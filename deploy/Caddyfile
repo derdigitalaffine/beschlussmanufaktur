@@ -1,0 +1,16 @@
+{
+    admin off
+}
+
+{$SITE_ADDRESS:localhost} {
+    tls internal
+    encode zstd gzip
+    handle_path /static/* {
+        root * /srv/static
+        file_server
+    }
+    handle {
+        reverse_proxy backend:8000
+    }
+}
+

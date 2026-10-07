@@ -1,0 +1,47 @@
+# Installation des Entwicklungsstands
+
+Voraussetzungen: Linux, Docker Engine mit Compose v2, DNS/Hostauflösung für die gewählten Domains, administrativer Hostzugriff und funktionierender SMTP-Versand. Die folgenden Schritte betreffen den Entwicklungsstand, nicht eine bereits abgenommene Produktivinstallation.
+
+## Intern / Einzelserver
+
+1. Repository klonen und `.env.example` nach `.env` kopieren.
+2. `DJANGO_SECRET_KEY` mit mindestens 50 zufälligen Zeichen und `POSTGRES_PASSWORD` setzen. Zum Generieren separat `python -c "import secrets; print(secrets.token_urlsafe(64))"` verwenden. Werte nicht committen.
+3. `SITE_ADDRESS`, `DJANGO_ALLOWED_HOSTS` und `CSRF_TRUSTED_ORIGINS` passend setzen, beispielsweise `ris.intern.example`, `ris.intern.example` und `https://ris.intern.example`. Bei abweichendem HTTPS-Port den Origin inklusive Port setzen.
+4. SMTP-Host, Port, Benutzer, Passwort und den einen Absender einstellen. STARTTLS und implizites SSL nicht gleichzeitig aktivieren. Kein Konsolen-Mailbackend: Anmeldecodes gehören nicht in Containerlogs.
+5. Installation prüfen, Image bauen, Datenbank migrieren und erstes Konto interaktiv einrichten:
+
+```sh
+docker compose config --quiet
+docker compose build
+docker compose up -d db
+docker compose run --rm backend python manage.py migrate
+docker compose run --rm backend python manage.py bootstrap
+docker compose up -d
+```
+
+Bootstrap fragt E-Mail, Verbundname und Passwort ab. Es erzeugt ausdrücklich eine Organisationsverwaltungsrolle und ist bei vorhandenen Konten gesperrt. Keine voreingestellten Zugangsdaten. Anmeldung erfolgt mit Passwort und anschließendem E-Mail-Code. Domain muss auf den Host zeigen; internes Verwaltungssystem nicht unkontrolliert ins öffentliche Internet exponieren.
+
+## TLS-Vertrauen
+
+Caddy erstellt eine lokale CA. Deren öffentliches Wurzelzertifikat liegt im Caddy-Datenvolume unter `caddy/pki/authorities/local/root.crt`. Über die Hostadministration auslesen und auf den vorgesehenen Endgeräten vertrauenswürdig installieren. Den privaten CA-Schlüssel niemals verteilen. Browserwarnungen nicht als dauerhaften Betriebsweg übergehen. Die spätere Umstellung auf Let's Encrypt im Adminbereich ist noch nicht implementiert.
+
+## Externer Server
+
+Separater Host, eigene `.env`, getrennte `PROTECTED_SECRET_KEY`/`PUBLIC_SECRET_KEY` und `PROTECTED_DB_PASSWORD`/`PUBLIC_DB_PASSWORD`, Domains `PROTECTED_HOST` und `PUBLIC_HOST`. Diese Dateien verwenden keine interne Datenbankadresse und öffnen keine Verbindung ins interne Netz.
+
+```sh
+docker compose -f compose.external.yaml config --quiet
+docker compose -f compose.external.yaml build
+docker compose -f compose.external.yaml up -d protected-db public-db
+docker compose -f compose.external.yaml run --rm protected python manage.py migrate
+docker compose -f compose.external.yaml run --rm public python manage.py migrate
+docker compose -f compose.external.yaml up -d
+```
+
+Der geschützte Dienst hat noch keine zentrale Kontenprovisionierung; dort weder Passwortkopien improvisieren noch öffentlichen Bootstrap öffnen. Der Bürgerdienst liefert aktuell nur den gekennzeichneten Leerzustand. Vollständiger Zweiserverbetrieb mit Fachdatenaustausch folgt in weiteren PRs.
+
+## Betriebshinweise
+
+Keine Datenbankports sind veröffentlicht. Caddy ist der einzige veröffentlichte Eingang. `/health/live/` prüft Prozessantwort, `/health/ready/` die Datenbankverbindung; Bereitschaft ersetzt keine Prüfung bereits erfolgter Migrationen. Volumes sind persistent. `docker compose down -v` löscht Daten und ist kein normaler Neustartbefehl.
+
+Backup/Restore und TLS-/Domainverwaltung sind noch nicht automatisiert. Containerimages verwenden zurzeit Major-Tags; geprüfte Digest-Pins folgen im Releaseprozess. Vor öffentlichem Produktiveinsatz müssen die im Anforderungskatalog beschriebenen Kernfunktionen und Abnahmen abgeschlossen sein.

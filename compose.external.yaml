@@ -1,0 +1,105 @@
+name: beschlussmanufaktur-external
+services:
+  protected-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: protected
+      POSTGRES_USER: beschlussmanufaktur
+      POSTGRES_PASSWORD: ${PROTECTED_DB_PASSWORD:?Bitte PROTECTED_DB_PASSWORD setzen}
+    volumes: [protected_database:/var/lib/postgresql/data]
+    networks: [protected_data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U beschlussmanufaktur -d protected']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  public-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: public
+      POSTGRES_USER: beschlussmanufaktur
+      POSTGRES_PASSWORD: ${PUBLIC_DB_PASSWORD:?Bitte PUBLIC_DB_PASSWORD setzen}
+    volumes: [public_database:/var/lib/postgresql/data]
+    networks: [public_data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U beschlussmanufaktur -d public']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  protected:
+    build: .
+    environment:
+      SERVER_ROLE: protected
+      DJANGO_SECRET_KEY: ${PROTECTED_SECRET_KEY:?Bitte PROTECTED_SECRET_KEY setzen}
+      DJANGO_ALLOWED_HOSTS: ${PROTECTED_HOST:-gremien.localhost}
+      CSRF_TRUSTED_ORIGINS: https://${PROTECTED_HOST:-gremien.localhost}
+      POSTGRES_HOST: protected-db
+      POSTGRES_DB: protected
+      POSTGRES_PASSWORD: ${PROTECTED_DB_PASSWORD:?Bitte PROTECTED_DB_PASSWORD setzen}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_SSL: ${SMTP_SSL:-false}
+    volumes: [protected_files:/app/data]
+    networks: [protected_data, protected_edge]
+    depends_on:
+      protected-db: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  public:
+    build: .
+    environment:
+      SERVER_ROLE: public
+      DJANGO_SECRET_KEY: ${PUBLIC_SECRET_KEY:?Bitte PUBLIC_SECRET_KEY setzen}
+      DJANGO_ALLOWED_HOSTS: ${PUBLIC_HOST:-info.localhost}
+      POSTGRES_HOST: public-db
+      POSTGRES_DB: public
+      POSTGRES_PASSWORD: ${PUBLIC_DB_PASSWORD:?Bitte PUBLIC_DB_PASSWORD setzen}
+    networks: [public_data, public_edge]
+    depends_on:
+      public-db: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      PROTECTED_HOST: ${PROTECTED_HOST:-gremien.localhost}
+      PUBLIC_HOST: ${PUBLIC_HOST:-info.localhost}
+    ports: ['${HTTP_PORT:-80}:80', '${HTTPS_PORT:-443}:443']
+    volumes:
+      - ./deploy/Caddyfile.external:/etc/caddy/Caddyfile:ro
+      - ./backend/static:/srv/static:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [protected_edge, public_edge]
+    depends_on: [protected, public]
+    restart: unless-stopped
+networks:
+  protected_data: {internal: true}
+  public_data: {internal: true}
+  protected_edge:
+  public_edge:
+volumes:
+  protected_database:
+  public_database:
+  protected_files:
+  caddy_data:
+  caddy_config:
+
