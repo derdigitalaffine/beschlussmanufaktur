@@ -1,15 +1,15 @@
 from django.conf import settings
 from django.urls import path
-from core import collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
     path("health/ready/", views.ready, name="ready"),
 ]
 if settings.SERVER_ROLE in ('protected','public'):
-    urlpatterns += [path('transfer/inbox/', exchange.inbox)]
+    urlpatterns += [path('transfer/inbox/', exchange.inbox),path('transfer/assets/',exchange.receive_asset),path('dokumente/<uuid:document_id>/anlagen/<uuid:asset_id>/',replica_views.asset,name='replica_asset'),path('dokumente/<uuid:document_id>/export/<str:format>/',replica_views.document_export,name='replica_export')]
 if settings.SERVER_ROLE == 'protected':
-    urlpatterns += [path('transfer/events/',exchange.events),path('transfer/ack/',exchange.acknowledge),path('unterlagen/',exchange_views.external_records,name='external_records'),path('unterlagen/<uuid:record_id>/vorschlag/',exchange_views.propose,name='propose')]
+    urlpatterns += [path('transfer/events/',exchange.events),path('transfer/ack/',exchange.acknowledge),path('vorlagen/',replica_views.documents,name='replica_documents'),path('dokumente/<uuid:document_id>/',replica_views.document,name='replica_document'),path('dokumente/<uuid:document_id>/vorschlag/',replica_views.propose_document,name='replica_propose'),path('unterlagen/',exchange_views.external_records,name='external_records'),path('unterlagen/<uuid:record_id>/vorschlag/',exchange_views.propose,name='propose')]
 if settings.SERVER_ROLE == "public":
     urlpatterns += [path("", views.public_home, name="home")]
 else:

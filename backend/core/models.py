@@ -265,6 +265,7 @@ class RemoteChange(models.Model):
     resource_id = models.UUIDField()
     resource_kind = models.CharField(max_length=20,default='registry')
     base_version = models.PositiveIntegerField()
+    context_id = models.UUIDField(null=True,blank=True)
     actor_id = models.PositiveBigIntegerField()
     content = models.TextField(max_length=100000)
     reason = models.CharField(max_length=500)
@@ -278,7 +279,8 @@ class PublicRecord(models.Model):
     id = models.UUIDField(primary_key=True)
     organization_id = models.UUIDField()
     kind = models.CharField(max_length=30)
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=300)
+    attachments = models.JSONField(default=list,blank=True)
     body = models.TextField(blank=True)
     version = models.PositiveIntegerField(default=1)
 
@@ -454,3 +456,10 @@ class ExternalDocument(models.Model):
     permissions = models.JSONField(default=dict)
     attachments = models.JSONField(default=list)
     received_at = models.DateTimeField(default=timezone.now)
+
+
+class ReplicaAsset(models.Model):
+    id = models.UUIDField(primary_key=True)
+    digest = models.CharField(max_length=64)
+    data = models.BinaryField()
+    received_at = models.DateTimeField(auto_now=True)

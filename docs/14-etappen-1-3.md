@@ -37,3 +37,9 @@ Interne Bereitstellung prüft alle Schritte und Anlagen; die Nummer wird transak
 Beratungsfolgen unterscheiden Vorberatung/Entscheidung, Reihenfolge, öffentlich/nichtöffentlich und ausdrücklich erlaubte lokale Ergänzungen. Weitere Körperschaften benötigen Zuständigkeit; lokale Ergänzungen besitzen eigenen Textstand und überschreiben die Ausgangsvorlage nicht. Verknüpfungen zu früheren Vorlagen werden nur bei Leserecht erlaubt.
 
 PDF und DOCX werden lokal aus einer konkreten Archivfassung erzeugt. Sie enthalten Text, Überschriften, Listen, Tabellen und Anlagenverzeichnis mit Prüfsummen; keine Wordvorlagen oder extern geladenen Assets. Amtliche Gesamtsitzungsmappen folgen im Sitzungsplanungsmodul.
+
+## Freigegebene Vorlagen außerhalb des internen Netzes
+
+Geschützte Vorlagekopien enthalten nur intern bereitgestellte Stände und die ausdrücklich berechneten Rechte je übertragenem Arbeitskontext. Vorlagenänderungen bleiben externe Vorschläge; die interne Prüfung kontrolliert den ursprünglichen Arbeitskontext, aktuelle Rechte und die Ausgangsversion. Der geschützte Dienst besitzt keine Vorlagenadministration oder direkte Schreibverbindung ins interne System.
+
+Dateien werden nach dem Metadatenstand separat übertragen. Der Empfänger akzeptiert nur bereits referenzierte IDs/Prüfsummen; öffentliche Dateien müssen in der konkreten veröffentlichten Archivfassung als geprüft und öffentlich vorgesehen markiert sein. Geschützte und öffentliche Dateien liegen in ihren getrennten Datenbanken. Downloads kontrollieren die aktuelle Manifestzugehörigkeit und Rechte; nicht mehr referenzierte Kopien werden beim nächsten Transfer gelöscht. Fehlende Dateien liefern keinen Ersatz oder internen Zugriff, sondern bleiben bis erfolgreicher Übertragung nicht verfügbar.

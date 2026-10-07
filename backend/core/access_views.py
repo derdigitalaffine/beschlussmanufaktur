@@ -20,7 +20,7 @@ class GrantForm(forms.ModelForm):
         super().__init__(*args,**kwargs)
         self.instance.organization=organization
         self.fields['membership'].queryset=Membership.objects.filter(organization=organization)
-        self.fields['resource_kind'].choices=[('organization','Gesamte Körperschaft'),('registry','Gremium / Stammdatensatz'),('unit','Organisationseinheit')]
+        self.fields['resource_kind'].choices=[('organization','Gesamte Körperschaft'),('registry','Gremium / Stammdatensatz'),('unit','Organisationseinheit'),('template','Vorlage')]
 
 @login_required
 @require_http_methods(['GET','POST'])
