@@ -45,8 +45,7 @@ def template_access(context,action,obj):
         participant=TemplateParticipant.objects.get(template=obj,membership=context)
         if action in participant.actions:return True
     if action in ('read','export') and obj.state in ('ready','withdrawn') and obj.classification in ('committee','public_planned'):
-        today=timezone.localdate()
-        return obj.consultations.filter(committee__organization_id=context.organization_id,committee__mandates__user_id=context.user_id,committee__mandates__archived=False,committee__mandates__starts_on__lte=today,committee__mandates__ends_on__gte=today).exists()
+        return any(can_access(context,action,'registry',consultation.committee) for consultation in obj.consultations.filter(committee__organization_id=context.organization_id).select_related('committee'))
     if same and obj.unit and can_access(context,action,'unit',obj.unit):return True
     return False
 

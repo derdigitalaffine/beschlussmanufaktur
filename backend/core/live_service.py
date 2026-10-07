@@ -40,6 +40,7 @@ def quorum(obj,item=None):
 def activate(context,meeting_id,version,server,rules):
     obj=lock_meeting(context,meeting_id,'invite',version)
     if obj.state!='invited' or obj.leading_server!='internal':raise ValidationError('Nur intern eingeladene Sitzungen aktivieren.')
+    if not available_contexts(obj.scribe).filter(organization=obj.organization,role='clerk').exists() or not available_contexts(obj.chair).filter(organization=obj.organization,role__in=['chair','mayor','local_mayor']).exists():raise ValidationError('Schriftführung und Vorsitz benötigen gültige ausdrückliche Fachrollen in dieser Körperschaft.')
     if server not in ('internal','protected'):raise ValidationError('Unbekannter führender Dienst.')
     if rules.get('quorum') not in ('majority_statutory','majority_nonexcluded','repeated_minimum','manual'):raise ValidationError('Beschlussfähigkeitsregel fehlt.')
     if server=='protected' and (not ExchangePolicy.objects.filter(organization=obj.organization,protected_enabled=True).exists() or not settings.EXCHANGE_PROTECTED_URL or len(settings.EXCHANGE_PROTECTED_KEY)<32):raise ValidationError('Geschützte Bereitstellung und Transferkonfiguration erforderlich.')

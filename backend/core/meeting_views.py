@@ -25,7 +25,8 @@ class MeetingForm(forms.ModelForm):
         self.fields['committee'].queryset=RegistryRecord.objects.filter(organization=organization,kind='committee',archived=False)
         self.fields['room'].queryset=RegistryRecord.objects.filter(organization=organization,kind='room',archived=False)
         people=User.objects.filter(pk__in=Membership.objects.filter(organization=organization).values('user_id'))
-        self.fields['chair'].queryset=people;self.fields['scribe'].queryset=people
+        self.fields['chair'].queryset=people.filter(memberships__organization=organization,memberships__role__in=['chair','mayor','local_mayor'],memberships__revoked_at__isnull=True,is_active=True).distinct()
+        self.fields['scribe'].queryset=people.filter(memberships__organization=organization,memberships__role='clerk',memberships__revoked_at__isnull=True,is_active=True).distinct()
         self.fields['invitation_days'].max_value=60
         self.fields['statutory_count'].max_value=1000
 
