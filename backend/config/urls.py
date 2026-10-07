@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import registry, user_views, views
+from core import access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -18,6 +18,8 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('rechte/', access_views.grants, name='grants'),
+            path('rechte/<uuid:grant_id>/entziehen/', access_views.revoke, name='revoke_grant'),
             path('struktur/', registry.structure, name='structure'),
             path('stammdaten/', registry.index, name='registry'),
             path('stammdaten/<str:kind>/neu/', registry.edit, name='registry_new'),

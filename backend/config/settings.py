@@ -86,3 +86,13 @@ EMAIL_USE_TLS = os.environ.get("SMTP_STARTTLS", "true").lower() == "true"
 EMAIL_USE_SSL = os.environ.get("SMTP_SSL", "false").lower() == "true"
 EMAIL_TIMEOUT = 10
 DEFAULT_FROM_EMAIL = os.environ.get("SMTP_FROM", "")
+# Different signing keys for the protected and public channels. Empty disables transfer.
+EXCHANGE_SOURCE = os.environ.get('EXCHANGE_SOURCE', '')
+EXCHANGE_PROTECTED_KEY = os.environ.get('EXCHANGE_PROTECTED_KEY', '')
+EXCHANGE_PUBLIC_KEY = os.environ.get('EXCHANGE_PUBLIC_KEY', '')
+EXCHANGE_PROTECTED_URL = os.environ.get('EXCHANGE_PROTECTED_URL', '')
+EXCHANGE_PUBLIC_URL = os.environ.get('EXCHANGE_PUBLIC_URL', '')
+EXCHANGE_CA_FILE = os.environ.get('EXCHANGE_CA_FILE', '')
+EXCHANGE_MAX_AGE = int(os.environ.get('EXCHANGE_MAX_AGE', '86400'))
+DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
