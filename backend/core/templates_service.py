@@ -67,7 +67,7 @@ def ensure_defaults(org):
     for name in DEFAULT_KINDS:TemplateKind.objects.get_or_create(organization=org,name=name,defaults={'initial_markdown':DEFAULT_TEXT})
 
 def lock_template(context,obj_id,action,expected):
-    obj=Template.objects.select_for_update().select_related('kind','organization','author','unit').get(pk=obj_id)
+    obj=Template.objects.select_for_update(of=('self',)).select_related('kind','organization','author','unit').get(pk=obj_id)
     if not template_access(context,action,obj):raise PermissionDenied
     if obj.version!=expected:raise ValidationError('Zwischenzeitlich geändert. Ihr Text bleibt im Formular; vergleichen Sie den aktuellen Stand und speichern Sie erneut.')
     return obj
