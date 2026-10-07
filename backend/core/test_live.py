@@ -50,6 +50,7 @@ class LiveTests(MeetingFixture,TestCase):
         self.assertEqual(MeetingEvent.objects.filter(pk=identifier).count(),1)
     def test_workspace_render(self):
         r=self.client.get(f'/sitzungen/{self.meeting.pk}/live/');self.assertEqual(r.status_code,200);self.assertContains(r,'Sitzungshoheit')
+        status=self.client.get(f'/sitzungen/{self.meeting.pk}/live/status/');self.assertEqual(status.status_code,200);self.assertIn('quorum',status.json())
     def test_public_guest_no_private_top_or_roster(self):
         guest=User.objects.create_user(username='guest2',email='guest2@example.org');member=Membership.objects.create(organization=self.org,user=guest,role='member')
         MeetingGuest.objects.create(meeting=self.meeting,membership=member,expires_at=self.meeting.ends_at,private=False)

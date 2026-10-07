@@ -87,4 +87,4 @@ def heartbeat(request,meeting_id):
 def status(request,meeting_id):
     obj=get_object_or_404(Meeting,pk=meeting_id);context=active_context(request)
     if not meeting_access(context,'read',obj):raise PermissionDenied
-    return JsonResponse({'version':obj.version,'state':obj.state,'paused':obj.paused,'active_item':str(obj.active_item_id) if obj.active_item_id and (meeting_access(context,'private',obj) or obj.active_item.public) else None,'quorum':quorum(obj,obj.active_item) if private else {'present':'nicht freigegeben','required':None,'calculated':None} if meeting_access(context,'private',obj) else None})
+    return JsonResponse({'version':obj.version,'state':obj.state,'paused':obj.paused,'active_item':str(obj.active_item_id) if obj.active_item_id and (meeting_access(context,'private',obj) or obj.active_item.public) else None,'quorum':quorum(obj,obj.active_item) if meeting_access(context,'private',obj) else None})
