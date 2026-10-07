@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import views
+from core import user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -17,5 +17,12 @@ else:
         path("kontext/", views.select_context, name="select_context"),
     ]
     if settings.SERVER_ROLE == "internal":
-        urlpatterns += [path("organisationen/neu/", views.create_organization, name="create_organization")]
-
+        urlpatterns += [
+            path("organisationen/neu/", views.create_organization, name="create_organization"),
+            path("benutzer/", user_views.users, name="users"),
+            path("benutzer/rollen/<uuid:membership_id>/", user_views.edit_membership, name="edit_membership"),
+            path("benutzer/rollen/<uuid:membership_id>/entziehen/", user_views.remove_membership, name="remove_membership"),
+            path("benutzer/einladungen/<uuid:invitation_id>/zurueckziehen/", user_views.remove_invitation, name="remove_invitation"),
+            path("einladung/", user_views.exchange_invitation, name="exchange_invitation"),
+            path("einladung/annehmen/", user_views.finish_invitation, name="accept_invitation"),
+        ]

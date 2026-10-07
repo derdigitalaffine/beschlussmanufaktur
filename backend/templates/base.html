@@ -5,6 +5,5 @@
 <header class="topbar"><a class="brand" href="/"><span class="brand-mark">B</span><span>Beschlussmanufaktur<small>Gremienarbeit. Gemeinsam gestaltet.</small></span></a>
 {% if user.is_authenticated %}<form method="post" action="{% url 'sign_out' %}">{% csrf_token %}<button class="quiet" type="submit">Abmelden</button></form>{% endif %}</header>
 <main>{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>
-<footer>Beschlussmanufaktur · Entwicklungsstand 0.1 · MIT-Lizenz</footer>
+<footer>Beschlussmanufaktur · Entwicklungsstand 0.2 · MIT-Lizenz</footer>
 </body></html>
-

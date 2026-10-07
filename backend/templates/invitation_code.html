@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% load static %}
+{% block content %}<section class="page-heading"><span class="eyebrow">Persönliche Einladung</span><h1>Willkommen in der Beschlussmanufaktur.</h1><p>Öffnen Sie den Link aus Ihrer Einladung oder tragen Sie den Einladungscode ein.</p></section><section class="card form-card"><form id="invitation-code-form" method="post">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}<button class="primary" type="submit">Einladung öffnen</button></form><p class="help">Der Code wird vertraulich geprüft. Es gibt keine freie Selbstregistrierung.</p></section><script src="{% static 'invitation.js' %}" defer></script>{% endblock %}
+

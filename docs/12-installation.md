@@ -6,7 +6,7 @@ Voraussetzungen: Linux, Docker Engine mit Compose v2, DNS/Hostauflösung für di
 
 1. Repository klonen und `.env.example` nach `.env` kopieren.
 2. `DJANGO_SECRET_KEY` mit mindestens 50 zufälligen Zeichen und `POSTGRES_PASSWORD` setzen. Zum Generieren separat `python -c "import secrets; print(secrets.token_urlsafe(64))"` verwenden. Werte nicht committen.
-3. `SITE_ADDRESS`, `DJANGO_ALLOWED_HOSTS` und `CSRF_TRUSTED_ORIGINS` passend setzen, beispielsweise `ris.intern.example`, `ris.intern.example` und `https://ris.intern.example`. Bei abweichendem HTTPS-Port den Origin inklusive Port setzen.
+3. `SITE_ADDRESS`, `DJANGO_ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` und `APPLICATION_URL` passend setzen, beispielsweise `ris.intern.example`, `ris.intern.example`, `https://ris.intern.example` und `https://ris.intern.example`. Bei abweichendem HTTPS-Port den Origin inklusive Port setzen. `APPLICATION_URL` ist die vertrauenswürdige Basis der Einladungslinks und wird niemals aus einem Request-Host übernommen.
 4. SMTP-Host, Port, Benutzer, Passwort und den einen Absender einstellen. STARTTLS und implizites SSL nicht gleichzeitig aktivieren. Kein Konsolen-Mailbackend: Anmeldecodes gehören nicht in Containerlogs.
 5. Installation prüfen, Image bauen, Datenbank migrieren und erstes Konto interaktiv einrichten:
 
@@ -20,6 +20,8 @@ docker compose up -d
 ```
 
 Bootstrap fragt E-Mail, Verbundname und Passwort ab. Es erzeugt ausdrücklich eine Organisationsverwaltungsrolle und ist bei vorhandenen Konten gesperrt. Keine voreingestellten Zugangsdaten. Anmeldung erfolgt mit Passwort und anschließendem E-Mail-Code. Domain muss auf den Host zeigen; internes Verwaltungssystem nicht unkontrolliert ins öffentliche Internet exponieren.
+
+Weitere Nutzer werden unter „Menschen und Rollen“ des ausgewählten Organisationskontexts eingeladen. Rollenverwaltung und Einladung sind im aktuellen Stand ausschließlich intern erreichbar. Details: [Konten und Rollen bedienen](13-konten-rollen.md).
 
 ## TLS-Vertrauen
 
@@ -43,5 +45,7 @@ Der geschützte Dienst hat noch keine zentrale Kontenprovisionierung; dort weder
 ## Betriebshinweise
 
 Keine Datenbankports sind veröffentlicht. Caddy ist der einzige veröffentlichte Eingang. `/health/live/` prüft Prozessantwort, `/health/ready/` die Datenbankverbindung; Bereitschaft ersetzt keine Prüfung bereits erfolgter Migrationen. Volumes sind persistent. `docker compose down -v` löscht Daten und ist kein normaler Neustartbefehl.
+
+Die Compose-Dienste vertrauen Caddys Forwarded-Clientadresse ausdrücklich, damit Anmelde-/Einladungslimits nicht alle Nutzer hinter dem Proxy gemeinsam treffen. `TRUST_PROXY_HEADERS=true` ist nur bei diesem privaten, ausschließlich über Caddy erreichbaren Backend zulässig; bei direktem Backendzugang deaktivieren. Caddy muss eingehende Forwarded-Header weiterhin aus nicht vertrauenswürdigen Quellen überschreiben.
 
 Backup/Restore und TLS-/Domainverwaltung sind noch nicht automatisiert. Containerimages verwenden zurzeit Major-Tags; geprüfte Digest-Pins folgen im Releaseprozess. Vor öffentlichem Produktiveinsatz müssen die im Anforderungskatalog beschriebenen Kernfunktionen und Abnahmen abgeschlossen sein.

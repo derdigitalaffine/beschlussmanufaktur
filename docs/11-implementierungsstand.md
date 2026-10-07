@@ -1,4 +1,4 @@
-# Implementierungsstand 0.1
+# Implementierungsstand 0.2
 
 ## Verfügbar
 
@@ -11,12 +11,16 @@
 - Auswahl und Speicherung des sichtbaren Arbeitskontexts; Entzug wird bei jeder Anfrage erneut geprüft.
 - Erste Weboberfläche: Anmeldung, Arbeitsplatz, Kontextwechsel und Anlegen untergeordneter Organisationen mit ausdrücklicher Zuweisung.
 - Auditereignisse für Einrichtung, Anmeldung, Kontextwahl und Organisationsanlage.
+- Organisationsbezogene Benutzerverwaltung mit Suche, Rollenänderung, Befristung und begründetem Entzug.
+- E-Mail-Einladungen mit sieben Tagen Gültigkeit, Einmaligkeit, Rücknahme und sicherer Konto-/Rollenannahme.
+- Neue Nutzer setzen ihr Passwort selbst; bestehende Konten nehmen zusätzliche Rollen nach Anmeldung an, ohne Passwort-/Profilüberschreibung.
+- Schutz gegen veraltete Rollenformulare und gegen Entfernung der letzten aktiven Organisationsverwaltung; Authority-Prüfung des Einladenden bei Annahme.
 - Separate öffentliche Serverrolle ohne private Routen sowie geschützte Rolle ohne interne Organisationsverwaltung.
 - Tests, Migrationsprüfung und GitHub-Actions-Checks einschließlich PostgreSQL, Compose-/Caddy-Validierung und Imagebuild.
 
 ## Noch nicht implementiert
 
-Dies ist eine Entwicklungsgrundlage, noch kein produktionsfertiges RIS. Insbesondere fehlen Benutzerverwaltung/Einladungen/Import in der Oberfläche, weitere Rollen/Rechtekonfiguration, TOTP/Passkeys, Stammdaten-/Gremienverwaltung, Vorlagen und Fachworkflows, Live-/Offline-Sitzung, Abstimmungen, Veröffentlichung, Suche, Synchronisierung, Backupverwaltung, Domain-/Zertifikatsadministration und Löschbarkeit der späteren Testdaten. Es werden aktuell keine Testpersonen oder automatisch erzeugten Fachdatensätze ausgeliefert. Die vorgesehenen minimalen Testdaten folgen mit den Fachmodulen.
+Dies ist eine Entwicklungsgrundlage, noch kein produktionsfertiges RIS. Insbesondere fehlen Benutzerimport, Passwortwiederherstellung, weitere Rollen und feingranulare Rechtekonfiguration, TOTP/Passkeys, Stammdaten-/Gremienverwaltung, Vorlagen und Fachworkflows, Live-/Offline-Sitzung, Abstimmungen, Veröffentlichung, Suche, Synchronisierung, Backupverwaltung, Domain-/Zertifikatsadministration und Löschbarkeit der späteren Testdaten. Es werden aktuell keine Testpersonen oder automatisch erzeugten Fachdatensätze ausgeliefert. Die vorgesehenen minimalen Testdaten folgen mit den Fachmodulen.
 
 Der externe geschützte Dienst kann gestartet werden, hat aber noch keine Kontenprovisionierung vom internen System. Seine Loginseite ist deshalb noch kein vollständiger Mandatsträgerzugang. Der öffentliche Dienst zeigt einen ausdrücklich gekennzeichneten Leerzustand, keine simulierten Veröffentlichungen. Die Zweiserverdatei stellt Netz-/Datenbankgrenzen bereit; Datenabgleich ist noch nicht vorhanden.
 
@@ -24,7 +28,7 @@ TLS verwendet aktuell fest die lokale Caddy-CA. Let's Encrypt, DNS-Prüfung und 
 
 ## Oberfläche und technische Entscheidung
 
-Der erste Stand verwendet serverseitige Django-Templates mit lokalem CSS statt eines zusätzlichen React-Builds. Dadurch sind Konten-/Rechtefluss sofort durchgängig testbar und CSP kann ohne Skriptausführung auskommen. React/TypeScript aus dem Architekturvorschlag bleibt für spätere interaktive Fachmodule eine Option, keine bereits ausgelieferte Komponente. Keine externen Schriften, Tracker oder Frontend-CDNs.
+Der erste Stand verwendet serverseitige Django-Templates mit lokalem CSS statt eines zusätzlichen React-Builds. Dadurch sind Konten-/Rechtefluss sofort durchgängig testbar. Ein einziges lokales Skript übernimmt Einladungsgeheimnisse aus URL-Fragmenten in einen CSRF-geschützten POST; manuelle Codeeingabe funktioniert ohne JavaScript. CSP erlaubt nur lokale Skripte, keine Inlineausführung. React/TypeScript aus dem Architekturvorschlag bleibt für spätere interaktive Fachmodule eine Option, keine bereits ausgelieferte Komponente. Keine externen Schriften, Tracker oder Frontend-CDNs.
 
 ## Entwicklung
 

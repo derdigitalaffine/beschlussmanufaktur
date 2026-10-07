@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -15,6 +16,10 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").sp
 if "127.0.0.1" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("127.0.0.1")  # Private container readiness probe.
 CSRF_TRUSTED_ORIGINS = list(filter(None, os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")))
+APPLICATION_URL = os.environ.get("APPLICATION_URL", "https://localhost").rstrip("/")
+application_url = urlparse(APPLICATION_URL)
+if application_url.scheme != "https" or not application_url.hostname or application_url.username or application_url.password or application_url.path or application_url.query or application_url.fragment:
+    raise ImproperlyConfigured("APPLICATION_URL muss ein vollständiger HTTPS-Origin ohne Pfad sein.")
 INSTALLED_APPS = [
     "django.contrib.auth", "django.contrib.contenttypes", "django.contrib.sessions",
     "django.contrib.messages", "django.contrib.staticfiles", "core",
@@ -67,6 +72,7 @@ SESSION_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_SAMESITE = "Strict"
 SESSION_COOKIE_AGE = 8 * 60 * 60
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+TRUST_PROXY_HEADERS = os.environ.get("TRUST_PROXY_HEADERS", "false").lower() == "true"
 SECURE_SSL_REDIRECT = True
 SECURE_REDIRECT_EXEMPT = [r"^health/"]
 SECURE_CONTENT_TYPE_NOSNIFF = True
