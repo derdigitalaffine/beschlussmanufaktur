@@ -70,6 +70,8 @@ class OrganizationRelation(models.Model):
 class Membership(models.Model):
     class Role(models.TextChoices):
         ORGANIZATION_ADMIN = "organization_admin", "Organisationsverwaltung"
+        REVIEWER = "reviewer", "Fachbereichsleitung / Prüfung"
+        RELEASE = "release", "Freigabe"
         CLERK = "clerk", "Sitzungsdienst"
         AUTHOR = "author", "Sachbearbeitung"
         CHAIR = "chair", "Vorsitz"
@@ -196,3 +198,29 @@ class Mandate(models.Model):
             raise ValidationError('Ungültiger Zeitraum.')
         if self.substitutes_for_id and (self.substitutes_for_id == self.pk or self.substitutes_for.committee_id != self.committee_id or self.substitutes_for.term_id != self.term_id or self.substitutes_for.substitutes_for_id):
             raise ValidationError('Vertretung muss ein reguläres Mandat desselben Gremiums und derselben Periode betreffen.')
+
+
+class AccessGrant(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    membership = models.ForeignKey(Membership,on_delete=models.PROTECT)
+    resource_kind = models.CharField(max_length=30,choices=[('organization','Körperschaft'),('registry','Gremium / Stammdatensatz'),('template','Vorlage'),('unit','Organisationseinheit')])
+    resource_id = models.UUIDField()
+    actions = models.JSONField(default=list)
+    expires_at = models.DateTimeField(null=True,blank=True)
+    revoked_at = models.DateTimeField(null=True,blank=True)
+    reason = models.CharField(max_length=500)
+    def clean(self):
+        if self.membership.organization_id != self.organization_id:
+            raise ValidationError('Die Zuweisung muss zur Körperschaft gehören.')
+        if not isinstance(self.actions,list) or not self.actions or set(self.actions)-{'read','edit','review','release','publish','export','delegate'}:
+            raise ValidationError('Unzulässige Einzelrechte.')
+        if self.resource_kind=='organization':
+            valid=self.resource_id==self.organization_id
+        elif self.resource_kind in ('registry','unit'):
+            valid=RegistryRecord.objects.filter(pk=self.resource_id,organization=self.organization).exists()
+        else:
+            # Template model is introduced by the next module.
+            from django.apps import apps
+            valid=apps.get_model('core','Template').objects.filter(pk=self.resource_id,organization=self.organization).exists()
+        if not valid:raise ValidationError('Rechteobjekt gehört nicht zur Körperschaft.')
