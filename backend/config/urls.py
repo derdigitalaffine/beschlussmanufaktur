@@ -10,6 +10,8 @@ if settings.SERVER_ROLE in ('protected','public'):
     urlpatterns += [path('transfer/inbox/', exchange.inbox),path('transfer/assets/',exchange.receive_asset),path('dokumente/<uuid:document_id>/anlagen/<uuid:asset_id>/',replica_views.asset,name='replica_asset'),path('dokumente/<uuid:document_id>/export/<str:format>/',replica_views.document_export,name='replica_export')]
 if settings.SERVER_ROLE == 'protected':
     urlpatterns += [path('transfer/events/',exchange.events),path('transfer/ack/',exchange.acknowledge),path('vorlagen/',replica_views.documents,name='replica_documents'),path('dokumente/<uuid:document_id>/',replica_views.document,name='replica_document'),path('dokumente/<uuid:document_id>/vorschlag/',replica_views.propose_document,name='replica_propose'),path('unterlagen/',exchange_views.external_records,name='external_records'),path('unterlagen/<uuid:record_id>/vorschlag/',exchange_views.propose,name='propose')]
+if settings.SERVER_ROLE=='protected':
+    urlpatterns += [path('sitzungen/',meeting_views.index,name='meetings'),path('sitzungen/<uuid:meeting_id>/',meeting_views.detail,name='meeting_detail'),path('einladungen/<uuid:invitation_id>/<str:format>/',invitation_views.download,name='meeting_invitation_download'),path('einladungen/status/<int:delivery_id>/',invitation_views.seen,name='meeting_invitation_seen')]
 if settings.SERVER_ROLE == "public":
     urlpatterns += [path("", views.public_home, name="home")]
 else:

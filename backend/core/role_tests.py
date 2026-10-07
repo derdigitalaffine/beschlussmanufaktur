@@ -6,7 +6,7 @@ class ServerBoundaryTests(TestCase):
         if settings.SERVER_ROLE != "public":
             self.skipTest("Separate public-role process required")
         self.assertContains(self.client.get("/"), "Noch keine Veröffentlichungen")
-        for path in ["/anmelden/", "/anmelden/code/", "/kontext/", "/organisationen/neu/", "/benutzer/", "/einladung/", "/einladung/annehmen/"]:
+        for path in ["/anmelden/", "/anmelden/code/", "/kontext/", "/organisationen/neu/", "/benutzer/", "/einladung/", "/einladung/annehmen/", "/sitzungen/", "/vorlagen/", "/stammdaten/"]:
             self.assertEqual(self.client.get(path).status_code, 404)
 
     def test_protected_role_has_no_internal_administration_route(self):
@@ -15,6 +15,9 @@ class ServerBoundaryTests(TestCase):
         self.assertEqual(self.client.get("/organisationen/neu/").status_code, 404)
         self.assertEqual(self.client.get("/benutzer/").status_code, 404)
         self.assertEqual(self.client.get("/einladung/").status_code, 404)
+        self.assertEqual(self.client.get("/sitzungen/neu/").status_code, 404)
+        self.assertEqual(self.client.get("/stammdaten/").status_code, 404)
+        self.assertEqual(self.client.get("/vorlagen/neu/").status_code, 404)
         self.assertContains(self.client.get("/anmelden/"), "Willkommen zurück")
 
     def test_role_specific_cookies(self):

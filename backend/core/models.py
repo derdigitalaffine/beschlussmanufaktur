@@ -486,6 +486,7 @@ class Meeting(models.Model):
     release_deadline = models.DateTimeField(null=True,blank=True)
     public_notice = models.TextField(blank=True,max_length=10000)
     public_enabled = models.BooleanField(default=False)
+    permission_snapshot = models.JSONField(default=dict,blank=True)
     leading_server = models.CharField(max_length=20,default='internal')
     active_item = models.ForeignKey('AgendaItem',null=True,blank=True,on_delete=models.PROTECT,related_name='+')
     class Meta:ordering=['starts_at','id']
@@ -508,6 +509,7 @@ class AgendaItem(models.Model):
     public = models.BooleanField(default=True)
     template = models.ForeignKey(Template,null=True,blank=True,on_delete=models.PROTECT)
     markdown = models.TextField(blank=True,max_length=100000)
+    frozen_template = models.JSONField(default=dict,blank=True)
     estimated_minutes = models.PositiveIntegerField(null=True,blank=True)
     proposed_by = models.ForeignKey(User,on_delete=models.PROTECT)
     removed = models.BooleanField(default=False)
@@ -540,8 +542,8 @@ class InvitationDelivery(models.Model):
     invitation = models.ForeignKey(MeetingInvitation,on_delete=models.PROTECT,related_name='deliveries')
     user = models.ForeignKey(User,on_delete=models.PROTECT)
     snapshot = models.JSONField()
-    delivered_at = models.DateTimeField(null=True)
-    seen_at = models.DateTimeField(null=True)
+    delivered_at = models.DateTimeField(null=True,blank=True)
+    seen_at = models.DateTimeField(null=True,blank=True)
     error = models.CharField(max_length=200,blank=True)
     attempts = models.PositiveIntegerField(default=0)
     class Meta:constraints=[models.UniqueConstraint(fields=['invitation','user'],name='unique_invitation_delivery')]

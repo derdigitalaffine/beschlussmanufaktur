@@ -64,6 +64,8 @@ def snapshot(channel):
             version=publication.template.versions.get(version=publication.version)
             files=[a for a in version.snapshot['attachments'] if a['public'] and a['checked']]
             records.append({'id':str(publication.template_id),'organization_id':str(publication.template.organization_id),'kind':'template','title':publication.subject,'body':publication.markdown,'version':publication.version,'attachments':files})
+        from .meeting_transfer import public_meetings
+        records+=public_meetings(ids)
         return {'records':records}
     memberships=Membership.objects.filter(organization_id__in=ids,role__in=REMOTE_ROLES)
     users=User.objects.filter(pk__in=memberships.values('user_id'))
@@ -84,7 +86,9 @@ def snapshot(channel):
         if permissions:
             version=obj.versions.get(version=obj.version)
             documents.append({'id':str(obj.pk),'organization_id':str(obj.organization_id),'title':obj.subject,'markdown':obj.markdown,'number':obj.number,'version':obj.version,'permissions':permissions,'attachments':version.snapshot['attachments']})
-    return {'documents':documents,'organizations':[dict(id=str(o.pk),name=o.name,kind=o.kind,primary_parent_id=str(o.primary_parent_id) if o.primary_parent_id in ids else None) for o in orgs],
+    from .meeting_transfer import export_meetings
+    meeting_data=export_meetings(ids,list(memberships),scalar)
+    return {'meeting_data':meeting_data,'documents':documents,'organizations':[dict(id=str(o.pk),name=o.name,kind=o.kind,primary_parent_id=str(o.primary_parent_id) if o.primary_parent_id in ids else None) for o in orgs],
         'users':[scalar(u,['id','email','password','first_name','last_name','is_active']) for u in users],
         'memberships':[scalar(m,MEMBERSHIP_FIELDS) for m in memberships],
         'registry':[scalar(r,REGISTRY_FIELDS) for r in registry],
@@ -127,11 +131,11 @@ def receive(payload,channel):
         expect_keys(data,['records'])
         for row in data['records']:
             expect_keys(row,['id','organization_id','kind','title','body','version','attachments'])
-            if row['kind'] not in ('organization','committee','template'):raise ValidationError('Unzulässiges öffentliches Objekt.')
+            if row['kind'] not in ('organization','committee','template','meeting'):raise ValidationError('Unzulässiges öffentliches Objekt.')
         upsert(PublicRecord,data['records'],['id','organization_id','kind','title','body','version','attachments'])
         PublicRecord.objects.exclude(pk__in=[row['id'] for row in data['records']]).delete()
     else:
-        expect_keys(data,['organizations','users','memberships','registry','mandates','grants','documents'])
+        expect_keys(data,['organizations','users','memberships','registry','mandates','grants','documents','meeting_data'])
         # Receiver is a dedicated replica; public storage never reaches this branch.
         org_ids={row['id'] for row in data['organizations']};user_ids={row['id'] for row in data['users']}
         for row in data['users']:
@@ -169,10 +173,12 @@ def receive(payload,channel):
             for rights in doc['permissions'].values():
                 if not isinstance(rights,list) or set(rights)-{'read','export','edit'}:raise ValidationError('Unzulässiges Vorlagenrecht.')
         upsert(ExternalDocument,data['documents'],['id','organization_id','title','markdown','number','version','permissions','attachments'])
+        from .meeting_transfer import import_meetings
+        import_meetings(data['meeting_data'],upsert,expect_keys,member_ids)
         ExternalDocument.objects.exclude(pk__in=[d['id'] for d in data['documents']]).delete()
     # Files no longer referenced by the current replica are removed with withdrawal.
-    manifests=PublicRecord.objects.values_list('attachments',flat=True) if channel=='public' else ExternalDocument.objects.values_list('attachments',flat=True)
-    asset_ids=[a['id'] for files in manifests for a in files]
+    from .meeting_transfer import referenced_assets
+    asset_ids=[a['id'] for a in referenced_assets(channel)]
     ReplicaAsset.objects.exclude(pk__in=asset_ids).delete()
     state.revision=payload['revision'];state.received_at=timezone.now();state.save()
 
@@ -221,8 +227,13 @@ def deliver(batch):
     try:
         data=batch.payload['data']
         documents=data['records'] if batch.channel=='public' else data['documents']
+        if batch.channel=='protected':
+            documents=documents+[{'attachments':item['template']['attachments']} for inv in data['meeting_data']['invitations'] for item in inv['snapshot']['items'] if item.get('template')]
+        sent=set()
         for manifest in documents:
             for meta in manifest.get('attachments',[]):
+                if meta['id'] in sent:continue
+                sent.add(meta['id'])
                 asset=Attachment.objects.filter(pk=meta['id'],digest=meta['digest']).first()
                 if not asset:raise ValidationError('Anlage nicht verfügbar.')
                 import base64
@@ -266,8 +277,8 @@ def receive_asset(request):
         import base64
         binary=base64.b64decode(data['data'],validate=True)
         if len(binary)>4*1024*1024 or hashlib.sha256(binary).hexdigest()!=data['digest']:raise ValidationError('Ungültige Datei.')
-        manifests=PublicRecord.objects.values_list('attachments',flat=True) if channel=='public' else ExternalDocument.objects.values_list('attachments',flat=True)
-        if not any(a['id']==data['id'] and a['digest']==data['digest'] for files in manifests for a in files):raise PermissionDenied
+        from .meeting_transfer import referenced_assets
+        if not any(a['id']==data['id'] and a['digest']==data['digest'] for a in referenced_assets(channel)):raise PermissionDenied
         ReplicaAsset.objects.update_or_create(pk=data['id'],defaults={'digest':data['digest'],'data':binary})
     except (ValueError,TypeError,KeyError,ValidationError,PermissionDenied):return JsonResponse({'error':'invalid-asset'},status=400)
     return JsonResponse({'status':'accepted'})
