@@ -66,6 +66,10 @@ def snapshot(channel):
             records.append({'id':str(publication.template_id),'organization_id':str(publication.template.organization_id),'kind':'template','title':publication.subject,'body':publication.markdown,'version':publication.version,'attachments':files})
         from .meeting_transfer import public_meetings
         records+=public_meetings(ids)
+        from .models import Minutes
+        for minutes in Minutes.objects.filter(meeting__organization_id__in=ids,published_version__isnull=False).select_related('meeting'):
+            public=minutes.public_snapshot
+            records.append({'id':str(minutes.pk),'organization_id':str(minutes.meeting.organization_id),'kind':'minutes','title':public['title'],'body':public['markdown'],'version':public['version'],'attachments':[]})
         return {'records':records}
     memberships=Membership.objects.filter(organization_id__in=ids,role__in=REMOTE_ROLES)
     users=User.objects.filter(pk__in=memberships.values('user_id'))

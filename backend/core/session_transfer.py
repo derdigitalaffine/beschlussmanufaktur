@@ -12,6 +12,9 @@ from .permissions import available_contexts
 from .exchange import scalar,expect_keys,upsert,authorize,transport
 
 TABLES={
+'minutes':(models.Minutes,['id','meeting_id','kind','markdown','public_markdown','state','version','published_version','public_snapshot']),
+'minutes_versions':(models.MinutesVersion,['id','minutes_id','version','snapshot','reason','actor_id','correction_meeting_id']),
+'decision_updates':(models.DecisionUpdate,['id','decision_id','version','snapshot','actor_id']),
 'participants':(models.MeetingParticipant,['id','meeting_id','user_id','person_id','mandate_id','name','function','voting','present','substitutes_for_id']),
 'events':(models.MeetingEvent,['id','meeting_id','item_id','kind','payload','digest','actor_id','context_id','device','occurred_at','version']),
 'conflicts':(models.ConflictOfInterest,['id','participant_id','item_id','active','reason']),
@@ -24,7 +27,7 @@ TABLES={
 
 def bundle(obj):
     item_ids=list(obj.items.values_list('pk',flat=True));participant_ids=list(obj.roster.values_list('pk',flat=True));vote_ids=list(obj.votes.values_list('pk',flat=True))
-    filters={'participants':{'meeting':obj},'events':{'meeting':obj},'conflicts':{'item_id__in':item_ids},'notes':{'item_id__in':item_ids},'motions':{'item_id__in':item_ids},'votes':{'meeting':obj},'ballots':{'vote_id__in':vote_ids},'decisions':{'vote_id__in':vote_ids}}
+    filters={'minutes':{'meeting':obj},'minutes_versions':{'minutes__meeting':obj},'decision_updates':{'decision__vote__meeting':obj},'participants':{'meeting':obj},'events':{'meeting':obj},'conflicts':{'item_id__in':item_ids},'notes':{'item_id__in':item_ids},'motions':{'item_id__in':item_ids},'votes':{'meeting':obj},'ballots':{'vote_id__in':vote_ids},'decisions':{'vote_id__in':vote_ids}}
     return {'meeting_id':str(obj.pk),'version':obj.version,'state':obj.state,'active_item_id':str(obj.active_item_id) if obj.active_item_id else None,'paused':obj.paused, 'tables':{key:[scalar(r,fields) for r in model.objects.filter(**filters[key])] for key,(model,fields) in TABLES.items()}}
 
 
@@ -41,6 +44,8 @@ def validate(data,obj,check_actors=False):
         for row in rows:
             expect_keys(row,fields)
             if row.get('meeting_id',str(obj.pk))!=str(obj.pk) or row.get('item_id') and row['item_id'] not in items:raise ValidationError('Fremdes Sitzungsobjekt.')
+            if row.get('minutes_id') and row['minutes_id'] not in ids['minutes'] or row.get('decision_id') and row['decision_id'] not in ids['decisions']:raise ValidationError('Fremde Niederschrifts-/Beschlussreferenz.')
+            if row.get('correction_meeting_id') and not models.Meeting.objects.filter(pk=row['correction_meeting_id'],committee=obj.committee,starts_at__gt=obj.starts_at).exists():raise ValidationError('Fremde Folgesitzung.')
             if row.get('participant_id') and row['participant_id'] not in ids['participants'] or row.get('vote_id') and row['vote_id'] not in ids['votes'] or row.get('substitutes_for_id') and row['substitutes_for_id'] not in ids['participants']:raise ValidationError('Fremde Sitzungsreferenz.')
             if key=='participants':
                 if row['mandate_id'] and not models.Mandate.objects.filter(pk=row['mandate_id'],committee=obj.committee,user_id=row['user_id'],person_id=row['person_id']).exists():raise ValidationError('Fremdes Mandat.')
@@ -55,20 +60,23 @@ def validate(data,obj,check_actors=False):
             # A UUID cannot be used to overwrite a row belonging to another session.
             pk=row.get('id',row.get('item_id'));old=model.objects.filter(pk=pk).first()
             if old:
-                if key in ('participants','events','votes'):foreign=old.meeting_id!=obj.pk
+                if key in ('participants','events','votes','minutes'):foreign=old.meeting_id!=obj.pk
                 elif key in ('notes','motions','conflicts'):foreign=old.item.meeting_id!=obj.pk
+                elif key=='minutes_versions':foreign=old.minutes.meeting_id!=obj.pk
+                elif key=='decision_updates':foreign=old.decision.vote.meeting_id!=obj.pk
                 else:foreign=old.vote.meeting_id!=obj.pk
                 if foreign:raise ValidationError('Datensatz gehört zu einer anderen Sitzung.')
 
 
 def apply(data,obj):
     validate(data,obj)
-    for key,(model,fields) in TABLES.items():
+    for key in ['participants','events','conflicts','notes','motions','votes','ballots','decisions','minutes','minutes_versions','decision_updates']:
+        model,fields=TABLES[key]
         rows=data['tables'][key]
         if key=='participants':
             rows=sorted(rows,key=lambda r:bool(r['substitutes_for_id']))
         for row in rows:
-            if key in ('events','ballots'):
+            if key in ('events','ballots','minutes_versions','decision_updates'):
                 old=model.objects.filter(pk=row['id']).first()
                 if old:
                     if scalar(old,fields)!=row:raise ValidationError('Unveränderlicher Stand widerspricht dem Journal.')

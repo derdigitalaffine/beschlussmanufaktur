@@ -692,3 +692,42 @@ class SessionReturn(models.Model):
     reviewed_by = models.ForeignKey(User,null=True,on_delete=models.PROTECT,related_name='reviewed_session_returns')
     reason = models.CharField(max_length=1000,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Minutes(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    meeting = models.OneToOneField(Meeting,on_delete=models.PROTECT,related_name='minutes')
+    kind = models.CharField(max_length=20,default='result',choices=[('result','Ergebnisprotokoll'),('course','Verlaufsprotokoll'),('verbatim','Wortprotokoll')])
+    markdown = models.TextField(max_length=200000,blank=True)
+    public_markdown = models.TextField(max_length=200000,blank=True)
+    state = models.CharField(max_length=20,default='draft')
+    version = models.PositiveIntegerField(default=1)
+    published_version = models.PositiveIntegerField(null=True,blank=True)
+    public_snapshot = models.JSONField(default=dict,blank=True)
+
+
+class MinutesVersion(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    minutes = models.ForeignKey(Minutes,on_delete=models.PROTECT,related_name='versions')
+    version = models.PositiveIntegerField()
+    snapshot = models.JSONField()
+    reason = models.CharField(max_length=1000)
+    actor = models.ForeignKey(User,on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    correction_meeting = models.ForeignKey(Meeting,null=True,blank=True,on_delete=models.PROTECT)
+    class Meta:constraints=[models.UniqueConstraint(fields=['minutes','version'],name='unique_minutes_version')]
+    def save(self,*args,**kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():raise ValidationError('Niederschriftsfassungen sind unveränderlich.')
+        super().save(*args,**kwargs)
+
+
+class DecisionUpdate(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    decision = models.ForeignKey(Decision,on_delete=models.PROTECT,related_name='updates')
+    version = models.PositiveIntegerField()
+    snapshot = models.JSONField()
+    actor = models.ForeignKey(User,on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def save(self,*args,**kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():raise ValidationError('Sachstände sind unveränderlich.')
+        super().save(*args,**kwargs)
