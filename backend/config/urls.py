@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import user_views, views
+from core import registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -18,6 +18,11 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('struktur/', registry.structure, name='structure'),
+            path('stammdaten/', registry.index, name='registry'),
+            path('stammdaten/<str:kind>/neu/', registry.edit, name='registry_new'),
+            path('stammdaten/<str:kind>/<uuid:record_id>/', registry.edit, name='registry_edit'),
+            path('ansicht/', registry.mode, name='mode'),
             path("organisationen/neu/", views.create_organization, name="create_organization"),
             path("benutzer/", user_views.users, name="users"),
             path("benutzer/rollen/<uuid:membership_id>/", user_views.edit_membership, name="edit_membership"),
