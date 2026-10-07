@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -22,6 +22,8 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('einladungen/<uuid:invitation_id>/<str:format>/',invitation_views.download,name='meeting_invitation_download'),
+            path('einladungen/status/<int:delivery_id>/',invitation_views.seen,name='meeting_invitation_seen'),
             path('sitzungen/',meeting_views.index,name='meetings'),
             path('sitzungen/neu/',meeting_views.edit,name='meeting_new'),
             path('sitzungen/<uuid:meeting_id>/',meeting_views.detail,name='meeting_detail'),

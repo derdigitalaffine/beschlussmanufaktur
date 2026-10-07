@@ -71,6 +71,16 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     restart: unless-stopped
+  invitation-worker:
+    build: .
+    command: [python, manage.py, invitation_worker, --watch]
+    environment: *internal_environment
+    networks: [data, edge]
+    depends_on:
+      db: {condition: service_healthy}
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
   caddy:
     image: caddy:2-alpine
     environment:
