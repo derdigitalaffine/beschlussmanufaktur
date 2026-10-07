@@ -27,7 +27,7 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r backend/requirements.txt
-      - run: node --check backend/static/invitation.js && node --check backend/static/editor.js
+      - run: node --check backend/static/invitation.js && node --check backend/static/editor.js && node --check backend/static/live.js
       - run: python manage.py check --settings=config.test_settings
         working-directory: backend
       - run: python manage.py makemigrations --check --dry-run --settings=config.test_settings

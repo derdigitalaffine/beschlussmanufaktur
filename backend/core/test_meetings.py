@@ -4,7 +4,7 @@ from django.utils import timezone
 from .models import Organization,User,Membership,RegistryRecord,Mandate,Meeting,AgendaItem,MeetingInvitation,InvitationDelivery,MeetingAmendment,MeetingGuest
 from .meetings_service import save_item,issue,approve_amendment,meeting_access,meeting_snapshot
 
-class MeetingTests(TestCase):
+class MeetingFixture:
     def setUp(self):
         self.org=Organization.objects.create(name='VG',kind='association')
         self.clerk=User.objects.create_user(username='clerk',email='clerk@example.org')
@@ -24,6 +24,8 @@ class MeetingTests(TestCase):
         return save_item(self.c,obj.pk,obj.version,{'title':'Öffentlicher TOP' if public else 'GEHEIMER TITEL','public_title':'' if public else 'Personalangelegenheit','position':1,'public':public})
     def invite(self):
         self.meeting.refresh_from_db();return issue(self.c,self.meeting.pk,self.meeting.version)
+
+class MeetingTests(MeetingFixture,TestCase):
     def test_plan_pages_scoped(self):
         self.assertContains(self.client.get('/sitzungen/'),'Ratssitzung');self.assertEqual(self.client.get('/sitzungen/neu/').status_code,200)
     def test_members_do_not_read_preparation(self):self.assertFalse(meeting_access(self.m,'read',self.meeting))

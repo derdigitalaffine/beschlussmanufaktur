@@ -6,13 +6,13 @@ from django.core.management import call_command
 from django.core import mail
 from django.utils import timezone
 from pypdf import PdfReader
-from .test_meetings import MeetingTests
+from .test_meetings import MeetingFixture
 from .models import TemplateKind,Template,Attachment,InvitationDelivery
 from .templates_service import archive
 from .meetings_service import save_item,issue,meeting_snapshot
 from .invitation_packets import packet,calendar
 
-class PacketTests(MeetingTests):
+class PacketTests(MeetingFixture,TestCase):
     def test_combined_pdf_includes_approved_attachment(self):
         with tempfile.TemporaryDirectory() as root,override_settings(MEDIA_ROOT=root):
             kind=TemplateKind.objects.create(organization=self.org,name='Beschluss')

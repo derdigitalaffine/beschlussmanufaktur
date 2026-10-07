@@ -477,6 +477,7 @@ class Meeting(models.Model):
     chair = models.ForeignKey(User,on_delete=models.PROTECT,related_name='chaired_meetings')
     scribe = models.ForeignKey(User,on_delete=models.PROTECT,related_name='scribed_meetings')
     created_by = models.ForeignKey(User,on_delete=models.PROTECT,related_name='created_meetings')
+    paused = models.BooleanField(default=False)
     state = models.CharField(max_length=30,default='preparation')
     version = models.PositiveIntegerField(default=1)
     rules = models.JSONField(default=dict,blank=True)
@@ -569,3 +570,69 @@ class MeetingAmendment(models.Model):
     state = models.CharField(max_length=20,default='pending')
     decision_record = models.CharField(max_length=1000,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class MeetingParticipant(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT,related_name='roster')
+    user = models.ForeignKey(User,null=True,blank=True,on_delete=models.PROTECT)
+    person = models.ForeignKey(RegistryRecord,null=True,blank=True,on_delete=models.PROTECT)
+    mandate = models.ForeignKey(Mandate,null=True,blank=True,on_delete=models.PROTECT)
+    name = models.CharField(max_length=200)
+    function = models.CharField(max_length=200,blank=True)
+    voting = models.BooleanField(default=False)
+    present = models.BooleanField(default=False)
+    substitutes_for = models.ForeignKey('self',null=True,blank=True,on_delete=models.PROTECT)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['meeting','user'],name='unique_meeting_user'),models.UniqueConstraint(fields=['meeting','person'],name='unique_meeting_person')]
+
+
+class MeetingLease(models.Model):
+    meeting = models.OneToOneField(Meeting,on_delete=models.PROTECT,primary_key=True)
+    holder = models.ForeignKey(User,on_delete=models.PROTECT)
+    context_id = models.UUIDField()
+    device = models.UUIDField()
+    epoch = models.PositiveIntegerField(default=1)
+    expires_at = models.DateTimeField()
+
+
+class MeetingEvent(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT,related_name='events')
+    item = models.ForeignKey(AgendaItem,null=True,blank=True,on_delete=models.PROTECT)
+    kind = models.CharField(max_length=30)
+    payload = models.JSONField(default=dict,blank=True)
+    digest = models.CharField(max_length=64)
+    actor = models.ForeignKey(User,on_delete=models.PROTECT)
+    context_id = models.UUIDField()
+    device = models.UUIDField()
+    occurred_at = models.DateTimeField()
+    recorded_at = models.DateTimeField(auto_now_add=True)
+    version = models.PositiveIntegerField()
+    class Meta:ordering=['version','id']
+    def save(self,*args,**kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():raise ValidationError('Ereignisse sind unveränderlich; Korrektur als neues Ereignis erfassen.')
+        super().save(*args,**kwargs)
+
+
+class ConflictOfInterest(models.Model):
+    participant = models.ForeignKey(MeetingParticipant,on_delete=models.PROTECT)
+    item = models.ForeignKey(AgendaItem,on_delete=models.PROTECT)
+    active = models.BooleanField(default=True)
+    reason = models.CharField(max_length=1000)
+    class Meta:constraints=[models.UniqueConstraint(fields=['participant','item'],name='unique_item_conflict')]
+
+
+class ItemNote(models.Model):
+    item = models.OneToOneField(AgendaItem,on_delete=models.PROTECT,primary_key=True)
+    markdown = models.TextField(max_length=100000,blank=True)
+
+
+class Motion(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    item = models.ForeignKey(AgendaItem,on_delete=models.PROTECT,related_name='motions')
+    applicant = models.CharField(max_length=200)
+    wording = models.TextField(max_length=100000)
+    kind = models.CharField(max_length=30,choices=[('substantive','Sachantrag'),('amendment','Änderungsantrag'),('procedure','Geschäftsordnungsantrag')])
+    position = models.PositiveIntegerField(default=1)
+    state = models.CharField(max_length=30,default='pending')
