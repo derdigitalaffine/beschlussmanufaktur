@@ -70,7 +70,8 @@ def snapshot(channel):
     memberships=Membership.objects.filter(organization_id__in=ids,role__in=REMOTE_ROLES)
     users=User.objects.filter(pk__in=memberships.values('user_id'))
     registry=RegistryRecord.objects.filter(organization_id__in=ids)
-    mandates=Mandate.objects.filter(committee_id__in=registry.values('pk')).filter(user_id__in=users.values('pk'))
+    from django.db.models import Q
+    mandates=Mandate.objects.filter(committee_id__in=registry.values('pk')).filter(Q(user_id__in=users.values('pk'))|Q(user__isnull=True))
     # Substitution references must also be in this snapshot.
     mandate_ids=set(mandates.values_list('id',flat=True))
     rows=[]

@@ -1,11 +1,11 @@
-from django.test import override_settings
-from .test_meetings import MeetingTests
+from django.test import TestCase,override_settings
+from .test_meetings import MeetingFixture
 from .models import ExchangePolicy,ExchangeState,Meeting,MeetingInvitation,InvitationDelivery
 from .exchange import snapshot,receive
 from .meetings_service import meeting_access
 
 @override_settings(EXCHANGE_SOURCE='b1d0ec0f-857c-452b-bc65-02ea198a2c4c')
-class MeetingTransferTests(MeetingTests):
+class MeetingTransferTests(MeetingFixture,TestCase):
     def setUp(self):
         super().setUp();ExchangePolicy.objects.create(organization=self.org,protected_enabled=True,public_enabled=True)
         for user in (self.clerk,self.chair,self.member):user.exchange_managed=True;user.save()

@@ -6,7 +6,7 @@ from django.utils import timezone
 from .models import Meeting,AgendaItem,MeetingInvitation,InvitationDelivery,MeetingGuest,ExternalDocument
 from .meetings_service import meeting_access,meeting_snapshot
 
-MEETING_FIELDS=['id','organization_id','committee_id','title','starts_at','ends_at','room_id','location','chair_id','scribe_id','created_by_id','state','version','rules','statutory_count','invitation_days','proposal_deadline','release_deadline','public_notice','public_enabled','leading_server','permission_snapshot']
+MEETING_FIELDS=['id','organization_id','committee_id','title','starts_at','ends_at','room_id','location','chair_id','scribe_id','created_by_id','state','paused','version','rules','statutory_count','invitation_days','proposal_deadline','release_deadline','public_notice','public_enabled','leading_server','permission_snapshot']
 ITEM_FIELDS=['id','meeting_id','parent_id','position','title','public_title','public','markdown','estimated_minutes','proposed_by_id','removed','frozen_template']
 INVITE_FIELDS=['id','meeting_id','revision','snapshot','digest','reason','issued_by_id','created_at']
 DELIVERY_FIELDS=['id','invitation_id','user_id','snapshot','delivered_at','seen_at','error','attempts']
@@ -41,7 +41,7 @@ def import_meetings(data,upsert,expect_keys,member_ids):
             if set(rights)-{'read','private','export','live','chair','protocol'}:raise ValidationError('Unzulässiges Sitzungsrecht.')
         existing=Meeting.objects.filter(pk=row['id']).first()
         # A protected live session is its own leader until controlled return.
-        if existing and existing.leading_server=='protected' and existing.state in ('live','finished','protocol_review') and existing.version>row['version']:
+        if existing and existing.leading_server=='protected' and existing.state in ('invited','live','finished','protocol_review') and existing.version>row['version']:
             existing.permission_snapshot=row['permission_snapshot'];existing.save(update_fields=['permission_snapshot']);continue
         upsert(Meeting,[row],MEETING_FIELDS)
     pending=list(data['items']);ordered=[];known=set(str(pk) for pk in AgendaItem.objects.values_list('pk',flat=True))
@@ -52,7 +52,7 @@ def import_meetings(data,upsert,expect_keys,member_ids):
     for row in ordered:
         if row['meeting_id'] not in ids:raise ValidationError('Fremder Tagesordnungspunkt.')
         existing=AgendaItem.objects.filter(pk=row['id']).select_related('meeting').first()
-        if existing and existing.meeting.leading_server=='protected' and existing.meeting.state in ('live','finished','protocol_review'):continue
+        if existing and existing.meeting.leading_server=='protected' and existing.meeting.state in ('invited','live','finished','protocol_review'):continue
         upsert(AgendaItem,[row],ITEM_FIELDS)
     for row in data['invitations']:
         expect_keys(row,INVITE_FIELDS)

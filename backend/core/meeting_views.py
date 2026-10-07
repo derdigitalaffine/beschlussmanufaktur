@@ -53,8 +53,10 @@ def index(request):
 @require_http_methods(['GET','POST'])
 def edit(request,meeting_id=None):
     context=active_context(request)
-    if not context or context.role!='clerk':raise PermissionDenied
+    if not context:raise PermissionDenied
+    if not meeting_id and context.role!='clerk':raise PermissionDenied
     obj=get_object_or_404(Meeting,pk=meeting_id,organization=context.organization) if meeting_id else Meeting(organization=context.organization,created_by=request.user)
+    if meeting_id and not meeting_access(context,'plan',obj):raise PermissionDenied
     form=MeetingForm(request.POST if request.method=='POST' else None,organization=context.organization,instance=obj,initial={'expected_version':obj.version})
     if request.method=='POST' and form.is_valid():
         try:
@@ -76,7 +78,7 @@ def detail(request,meeting_id):
     if not meeting_access(context,'read',obj):raise PermissionDenied
     data=meeting_snapshot(obj,context)
     deliveries=InvitationDelivery.objects.filter(invitation__meeting=obj,user=request.user).select_related('invitation').order_by('-invitation__revision')
-    return render(request,'meeting_detail.html',{'context':context,'obj':obj,'data':data,'can_plan':meeting_access(context,'plan',obj),'can_invite':meeting_access(context,'invite',obj),'can_chair':meeting_access(context,'chair',obj),'amendments':MeetingAmendment.objects.filter(meeting=obj),'deliveries':deliveries,'memberships':Membership.objects.filter(organization=obj.organization).select_related('user')})
+    return render(request,'meeting_detail.html',{'context':context,'obj':obj,'data':data,'can_plan':meeting_access(context,'plan',obj),'can_invite':meeting_access(context,'invite',obj),'can_chair':meeting_access(context,'chair',obj),'amendments':MeetingAmendment.objects.filter(meeting=obj) if meeting_access(context,'plan',obj) or meeting_access(context,'chair',obj) else [],'deliveries':deliveries,'memberships':Membership.objects.filter(organization=obj.organization).select_related('user')})
 
 @login_required
 @require_http_methods(['GET','POST'])
