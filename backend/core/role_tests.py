@@ -6,7 +6,7 @@ class ServerBoundaryTests(TestCase):
         if settings.SERVER_ROLE != "public":
             self.skipTest("Separate public-role process required")
         self.assertContains(self.client.get("/"), "Noch keine Veröffentlichungen")
-        for path in ["/anmelden/", "/anmelden/code/", "/kontext/", "/organisationen/neu/", "/benutzer/", "/einladung/", "/einladung/annehmen/", "/sitzungen/", "/vorlagen/", "/stammdaten/"]:
+        for path in ["/anmelden/", "/anmelden/code/", "/kontext/", "/organisationen/neu/", "/benutzer/", "/einladung/", "/einladung/annehmen/", "/sitzungen/", "/vorlagen/", "/stammdaten/", "/offline/identitaet/", "/offline/sitzungen/", "/offline/abgleich/", "/mein-bereich/", "/beschluesse/"]:
             self.assertEqual(self.client.get(path).status_code, 404)
 
     def test_protected_role_has_no_internal_administration_route(self):

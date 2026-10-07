@@ -90,7 +90,12 @@ def apply(data,obj):
             if key in ('events','ballots','minutes_versions','decision_updates'):
                 old=model.objects.filter(request_id=row['request_id']).first() if key=='ballots' else model.objects.filter(pk=row['id']).first()
                 if old:
-                    if scalar(old,fields)!=row:raise ValidationError('Unveränderlicher Stand widerspricht dem Journal.')
+                    previous=scalar(old,fields)
+                    if key=='minutes_versions' and settings.SERVER_ROLE=='protected' and row['correction_meeting_id'] is None:
+                        previous['correction_meeting_id']=None
+                    if previous!=row:raise ValidationError('Unveränderlicher Stand widerspricht dem Journal.')
+                    if key=='minutes_versions' and settings.SERVER_ROLE=='protected' and row['correction_meeting_id'] is None:
+                        model.objects.filter(pk=old.pk).update(correction_meeting_id=None)
                     continue
             if key=='ballots':model.objects.create(**row)
             elif key=='conflicts':model.objects.update_or_create(participant_id=row['participant_id'],item_id=row['item_id'],defaults={'active':row['active'],'reason':row['reason']})

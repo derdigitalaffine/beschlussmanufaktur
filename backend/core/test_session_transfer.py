@@ -53,3 +53,12 @@ class SessionTransferTests(MeetingFixture,TestCase):
         # Different host-local primary keys must not duplicate or reassign votes.
         ConflictOfInterest.objects.create(id=999,participant=part,item=item,active=False,reason='aufgehoben')
         apply(data,self.meeting);apply(data,self.meeting);self.assertEqual(Ballot.objects.count(),1);self.assertEqual(ConflictOfInterest.objects.get().pk,999)
+
+    def test_accepted_return_is_not_polled_as_new_conflict(self):
+        from unittest.mock import patch
+        from .exchange import scalar
+        from .session_transfer import pull_returns
+        change=self.run_session();self.meeting.version=self.meeting.authority_base;self.meeting.state='invited';self.meeting.save();accept(self.c,change.pk,'Geprüft');change.refresh_from_db()
+        row=scalar(change,['id','meeting_id','base_version','bundle','digest','requested_by_id','context_id'])
+        with patch('core.session_transfer.transport',return_value={'returns':[row]}) as transport:
+            pull_returns();transport.assert_called_once_with('protected','/transfer/sessions/')

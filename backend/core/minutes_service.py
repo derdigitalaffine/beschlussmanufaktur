@@ -72,7 +72,7 @@ def change(context,minutes_id,version,action,reason='',data=None,correction_id=N
         obj.state='draft';meeting.state='protocol_review'
     elif action=='publish':
         if settings.SERVER_ROLE!='internal' or not meeting_access(context,'invite',meeting) or obj.state!='approved' or not reason.strip() or not obj.public_markdown.strip():raise ValidationError('Intern genehmigte Fassung und ausdrückliche Veröffentlichungsprüfung erforderlich.')
-        obj.published_version=obj.version;obj.public_snapshot={'title':'Niederschrift · '+meeting.title,'markdown':obj.public_markdown,'version':obj.version};obj.save(update_fields=['published_version','public_snapshot'])
+        obj.published_version=obj.version;obj.public_snapshot={'title':('Niederschrift · '+meeting.title)[:300],'markdown':obj.public_markdown,'version':obj.version};obj.save(update_fields=['published_version','public_snapshot'])
         AuditEvent.objects.create(actor=context.user,action='minutes.published',object_id=str(obj.pk),metadata={'version':obj.version,'reason':reason});return obj
     elif action=='withdraw':
         if settings.SERVER_ROLE!='internal' or not meeting_access(context,'invite',meeting) or not reason.strip():raise PermissionDenied
