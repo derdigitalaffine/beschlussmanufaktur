@@ -2,7 +2,11 @@
 
 Ein geplantes, vollständig webbasiertes Ratsinformationssystem für kommunale Verwaltung, Mandatsträger und Öffentlichkeit. Schwerpunkt sind eine verständliche Bedienung und die Schriftführung während der Sitzung. Das System soll auf Linux vollständig mit Docker Compose betreibbar sein und getrennte interne und externe Server unterstützen.
 
-**Projektstand: Anforderungs- und Architekturplanung, 7. Oktober 2026.** Dieses Repository enthält ausschließlich Textdokumentation und die MIT-Lizenz. Es gibt noch keine Anwendung, Container, Compose-Dateien oder startfähige Installation. Die folgenden Aussagen beschreiben das zu entwickelnde Produkt.
+**Projektstand: Implementierung begonnen, Entwicklungsstand 0.1.** Ein erstes Django-Fundament mit E-Mail-Code-Anmeldung, Organisationen, Arbeitskontext und Docker Compose ist vorhanden. Das vollständige Ratsinformationssystem ist noch nicht fertig oder produktiv abgenommen. Die folgenden Zielanforderungen bleiben gültig; tatsächlich verfügbare Funktionen stehen im [Implementierungsstand](docs/11-implementierungsstand.md).
+
+## Start und Entwicklung
+
+Die [Installationsanleitung](docs/12-installation.md) beschreibt Einrichtung mit Docker Compose, SMTP und Caddys lokaler CA. Für Backendtests siehe [Entwicklung](docs/11-implementierungsstand.md#entwicklung). Änderungen erfolgen immer über einen Pull Request mit anschließendem Merge nach relevanten Prüfungen.
 
 ## Ziel
 
@@ -24,6 +28,8 @@ Von der Vorlage über Freigabe, Einladung und Tagesordnung bis zur Live-Sitzung,
 | [Spätere Module](docs/08-spaetere-module.md) | Aufnahme, Transkription, KI, Sitzungsgeld und vorbereitete Schnittstellen |
 | [Abnahme und Umsetzung](docs/09-abnahme-umsetzung.md) | Prüfszenarien, Entwicklungsreihenfolge und Voraussetzungen des Livegangs |
 | [Quellen und Klärungen](docs/10-quellen-offene-punkte.md) | Recherche, fachliche Grenzen und konkrete offene Fragen |
+| [Implementierungsstand](docs/11-implementierungsstand.md) | Verfügbare Funktionen und noch offene Umsetzung |
+| [Installation](docs/12-installation.md) | Docker-Start, Einrichtung und TLS-Vertrauen |
 
 ## Erster produktiver Umfang
 

@@ -1,0 +1,62 @@
+name: Foundation checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: beschlussmanufaktur
+          POSTGRES_USER: beschlussmanufaktur
+          POSTGRES_PASSWORD: ci-only-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U beschlussmanufaktur -d beschlussmanufaktur"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r backend/requirements.txt
+      - run: python manage.py check --settings=config.test_settings
+        working-directory: backend
+      - run: python manage.py makemigrations --check --dry-run --settings=config.test_settings
+        working-directory: backend
+      - run: python manage.py test --settings=config.test_settings
+        working-directory: backend
+      - run: python manage.py test core.role_tests --settings=config.test_settings
+        working-directory: backend
+        env:
+          SERVER_ROLE: public
+      - run: python manage.py test core.role_tests --settings=config.test_settings
+        working-directory: backend
+        env:
+          SERVER_ROLE: protected
+      - run: python manage.py test core.tests --settings=config.test_postgres_settings
+        working-directory: backend
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_PASSWORD: ci-only-password
+      - name: Validate Compose and Caddy
+        env:
+          DJANGO_SECRET_KEY: ci-validation-only-not-a-production-key-012345678901234567890
+          POSTGRES_PASSWORD: ci-only-password
+          PROTECTED_SECRET_KEY: ci-validation-protected-key-0123456789012345678901234567890
+          PUBLIC_SECRET_KEY: ci-validation-public-key-0123456789012345678901234567890123
+          PROTECTED_DB_PASSWORD: ci-only-protected
+          PUBLIC_DB_PASSWORD: ci-only-public
+        run: |
+          docker compose config --quiet
+          docker compose -f compose.external.yaml config --quiet
+          docker run --rm -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+          docker run --rm -v "$PWD/deploy/Caddyfile.external:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+          docker compose build backend

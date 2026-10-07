@@ -1,0 +1,27 @@
+{
+    admin off
+}
+
+{$PROTECTED_HOST:gremien.localhost} {
+    tls internal
+    encode zstd gzip
+    handle_path /static/* {
+        root * /srv/static
+        file_server
+    }
+    handle {
+        reverse_proxy protected:8000
+    }
+}
+
+{$PUBLIC_HOST:info.localhost} {
+    tls internal
+    encode zstd gzip
+    handle_path /static/* {
+        root * /srv/static
+        file_server
+    }
+    handle {
+        reverse_proxy public:8000
+    }
+}
