@@ -101,6 +101,7 @@ def sync(request):
         if len(request.body)>2*1024*1024:raise ValidationError('Offline-Verlauf zu groß.')
         data=json.loads(request.body);version=reconcile(active_context(request),data)
     except (ValidationError,ValueError,KeyError,TypeError,ObjectDoesNotExist) as e:return JsonResponse({'error':' '.join(e.messages) if isinstance(e,ValidationError) else 'Offline-Daten ungültig.'},status=409)
+    request.session['live_device']=data['device']
     return JsonResponse({'version':version,'status':'accepted'})
 
 @login_required

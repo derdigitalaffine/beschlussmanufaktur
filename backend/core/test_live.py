@@ -57,3 +57,10 @@ class LiveTests(MeetingFixture,TestCase):
         item=self.meeting.items.first();item.public=False;item.public_title='Nichtöffentlich';item.title='PRIVATE GEHEIM';item.save();self.meeting.active_item=item;self.meeting.save()
         self.client.force_login(guest);s=self.client.session;s['context_id']=str(member.pk);s.save();r=self.client.get(f'/sitzungen/{self.meeting.pk}/live/')
         self.assertNotContains(r,'PRIVATE GEHEIM');self.assertNotContains(r,'Ratsmitglied')
+
+    def test_public_guest_no_internal_draft_for_public_top(self):
+        guest=User.objects.create_user(username='publicguest',email='publicguest@example.org');context=Membership.objects.create(organization=self.org,user=guest,role='member')
+        MeetingGuest.objects.create(meeting=self.meeting,membership=context,expires_at=self.meeting.ends_at,private=False)
+        item=self.meeting.items.first();ItemNote.objects.create(item=item,markdown='INTERNER PROTOKOLLENTWURF');self.meeting.active_item=item;self.meeting.save()
+        self.client.force_login(guest);s=self.client.session;s['context_id']=str(context.pk);s.save()
+        r=self.client.get(f'/sitzungen/{self.meeting.pk}/live/');self.assertNotContains(r,'INTERNER PROTOKOLLENTWURF')

@@ -1,36 +1,42 @@
-# Implementierungsstand 0.2
+# Implementierungsstand 0.7
 
-## Verfügbar
+## Implementierte Entwicklungsfunktionen
 
-- Django 5.2/Python 3.12, PostgreSQL und Gunicorn; Abhängigkeiten exakt versioniert.
-- Docker-Compose-Grundbetrieb für intern/Einzelserver und getrennten externen Host.
-- Caddy mit lokaler CA; nur Proxyports veröffentlicht, Datenbanknetze intern.
-- Persönliche Konten, Passwort plus E-Mail-Code, Ablauf, Einmaligkeit, Versuchslimits und privates Session-Cookie.
-- Organisationstypen, primärer Baum mit Kreisprüfung und zusätzliches Beziehungsmodell.
-- Zeitlich gültige explizite Rollen, kein automatischer Zugriff auf untergeordnete Organisationen, kein Superuser-Fachzugriff.
-- Auswahl und Speicherung des sichtbaren Arbeitskontexts; Entzug wird bei jeder Anfrage erneut geprüft.
-- Erste Weboberfläche: Anmeldung, Arbeitsplatz, Kontextwechsel und Anlegen untergeordneter Organisationen mit ausdrücklicher Zuweisung.
-- Auditereignisse für Einrichtung, Anmeldung, Kontextwahl und Organisationsanlage.
-- Organisationsbezogene Benutzerverwaltung mit Suche, Rollenänderung, Befristung und begründetem Entzug.
-- E-Mail-Einladungen mit sieben Tagen Gültigkeit, Einmaligkeit, Rücknahme und sicherer Konto-/Rollenannahme.
-- Neue Nutzer setzen ihr Passwort selbst; bestehende Konten nehmen zusätzliche Rollen nach Anmeldung an, ohne Passwort-/Profilüberschreibung.
-- Schutz gegen veraltete Rollenformulare und gegen Entfernung der letzten aktiven Organisationsverwaltung; Authority-Prüfung des Einladenden bei Annahme.
-- Separate öffentliche Serverrolle ohne private Routen sowie geschützte Rolle ohne interne Organisationsverwaltung.
-- Tests, Migrationsprüfung und GitHub-Actions-Checks einschließlich PostgreSQL, Compose-/Caddy-Validierung und Imagebuild.
+| Bereich | Verfügbar | Bedienung |
+|---|---|---|
+| Konten | Passwort plus E-Mail-Code, persönliche Konten, befristete Rollen, Einladungen ohne Selbstregistrierung | docs/13 |
+| Organisation/Rechte | Hauptbaum und zusätzliche Beziehungen, Stammdaten/Legislaturperioden/Gremien/Funktionen/Mandate, einfacher/erweiterter Modus, expliziter Arbeitskontext, Einzelrechte | docs/14 |
+| Austausch | Separate Datenbanken/Dienste, geschützte Kontenprovisionierung, Rechteentzug, signierte Snapshots und Dateien, externe Vorschläge mit interner Genehmigung | docs/14–16 |
+| Vorlagen | Markdown-Webeditor und Vorschau, Arten/Pflichtfelder, Anlagen, Fassungen, parallele Bearbeitung mit Konfliktprüfung, Aufgaben/Hinweise, Prüfketten, Jahresnummern, PDF/DOCX, getrennte Veröffentlichung | docs/14 |
+| Vorbereitung | Kalender, Zuständigkeiten, Tagesordnung/Unterpunkte, Einladung mit festem Versandstand, genehmigte Nachträge, technische Zustellung und Kenntnisnahme, persönliche PDF-Gesamtmappe/ICS | docs/15 |
+| Live | Exklusive Sitzungshoheit mit Epoche/Heartbeat, begründete Vorsitzübernahme, vorbereitete Besetzung, Ein-/Austritte mit Zeit/TOP, Befangenheit, dokumentierte Beschlussfähigkeit, Notizen/Anträge, Journal | docs/16 |
+| Abstimmen | Fester Versuch/Wortlaut/Optionen/Stimmrechtskreis, digitale namentliche Stimmen ausschließlich online, gesonderte Hand-/Papierauszählung, fehlende Stimmen, Abbruch bei Kontextänderung, Ergebnisfeststellung und Beschluss | docs/16-live-sitzungsfuehrung |
+| Rückgabe | Extern abgeschlossene Sitzung wird eingefroren, intern abgeholt, geprüft und ausdrücklich genehmigt; kein automatisches Übernehmen externer Fachänderungen | docs/16 |
+| Niederschrift | Journaldraft, manuelle Ergebnis-/Verlaufs-/Wortfassung, unveränderliche Fassungen, Schriftführung→Vorsitz, Rückgabe/Berichtigung mit Folgesitzungsbezug, separate öffentliche Fassung, PDF/DOCX | docs/17 |
+| Beschlusskontrolle | Optionale Zuständigkeit/Frist, Kenntnisnahme ohne Aufgabe, Teilfortschritt, Erledigungsmeldung und geprüfter Abschluss, Historie, neutraler Hinweis | docs/18 |
+| Persönlicher Bereich | Aktuell berechtigte Suche/Favoriten/zuletzt geöffnet, konto- und kontextgebundene eigene Notizen, keine fremden Notizen im Fachjournal | docs/19 |
+| Offline | HTTPS-Browseroberfläche, verschlüsselte IndexedDB-Mappen und optionales PDF, persönliche Notizen und lokale Schriftführungsereignisse, signierte Vorbereitung, ausdrücklicher atomarer Abgleich und sichtbare Konflikte | docs/19 |
+| Betrieb | Linux/Docker Compose, Django 5.2/Python 3.12/PostgreSQL/Gunicorn, Caddy lokale CA, SMTP-Worker, Dateivolumes, getrennte Datenbanknetze, Prozess-/Datenbankbereitschaft | docs/12 |
 
-## Noch nicht implementiert
+Öffentliche Dienste erhalten ausschließlich ausdrücklich freigegebene Projektionen und Anlagen. Das vorhandene öffentliche Portal ist eine Grundlage mit freigegebenen Datensätzen, noch nicht der in Etappe 8 geplante umfassende Portal-/Integrationsausbau. Geschützte Dienste können bereitgestellte Konten, Unterlagen und Sitzungen verwenden; interne Organisations-/Vorlagenadministration bleibt intern. Technische Superuser bekommen keine impliziten Fachrechte.
 
-Dies ist eine Entwicklungsgrundlage, noch kein produktionsfertiges RIS. Insbesondere fehlen Benutzerimport, Passwortwiederherstellung, weitere Rollen und feingranulare Rechtekonfiguration, TOTP/Passkeys, Stammdaten-/Gremienverwaltung, Vorlagen und Fachworkflows, Live-/Offline-Sitzung, Abstimmungen, Veröffentlichung, Suche, Synchronisierung, Backupverwaltung, Domain-/Zertifikatsadministration und Löschbarkeit der späteren Testdaten. Es werden aktuell keine Testpersonen oder automatisch erzeugten Fachdatensätze ausgeliefert. Die vorgesehenen minimalen Testdaten folgen mit den Fachmodulen.
+## Noch offen und Grenzen
 
-Der externe geschützte Dienst kann gestartet werden, hat aber noch keine Kontenprovisionierung vom internen System. Seine Loginseite ist deshalb noch kein vollständiger Mandatsträgerzugang. Der öffentliche Dienst zeigt einen ausdrücklich gekennzeichneten Leerzustand, keine simulierten Veröffentlichungen. Die Zweiserverdatei stellt Netz-/Datenbankgrenzen bereit; Datenabgleich ist noch nicht vorhanden.
+- Digitale **geheime** Wahlen/Abstimmungen: nicht implementiert; geheime Papierauszählung ist verfügbar. Keine Anonymitätsbehauptung durch Verbergen von Namen. Ein gesondert geprüfter Entwurf und unabhängige qualifizierte Prüfung bleiben erforderlich.
+- Vollständiger Bürgerportal-/Domain-/CI-/iframe-/Such-/IMAP-Ausbau, OParl-/DMS-Vorbereitung und weitergehende Administration: folgende Etappen. SMTP-Versand und ICS-Dateien sind bereits verfügbar.
+- Benutzerimport, Passwortwiederherstellung, TOTP/Passkeys, dokumentierter Notfallzugriff, frei konfigurierbare TLS-/DNS-/Zertifikatsverwaltung, automatisiertes Backup/Restore und löschbare minimale Auslieferungstestdaten: noch offen. Aktuell werden keine Testpersonen automatisch ausgeliefert.
+- Einfache/erweiterte Ansichten sind vorhanden; manche erweiterte Rechte-/Workflowkonfiguration verwendet noch technische Felder/JSON. Die Bedienbarkeit muss mit Fachanwendern erprobt und weiter vereinheitlicht werden.
+- Zentrale Personenstammdaten sind vorhanden, die organisationsübergreifende Dubletten-/Identitätsverwaltung sowie komfortable Bearbeitung aller Mehrfachbeziehungen sind weiter auszubauen. Keine stillschweigende Abnahme des gesamten ORG-Katalogs.
+- Exporte verwenden lokale Text-/Listen-/Tabellenkonvertierung; komplexe Dokumenttypografie und CI benötigen weitere Abnahme. Kein automatisch erzeugtes Audio-/Wortprotokoll, keine qualifizierte elektronische Signatur.
+- Transferverträge sind bewusst begrenzt (8 MiB pro Antwort/Anfrage, Dateien 4 MiB, Offline-Abgleich 2 MiB, lokale PDF 20 MiB). Große Gesamtdatenbestände benötigen vor Betrieb Chunking/inkrementelle Übertragung und Lastprüfung; die Zielgröße von 150 Sitzungen/Jahr wurde nicht als Lastabnahme bestätigt.
+- Keine lokale Docker-Laufzeit verfügbar; Compose/Caddy und Imagebuild werden in GitHub CI geprüft. Chromium-Offlinemechanik ist automatisiert geprüft; iPad/Firefox, vollständige reale Zweiserverstrecke und Fachanwenderabläufe sind noch praktisch abzunehmen.
+- Offlinekopien können zentrale Rechteänderungen ohne Netz nicht sofort erkennen. Lokale Verschlüsselung ersetzt keine Gerätesicherheit; Details und Löschwege in docs/19.
 
-TLS verwendet aktuell fest die lokale Caddy-CA. Let's Encrypt, DNS-Prüfung und Zertifikatimport sind dokumentierte nächste Betriebsfunktionen, noch keine Weboption. Keine automatische Migration beim Containerstart: Datenbankschema wird bewusst vor Betriebsstart eingerichtet.
+Der gesamte bestätigte KERN-Katalog bleibt verbindlich. Der Stand ist zur Entwicklung und Erprobung bestimmt; **keine Produktivfreigabe**. Aufnahme/Transkription/KI und Sitzungsgeld sind weiterhin bewusst verschoben. Weitere Anforderungen werden nicht durch diese Auflistung aufgehoben.
 
-## Oberfläche und technische Entscheidung
+## Prüfungen und Entwicklung
 
-Der erste Stand verwendet serverseitige Django-Templates mit lokalem CSS statt eines zusätzlichen React-Builds. Dadurch sind Konten-/Rechtefluss sofort durchgängig testbar. Ein einziges lokales Skript übernimmt Einladungsgeheimnisse aus URL-Fragmenten in einen CSRF-geschützten POST; manuelle Codeeingabe funktioniert ohne JavaScript. CSP erlaubt nur lokale Skripte, keine Inlineausführung. React/TypeScript aus dem Architekturvorschlag bleibt für spätere interaktive Fachmodule eine Option, keine bereits ausgelieferte Komponente. Keine externen Schriften, Tracker oder Frontend-CDNs.
-
-## Entwicklung
+199 Backendtests laufen lokal mit In-Memory-SQLite. GitHub prüft zusätzlich PostgreSQL, getrennte öffentliche/geschützte Rollen, Migrationen, JavaScript-Syntax, Compose, Caddy und Imagebuild. Drei Node-Prüfungen decken Verschlüsselung, Manipulation, falsches Passwort und große Daten ab. Chromium prüft verschlüsselte Vorbereitung, echtes Offline-Neuladen, persönliche Notizen, sichere Textausgabe, Kontext-/Zentralstandkonflikte und ausschließlich statische Shell-Caches. Die Zahl wird bei weiteren Regressionstests angepasst.
 
 ```sh
 uv venv .venv
@@ -40,8 +46,6 @@ cd backend
 ../.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.test_settings
 ```
 
-`config.test_settings` ist ausschließlich für isolierte Tests: In-Memory-SQLite, Test-Mailbackend und schneller Test-Passworthasher. Niemals als Serverkonfiguration verwenden. Produktionskonfiguration setzt HTTPS und sichere Cookies voraus.
+Im Repositoryroot: `node --test tests/offline_crypto.cjs`. Für den Browsercheck separat `npm install --no-save --package-lock=false playwright@1.62.1`, `npx playwright install --with-deps chromium`, `node tests/offline_browser.cjs`. Browsertransportfixtures sind isolierte Testdaten und werden nicht ausgeliefert. `config.test_settings` ist ausschließlich für Tests, niemals Serverkonfiguration.
 
-## Änderungen
-
-Ab jetzt jede Änderung über Branch → Pull Request → relevante Prüfungen → Merge. Der Anforderungskatalog bleibt gültig; dieser Stand setzt erst einen Teil davon um.
+Die Oberfläche verwendet Django-Templates mit lokalem CSS/JavaScript, keine externen Schriften/CDNs/Tracker. CSP gestattet keine Inline-Skripte. Änderungen: Branch → kleiner PR → relevante grüne Prüfungen → Merge. Der Etappenplan steht in docs/20; die Abnahmeszenarien aus docs/09 sind weiterhin offen, soweit keine konkrete fachliche Abnahme dokumentiert wurde.

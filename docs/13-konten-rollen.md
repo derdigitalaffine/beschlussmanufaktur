@@ -1,6 +1,6 @@
 # Konten und Rollen bedienen
 
-Stand 0.2. Diese Funktionen stehen im internen Fachsystem zur Verfügung. Geschützter externer Dienst und Bürgerportal haben keine Benutzerverwaltungs- oder Einladungsrouten; Kontensynchronisierung für den Außendienst folgt später.
+Stand 0.7. Benutzerverwaltung und Einladungen stehen im internen Fachsystem zur Verfügung. Geschützter externer Dienst und Bürgerportal haben keine Benutzerverwaltungs- oder Einladungsrouten. Der interne Worker provisioniert Konten und explizite Rollen geschützt; öffentliche Dienste erhalten keine Konten. Konfiguration: docs/12 und docs/14.
 
 ## Einladen
 

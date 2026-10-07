@@ -24,8 +24,12 @@ def generated(meeting):
         note=ItemNote.objects.filter(item=item).first()
         if note:text+=note.markdown+'\n\n'
         for motion in item.motions.all():text+=f'### Antrag · {motion.applicant}\n\n{motion.wording}\n\n'
-        for d in Decision.objects.filter(vote__item=item):text+=f'### Beschluss {d.pk}\n\n{d.wording}\n\nErgebnis: {d.result}\n\nFeststellung: {d.chair_confirmation}\n\n'
-    return text[:200000]
+        for d in Decision.objects.filter(vote__item=item):
+            text+=f'### Beschluss {d.pk}\n\n{d.wording}\n\nErgebnis: {d.result}\n\nFeststellung: {d.chair_confirmation}\n\n'
+            if d.vote.mode=='named':
+                for ballot in d.vote.ballots.select_related('participant'):text+=f'- {ballot.participant.name}: {ballot.choice}\n'
+    if len(text)>200000:raise ValidationError('Journal überschreitet die Niederschriftsgrenze. Vor Erstellung fachlich aufteilen; es wurde nichts gekürzt.')
+    return text
 
 @transaction.atomic
 def create(context,meeting_id,meeting_version):
@@ -68,7 +72,7 @@ def change(context,minutes_id,version,action,reason='',data=None,correction_id=N
         obj.state='draft';meeting.state='protocol_review'
     elif action=='publish':
         if settings.SERVER_ROLE!='internal' or not meeting_access(context,'invite',meeting) or obj.state!='approved' or not reason.strip() or not obj.public_markdown.strip():raise ValidationError('Intern genehmigte Fassung und ausdrückliche Veröffentlichungsprüfung erforderlich.')
-        obj.published_version=obj.version;obj.public_snapshot={'title':'Niederschrift · '+meeting.title,'markdown':obj.public_markdown,'version':obj.version};obj.save(update_fields=['published_version','public_snapshot'])
+        obj.published_version=obj.version;obj.public_snapshot={'title':('Niederschrift · '+meeting.title)[:300],'markdown':obj.public_markdown,'version':obj.version};obj.save(update_fields=['published_version','public_snapshot'])
         AuditEvent.objects.create(actor=context.user,action='minutes.published',object_id=str(obj.pk),metadata={'version':obj.version,'reason':reason});return obj
     elif action=='withdraw':
         if settings.SERVER_ROLE!='internal' or not meeting_access(context,'invite',meeting) or not reason.strip():raise PermissionDenied
