@@ -463,3 +463,107 @@ class ReplicaAsset(models.Model):
     digest = models.CharField(max_length=64)
     data = models.BinaryField()
     received_at = models.DateTimeField(auto_now=True)
+
+
+class Meeting(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    committee = models.ForeignKey(RegistryRecord,on_delete=models.PROTECT,related_name='meetings')
+    title = models.CharField(max_length=200)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    room = models.ForeignKey(RegistryRecord,null=True,blank=True,on_delete=models.PROTECT,related_name='room_meetings')
+    location = models.CharField(max_length=300)
+    chair = models.ForeignKey(User,on_delete=models.PROTECT,related_name='chaired_meetings')
+    scribe = models.ForeignKey(User,on_delete=models.PROTECT,related_name='scribed_meetings')
+    created_by = models.ForeignKey(User,on_delete=models.PROTECT,related_name='created_meetings')
+    state = models.CharField(max_length=30,default='preparation')
+    version = models.PositiveIntegerField(default=1)
+    rules = models.JSONField(default=dict,blank=True)
+    statutory_count = models.PositiveIntegerField(default=1)
+    invitation_days = models.PositiveIntegerField(default=4)
+    proposal_deadline = models.DateTimeField(null=True,blank=True)
+    release_deadline = models.DateTimeField(null=True,blank=True)
+    public_notice = models.TextField(blank=True,max_length=10000)
+    public_enabled = models.BooleanField(default=False)
+    leading_server = models.CharField(max_length=20,default='internal')
+    active_item = models.ForeignKey('AgendaItem',null=True,blank=True,on_delete=models.PROTECT,related_name='+')
+    class Meta:ordering=['starts_at','id']
+    def clean(self):
+        if self.committee_id and (self.committee.kind!='committee' or self.committee.organization_id!=self.organization_id):raise ValidationError('Gremium gehört nicht zur Körperschaft.')
+        if self.room and (self.room.kind!='room' or self.room.organization_id!=self.organization_id):raise ValidationError('Raum gehört nicht zur Körperschaft.')
+        if self.ends_at and self.starts_at and self.ends_at<=self.starts_at:raise ValidationError('Sitzungsende muss nach Beginn liegen.')
+        if self.statutory_count<1:raise ValidationError('Gesetzliche Mitgliederzahl erforderlich.')
+        for person_id in (self.chair_id,self.scribe_id):
+            if person_id and not Membership.objects.filter(user_id=person_id,organization=self.organization).exists():raise ValidationError('Vorsitz und Schriftführung brauchen einen zugehörigen Arbeitskontext.')
+
+
+class AgendaItem(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT,related_name='items')
+    parent = models.ForeignKey('self',null=True,blank=True,on_delete=models.PROTECT,related_name='subitems')
+    position = models.PositiveIntegerField(default=1)
+    title = models.CharField(max_length=300)
+    public_title = models.CharField(max_length=300,blank=True)
+    public = models.BooleanField(default=True)
+    template = models.ForeignKey(Template,null=True,blank=True,on_delete=models.PROTECT)
+    markdown = models.TextField(blank=True,max_length=100000)
+    estimated_minutes = models.PositiveIntegerField(null=True,blank=True)
+    proposed_by = models.ForeignKey(User,on_delete=models.PROTECT)
+    removed = models.BooleanField(default=False)
+    class Meta:ordering=['position','id']
+    def clean(self):
+        parent=self.parent;seen={self.pk}
+        while parent:
+            if parent.pk in seen or parent.meeting_id!=self.meeting_id:raise ValidationError('Ungültige TOP-Untergliederung.')
+            seen.add(parent.pk);parent=parent.parent
+        if self.position<1:raise ValidationError('Reihenfolge beginnt bei 1.')
+        if not self.public and not self.public_title.strip():raise ValidationError('Nichtöffentlicher TOP benötigt einen unverfänglichen Bekanntmachungstitel.')
+
+
+class MeetingInvitation(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT,related_name='invitations')
+    revision = models.PositiveIntegerField()
+    snapshot = models.JSONField()
+    digest = models.CharField(max_length=64)
+    reason = models.CharField(max_length=1000,blank=True)
+    issued_by = models.ForeignKey(User,on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:constraints=[models.UniqueConstraint(fields=['meeting','revision'],name='unique_meeting_invitation')]
+    def save(self,*args,**kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():raise ValidationError('Versandstände sind unveränderlich.')
+        super().save(*args,**kwargs)
+
+
+class InvitationDelivery(models.Model):
+    invitation = models.ForeignKey(MeetingInvitation,on_delete=models.PROTECT,related_name='deliveries')
+    user = models.ForeignKey(User,on_delete=models.PROTECT)
+    snapshot = models.JSONField()
+    delivered_at = models.DateTimeField(null=True)
+    seen_at = models.DateTimeField(null=True)
+    error = models.CharField(max_length=200,blank=True)
+    attempts = models.PositiveIntegerField(default=0)
+    class Meta:constraints=[models.UniqueConstraint(fields=['invitation','user'],name='unique_invitation_delivery')]
+
+
+class MeetingGuest(models.Model):
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT)
+    membership = models.ForeignKey(Membership,on_delete=models.PROTECT)
+    expires_at = models.DateTimeField()
+    private = models.BooleanField(default=False)
+    class Meta:constraints=[models.UniqueConstraint(fields=['meeting','membership'],name='unique_meeting_guest')]
+
+
+class MeetingAmendment(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT)
+    base_version = models.PositiveIntegerField()
+    kind = models.CharField(max_length=30,choices=[('correction','Berichtigung'),('urgent','Dringlicher neuer Gegenstand'),('attachment','Zusätzliche Unterlage'),('remove','Gegenstand absetzen'),('reschedule','Termin ändern')])
+    reason = models.CharField(max_length=1000)
+    data = models.JSONField()
+    requested_by = models.ForeignKey(User,on_delete=models.PROTECT,related_name='meeting_amendments')
+    reviewed_by = models.ForeignKey(User,null=True,on_delete=models.PROTECT)
+    state = models.CharField(max_length=20,default='pending')
+    decision_record = models.CharField(max_length=1000,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
