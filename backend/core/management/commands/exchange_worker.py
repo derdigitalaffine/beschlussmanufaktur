@@ -20,7 +20,10 @@ class Command(BaseCommand):
                 for batch in TransferBatch.objects.filter(channel=channel,delivered_at__isnull=True).order_by('revision'):
                     if not deliver(batch):break
             if settings.EXCHANGE_PROTECTED_URL and settings.EXCHANGE_PROTECTED_KEY:
-                try:pull_events()
+                try:
+                    pull_events()
+                    from core.session_transfer import pull_returns
+                    pull_returns()
                 except Exception:self.stderr.write('Abholung fehlgeschlagen. Verbindung und Konfiguration prüfen.')
             if not options['watch']:break
             time.sleep(60)
