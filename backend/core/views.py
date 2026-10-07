@@ -93,6 +93,7 @@ def dashboard(request):
     context = active_context(request)
     return render(request, "dashboard.html", {
         "contexts": contexts, "context": context,
+        "internal": settings.SERVER_ROLE == "internal",
         "can_manage": settings.SERVER_ROLE == "internal" and may_manage_organization(context),
     })
 
