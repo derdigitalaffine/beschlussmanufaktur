@@ -20,7 +20,7 @@ class MemberTests(MeetingFixture,TestCase):
         self.m.revoked_at=timezone.now();self.m.save()
         with self.assertRaises(PermissionDenied):save_note(self.m,self.meeting.pk,0,'privat')
     def test_new_context_has_separate_note(self):
-        save_note(self.m,self.meeting.pk,0,'Ratsmitglied');other=Membership.objects.create(user=self.member,organization=self.org,role='reviewer');save_note(other,self.meeting.pk,0,'Andere Rolle');self.assertEqual(PersonalNote.objects.count(),2)
+        save_note(self.m,self.meeting.pk,0,'Ratsmitglied');other=Membership.objects.create(user=self.member,organization=self.org,role='mayor');save_note(other,self.meeting.pk,0,'Andere Rolle');self.assertEqual(PersonalNote.objects.count(),2)
     def test_favorites_scoped_and_revoked_hidden(self):
         self.client.force_login(self.member);s=self.client.session;s['context_id']=str(self.m.pk);s.save()
         self.assertEqual(self.client.post('/mein-bereich/',{'kind':'meeting','resource_id':str(self.meeting.pk)}).status_code,302);self.assertEqual(WorkspaceEntry.objects.get().owner_id,self.member.pk)

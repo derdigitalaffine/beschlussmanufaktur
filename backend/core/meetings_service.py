@@ -5,20 +5,23 @@ from django.db import transaction
 from django.db.models import Q,Max
 from django.utils import timezone
 from .models import Meeting,AgendaItem,MeetingInvitation,InvitationDelivery,MeetingGuest,MeetingAmendment,Membership,Mandate,Template,Notification,AuditEvent
-from .permissions import available_contexts
+from .permissions import available_contexts,MANDATE_ROLES
 from .templates_service import template_access
 
 
 def meeting_access(context,action,obj):
     if not context or not available_contexts(context.user).filter(pk=context.pk).exists():return False
-    if settings.SERVER_ROLE=='protected':return action in obj.permission_snapshot.get(str(context.pk),[])
+    if settings.SERVER_ROLE=='protected':
+        if action in ('live','protocol') and context.role not in ('clerk','chair','mayor','local_mayor'):return False
+        if action=='chair' and context.role not in ('chair','mayor','local_mayor'):return False
+        return action in obj.permission_snapshot.get(str(context.pk),[])
     same=context.organization_id==obj.organization_id
     if not same:return False
     if context.role=='clerk':return action in ('read','private','plan','invite','export','live','protocol')
-    if context.user_id==obj.chair_id:return action in ('read','private','plan','export','chair','live','protocol')
-    if context.user_id==obj.scribe_id:return action in ('read','private','export','live','protocol')
+    if context.user_id==obj.chair_id and context.role in ('chair','mayor','local_mayor'):return action in ('read','private','plan','export','chair','live','protocol')
+    if context.user_id==obj.scribe_id and context.role=='clerk':return action in ('read','private','export','live','protocol')
     today=timezone.localdate()
-    if obj.state!='preparation' and action in ('read','private','export') and Mandate.objects.filter(committee=obj.committee,user=context.user,archived=False,starts_on__lte=today,ends_on__gte=today).exists():return True
+    if context.role in MANDATE_ROLES and obj.state!='preparation' and action in ('read','private','export') and Mandate.objects.filter(committee=obj.committee,user=context.user,archived=False,starts_on__lte=today,ends_on__gte=today).exists():return True
     guest=MeetingGuest.objects.filter(meeting=obj,membership=context,expires_at__gt=timezone.now()).first()
     return bool(guest and (action in ('read','export') or action=='private' and guest.private))
 

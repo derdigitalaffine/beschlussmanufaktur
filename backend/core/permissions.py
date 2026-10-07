@@ -29,6 +29,8 @@ def may_manage_organization(context):
 
 
 
+MANDATE_ROLES=('member','chair','mayor','local_mayor')
+
 def can_access(context, action, kind, obj):
     if not context or not available_contexts(context.user).filter(pk=context.pk).exists():return False
     organization_id = obj.pk if kind=='organization' else obj.organization_id
@@ -37,7 +39,7 @@ def can_access(context, action, kind, obj):
     grants=AccessGrant.objects.filter(membership=context,resource_kind=kind,resource_id=obj.pk,revoked_at__isnull=True).filter(Q(expires_at__isnull=True)|Q(expires_at__gt=now))
     organization_grants=AccessGrant.objects.filter(membership=context,resource_kind='organization',resource_id=organization_id,revoked_at__isnull=True).filter(Q(expires_at__isnull=True)|Q(expires_at__gt=now))
     if any(action in grant.actions for grant in list(grants)+list(organization_grants)):return True
-    if kind=='registry' and action=='read':
+    if kind=='registry' and action in ('read','export') and context.role in MANDATE_ROLES:
         today=timezone.localdate()
         return Mandate.objects.filter(user=context.user,committee=obj,archived=False,starts_on__lte=today,ends_on__gte=today).exists()
     return False
