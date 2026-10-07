@@ -43,7 +43,7 @@ def activate(context,meeting_id,version,server,rules):
     if server not in ('internal','protected'):raise ValidationError('Unbekannter führender Dienst.')
     if rules.get('quorum') not in ('majority_statutory','majority_nonexcluded','repeated_minimum','manual'):raise ValidationError('Beschlussfähigkeitsregel fehlt.')
     if server=='protected' and (not ExchangePolicy.objects.filter(organization=obj.organization,protected_enabled=True).exists() or not settings.EXCHANGE_PROTECTED_URL or len(settings.EXCHANGE_PROTECTED_KEY)<32):raise ValidationError('Geschützte Bereitstellung und Transferkonfiguration erforderlich.')
-    obj.leading_server=server;obj.rules=rules;obj.version+=1;obj.save()
+    obj.leading_server=server;obj.rules=rules;obj.version+=1;obj.authority_base=obj.version;obj.save()
     AuditEvent.objects.create(actor=context.user,action='meeting.activated',object_id=str(obj.pk),metadata={'server':server,'rules':rules,'version':obj.version})
     return obj
 
@@ -93,6 +93,8 @@ def roster(context,meeting_id,version,device,epoch):
     for mandate in mandates:
         if mandate.substitutes_for_id and mandate.substitutes_for_id in mapping:
             part=mapping[mandate.pk];part.substitutes_for=mapping[mandate.substitutes_for_id];part.save(update_fields=['substitutes_for'])
+    from .models import Vote
+    Vote.objects.filter(meeting=obj,state='open').update(state='aborted')
     obj.version+=1;obj.save(update_fields=['version']);event(obj,context,device,'roster',{'count':len(mapping)})
     return obj
 
@@ -134,7 +136,7 @@ def apply_payload(obj,kind,data):
         data['calculation']=quorum(obj,item)
     else:raise ValidationError('Unbekanntes Sitzungsereignis.')
     # Any roster change invalidates an open ballot; implemented by the voting module.
-    if kind in ('presence','conflict','end'):
+    if kind in ('presence','conflict','end','pause','top','roster'):
         from django.apps import apps
         try:vote_model=apps.get_model('core','Vote')
         except LookupError:vote_model=None

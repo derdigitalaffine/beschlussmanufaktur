@@ -487,6 +487,7 @@ class Meeting(models.Model):
     release_deadline = models.DateTimeField(null=True,blank=True)
     public_notice = models.TextField(blank=True,max_length=10000)
     public_enabled = models.BooleanField(default=False)
+    authority_base = models.PositiveIntegerField(default=0)
     permission_snapshot = models.JSONField(default=dict,blank=True)
     leading_server = models.CharField(max_length=20,default='internal')
     active_item = models.ForeignKey('AgendaItem',null=True,blank=True,on_delete=models.PROTECT,related_name='+')
@@ -648,7 +649,7 @@ class Vote(models.Model):
     options = models.JSONField(default=list)
     electorate = models.JSONField(default=list)
     state = models.CharField(max_length=20,default='open')
-    result = models.JSONField(default=dict)
+    result = models.JSONField(default=dict,blank=True)
     opened_version = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -668,7 +669,7 @@ class Decision(models.Model):
     id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     vote = models.OneToOneField(Vote,on_delete=models.PROTECT)
     wording = models.TextField(max_length=100000)
-    result = models.JSONField(default=dict)
+    result = models.JSONField(default=dict,blank=True)
     chair_confirmation = models.CharField(max_length=1000)
     confirmed_by = models.ForeignKey(User,on_delete=models.PROTECT)
     confirmed_at = models.DateTimeField(auto_now_add=True)
@@ -677,3 +678,17 @@ class Decision(models.Model):
     status = models.CharField(max_length=20,default='open')
     progress = models.TextField(blank=True,max_length=100000)
     version = models.PositiveIntegerField(default=1)
+
+
+class SessionReturn(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT,related_name='returns')
+    base_version = models.PositiveIntegerField()
+    bundle = models.JSONField(default=dict)
+    digest = models.CharField(max_length=64)
+    state = models.CharField(max_length=20,default='pending')
+    requested_by = models.ForeignKey(User,on_delete=models.PROTECT)
+    context_id = models.UUIDField()
+    reviewed_by = models.ForeignKey(User,null=True,on_delete=models.PROTECT,related_name='reviewed_session_returns')
+    reason = models.CharField(max_length=1000,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
