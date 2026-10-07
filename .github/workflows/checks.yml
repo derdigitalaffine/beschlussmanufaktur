@@ -27,6 +27,7 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r backend/requirements.txt
+      - run: node --check backend/static/invitation.js
       - run: python manage.py check --settings=config.test_settings
         working-directory: backend
       - run: python manage.py makemigrations --check --dry-run --settings=config.test_settings
@@ -41,7 +42,7 @@ jobs:
         working-directory: backend
         env:
           SERVER_ROLE: protected
-      - run: python manage.py test core.tests --settings=config.test_postgres_settings
+      - run: python manage.py test core --settings=config.test_postgres_settings
         working-directory: backend
         env:
           POSTGRES_HOST: 127.0.0.1

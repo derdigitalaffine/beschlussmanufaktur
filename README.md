@@ -2,7 +2,7 @@
 
 Ein geplantes, vollständig webbasiertes Ratsinformationssystem für kommunale Verwaltung, Mandatsträger und Öffentlichkeit. Schwerpunkt sind eine verständliche Bedienung und die Schriftführung während der Sitzung. Das System soll auf Linux vollständig mit Docker Compose betreibbar sein und getrennte interne und externe Server unterstützen.
 
-**Projektstand: Implementierung begonnen, Entwicklungsstand 0.1.** Ein erstes Django-Fundament mit E-Mail-Code-Anmeldung, Organisationen, Arbeitskontext und Docker Compose ist vorhanden. Das vollständige Ratsinformationssystem ist noch nicht fertig oder produktiv abgenommen. Die folgenden Zielanforderungen bleiben gültig; tatsächlich verfügbare Funktionen stehen im [Implementierungsstand](docs/11-implementierungsstand.md).
+**Projektstand: Implementierung begonnen, Entwicklungsstand 0.2.** Das Django-Fundament enthält E-Mail-Code-Anmeldung, Organisationen, Arbeitskontext, organisationsbezogene Benutzer-/Rollenverwaltung und Einladungen sowie Docker Compose. Das vollständige Ratsinformationssystem ist noch nicht fertig oder produktiv abgenommen. Die folgenden Zielanforderungen bleiben gültig; tatsächlich verfügbare Funktionen stehen im [Implementierungsstand](docs/11-implementierungsstand.md).
 
 ## Start und Entwicklung
 
@@ -30,6 +30,7 @@ Von der Vorlage über Freigabe, Einladung und Tagesordnung bis zur Live-Sitzung,
 | [Quellen und Klärungen](docs/10-quellen-offene-punkte.md) | Recherche, fachliche Grenzen und konkrete offene Fragen |
 | [Implementierungsstand](docs/11-implementierungsstand.md) | Verfügbare Funktionen und noch offene Umsetzung |
 | [Installation](docs/12-installation.md) | Docker-Start, Einrichtung und TLS-Vertrauen |
+| [Konten und Rollen bedienen](docs/13-konten-rollen.md) | Einladungen, Gültigkeitszeiträume und Entzug |
 
 ## Erster produktiver Umfang
 

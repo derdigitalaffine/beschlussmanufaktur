@@ -12,6 +12,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from .forms import CodeForm, OrganizationForm, SignInForm
 from .models import AuditEvent, Membership, User
+from .network import client_address
 from .permissions import active_context, available_contexts, may_manage_organization
 from .services import consume_rate_limit, issue_challenge, verify_challenge
 
@@ -41,7 +42,7 @@ def sign_in(request):
     form = SignInForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         email = form.cleaned_data["email"].lower()
-        ip_allowed = consume_rate_limit("ip:" + request.META.get("REMOTE_ADDR", "unknown"), maximum=30)
+        ip_allowed = consume_rate_limit("ip:" + client_address(request), maximum=30)
         account_allowed = consume_rate_limit("account:" + email)
         if not ip_allowed or not account_allowed:
             form.add_error(None, "Zu viele Versuche. Bitte versuchen Sie es später erneut.")
@@ -72,6 +73,8 @@ def verify_code(request):
         if user:
             request.session.pop("pending_challenge", None)
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            if settings.SERVER_ROLE == "internal" and request.session.get("pending_invitation"):
+                return redirect("accept_invitation")
             return redirect("home")
         form.add_error(None, "Code ungültig, abgelaufen oder zu oft versucht. Fordern Sie bei Bedarf einen neuen Code an.")
     return render(request, "auth.html", {"form": form, "title": "Anmeldung bestätigen", "description": "Geben Sie den sechsstelligen Code aus Ihrer E-Mail ein.", "button": "Sicher anmelden", "code_step": True})

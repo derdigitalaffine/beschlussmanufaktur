@@ -32,6 +32,7 @@ services:
     build: .
     environment:
       SERVER_ROLE: protected
+      TRUST_PROXY_HEADERS: 'true'
       DJANGO_SECRET_KEY: ${PROTECTED_SECRET_KEY:?Bitte PROTECTED_SECRET_KEY setzen}
       DJANGO_ALLOWED_HOSTS: ${PROTECTED_HOST:-gremien.localhost}
       CSRF_TRUSTED_ORIGINS: https://${PROTECTED_HOST:-gremien.localhost}
@@ -102,4 +103,3 @@ volumes:
   protected_files:
   caddy_data:
   caddy_config:
-

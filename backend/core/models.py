@@ -78,6 +78,8 @@ class Membership(models.Model):
     ends_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
 
+    version = models.PositiveIntegerField(default=1)
+
     class Meta:
         constraints = [models.CheckConstraint(
             condition=models.Q(ends_at__isnull=True) | models.Q(ends_at__gt=models.F("starts_at")), name="membership_valid_period",
@@ -107,3 +109,24 @@ class AuditEvent(models.Model):
     object_id = models.CharField(max_length=100, blank=True)
     metadata = models.JSONField(default=dict)
 
+
+class Invitation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.PROTECT, related_name="invitations")
+    email = models.EmailField()
+    role = models.CharField(max_length=30, choices=Membership.Role.choices)
+    starts_at = models.DateTimeField(default=timezone.now)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    invited_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    token_digest = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [models.CheckConstraint(
+            condition=models.Q(ends_at__isnull=True) | models.Q(ends_at__gt=models.F("starts_at")),
+            name="invitation_valid_membership_period",
+        )]
