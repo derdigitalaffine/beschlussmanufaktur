@@ -1,0 +1,8 @@
+
+## Abstimmungen und Beschlüsse
+
+Ein Versuch hat festen Wortlaut, TOP, Optionen, Regel und Stimmberechtigtenkreis. Digitale namentliche Stimmen werden nur online im gültigen Arbeitskontext mit aktuellem Mandat zugelassen. Sitzung, Anwesenheit, Befangenheit und Versuche werden am selben Sitzungsdatensatz serialisiert. Wiederholung derselben Stimm-ID ist idempotent; nachträgliche Änderung einer Stimme wird abgewiesen. Eintritt/Austritt, Befangenheit und Sitzungsende brechen offene Versuche ab. Neue Versuche benötigen eine aktuelle ausdrückliche Beschlussfähigkeitsfeststellung. Fehlende Stimmen werden separat gezählt. Keine automatische Enthaltung, keine Zusammenführung abgebrochener Versuche.
+
+Handzeichen und geheime Papierwahlen erhalten getrennte Auszählungen ohne personenbezogene Stimmzeilen. Mehrheiten: abgegebene Ja/Nein, anwesende Stimmberechtigte, zwei Drittel gesetzlicher Mitgliederzahl, Einstimmigkeit. Wahloptionen sind frei; Wahlmehrheit, Stichwahl und Losentscheid bedürfen einer ausdrücklich dokumentierten Feststellung. Das berechnete Ergebnis wird erst mit Feststellung des Vorsitzes zum Beschluss. Schriftführung darf dessen mündliche Feststellung dokumentieren; die spätere Niederschriftsprüfung bleibt separat.
+
+Digitale **geheime** Wahlen sind weiterhin eine offene Anforderung: Der bisherige Mechanismus bietet bewusst keine vermeintliche Anonymität durch Ausblenden von Namen. Dafür ist ein gesondertes Verfahren mit unabhängiger kryptografischer und rechtlicher Prüfung erforderlich. Namentliches digitales Abstimmen ist im Kern implementiert. Papier bleibt für geheime Wahlen verfügbar; dies ist keine vollständige Abnahme dieser Teilanforderung.

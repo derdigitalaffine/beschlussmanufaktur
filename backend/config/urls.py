@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -13,7 +13,7 @@ if settings.SERVER_ROLE == 'protected':
 if settings.SERVER_ROLE=='protected':
     urlpatterns += [path('sitzungen/',meeting_views.index,name='meetings'),path('sitzungen/<uuid:meeting_id>/',meeting_views.detail,name='meeting_detail'),path('einladungen/<uuid:invitation_id>/<str:format>/',invitation_views.download,name='meeting_invitation_download'),path('einladungen/status/<int:delivery_id>/',invitation_views.seen,name='meeting_invitation_seen')]
 if settings.SERVER_ROLE in ('internal','protected'):
-    urlpatterns += [path('sitzungen/<uuid:meeting_id>/live/',live_views.workspace,name='live_workspace'),path('sitzungen/<uuid:meeting_id>/live/status/',live_views.status,name='live_status'),path('sitzungen/<uuid:meeting_id>/live/heartbeat/',live_views.heartbeat,name='live_heartbeat')]
+    urlpatterns += [path('sitzungen/<uuid:meeting_id>/abstimmungen/',vote_views.workspace,name='votes'),path('sitzungen/<uuid:meeting_id>/live/',live_views.workspace,name='live_workspace'),path('sitzungen/<uuid:meeting_id>/live/status/',live_views.status,name='live_status'),path('sitzungen/<uuid:meeting_id>/live/heartbeat/',live_views.heartbeat,name='live_heartbeat')]
 if settings.SERVER_ROLE == "public":
     urlpatterns += [path("", views.public_home, name="home")]
 else:
