@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import exchange, exchange_views, access_views, registry, user_views, views
+from core import template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -22,6 +22,16 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('vorlagen/',template_views.index,name='templates'),
+            path('vorlagen/neu/',template_views.edit,name='template_new'),
+            path('vorlagen/vorschau/',template_views.preview,name='template_preview'),
+            path('vorlagen/<uuid:template_id>/',template_views.detail,name='template_detail'),
+            path('vorlagen/<uuid:template_id>/bearbeiten/',template_views.edit,name='template_edit'),
+            path('vorlagen/<uuid:template_id>/beteiligt/',template_views.heartbeat,name='template_heartbeat'),
+            path('vorlagen/<uuid:template_id>/version/<int:version>/',template_views.compare,name='template_compare'),
+            path('vorlagen/<uuid:template_id>/anlagen/',template_views.upload,name='attachment_upload'),
+            path('anlagen/<uuid:attachment_id>/',template_views.download,name='attachment_download'),
+            path('anlagen/<uuid:attachment_id>/status/',template_views.attachment_change,name='attachment_change'),
             path('austausch/',exchange_views.index,name='exchange'),
             path('austausch/<uuid:change_id>/',exchange_views.review,name='review_remote'),
             path('rechte/', access_views.grants, name='grants'),

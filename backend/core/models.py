@@ -281,3 +281,133 @@ class PublicRecord(models.Model):
     title = models.CharField(max_length=200)
     body = models.TextField(blank=True)
     version = models.PositiveIntegerField(default=1)
+
+
+class TemplateKind(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    name = models.CharField(max_length=100)
+    fields = models.JSONField(default=list,blank=True)
+    initial_markdown = models.TextField(blank=True,max_length=100000)
+    workflow = models.JSONField(default=list,blank=True)
+    four_eyes = models.BooleanField(default=False)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['organization','name'],name='unique_template_kind')]
+    def clean(self):
+        from .templates_service import validate_configuration
+        validate_configuration(self.fields,self.workflow)
+    def __str__(self):return self.name
+
+
+class Template(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    kind = models.ForeignKey(TemplateKind,on_delete=models.PROTECT)
+    author = models.ForeignKey(User,on_delete=models.PROTECT)
+    subject = models.CharField(max_length=300)
+    markdown = models.TextField(max_length=100000)
+    public_markdown = models.TextField(blank=True,max_length=100000)
+    fields = models.JSONField(default=dict,blank=True)
+    unit = models.ForeignKey(RegistryRecord,null=True,blank=True,on_delete=models.PROTECT)
+    reference = models.CharField(max_length=200,blank=True)
+    classification = models.CharField(max_length=20,choices=[('internal','Verwaltungsintern'),('committee','Gremienkreis'),('restricted','Eingeschränkter Personenkreis'),('public_planned','Öffentlich vorgesehen')],default='internal')
+    state = models.CharField(max_length=20,default='draft')
+    version = models.PositiveIntegerField(default=1)
+    number = models.CharField(max_length=40,blank=True)
+    number_year = models.PositiveIntegerField(null=True,blank=True)
+    number_sequence = models.PositiveIntegerField(null=True,blank=True)
+    published_version = models.PositiveIntegerField(null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering=['-updated_at']
+        constraints=[models.UniqueConstraint(fields=['organization','number_year','number_sequence'],name='unique_template_number')]
+    def clean(self):
+        if self.kind.organization_id!=self.organization_id:raise ValidationError('Vorlagenart gehört zu einer anderen Körperschaft.')
+        if self.unit and (self.unit.organization_id!=self.organization_id or self.unit.kind!='unit'):raise ValidationError('Unzulässiger Fachbereich.')
+    def __str__(self):return self.subject
+
+
+class TemplateVersion(models.Model):
+    template = models.ForeignKey(Template,on_delete=models.PROTECT,related_name='versions')
+    version = models.PositiveIntegerField()
+    snapshot = models.JSONField()
+    digest = models.CharField(max_length=64)
+    author = models.ForeignKey(User,on_delete=models.PROTECT)
+    reason = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['template','version'],name='unique_template_version')]
+    def save(self,*args,**kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():raise ValidationError('Archivierte Fassungen sind unveränderlich.')
+        super().save(*args,**kwargs)
+    def delete(self,*args,**kwargs):raise ValidationError('Archivierte Fassungen bleiben erhalten.')
+
+
+class TemplateParticipant(models.Model):
+    template = models.ForeignKey(Template,on_delete=models.PROTECT,related_name='participants')
+    membership = models.ForeignKey(Membership,on_delete=models.PROTECT)
+    actions = models.JSONField(default=list)
+    expires_at = models.DateTimeField(null=True,blank=True)
+    revoked_at = models.DateTimeField(null=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['template','membership'],name='unique_template_participant')]
+
+
+class Consultation(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    template = models.ForeignKey(Template,on_delete=models.PROTECT,related_name='consultations')
+    committee = models.ForeignKey(RegistryRecord,on_delete=models.PROTECT)
+    position = models.PositiveIntegerField(default=1)
+    deciding = models.BooleanField(default=False)
+    public = models.BooleanField(default=True)
+    may_amend = models.BooleanField(default=False)
+    amendment = models.TextField(blank=True,max_length=100000)
+    version = models.PositiveIntegerField(default=1)
+    class Meta:ordering=['position','id']
+
+
+class TemplateLink(models.Model):
+    source = models.ForeignKey(Template,on_delete=models.PROTECT,related_name='links')
+    target = models.ForeignKey(Template,on_delete=models.PROTECT,related_name='backlinks')
+    description = models.CharField(max_length=200)
+
+
+class Attachment(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    template = models.ForeignKey(Template,on_delete=models.PROTECT,related_name='attachments')
+    name = models.CharField(max_length=200)
+    file = models.FileField(upload_to='attachments/%Y/%m')
+    digest = models.CharField(max_length=64)
+    size = models.PositiveIntegerField()
+    media_type = models.CharField(max_length=100)
+    public = models.BooleanField(default=False)
+    checked = models.BooleanField(default=False)
+    removed_at = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TemplateComment(models.Model):
+    template = models.ForeignKey(Template,on_delete=models.PROTECT,related_name='comments')
+    author = models.ForeignKey(User,on_delete=models.PROTECT)
+    text = models.TextField(max_length=4000)
+    version = models.PositiveIntegerField()
+    task_assignee = models.ForeignKey(User,null=True,blank=True,on_delete=models.PROTECT,related_name='template_tasks')
+    completed_at = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(User,on_delete=models.CASCADE)
+    text = models.CharField(max_length=200)
+    path = models.CharField(max_length=300)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True)
+    emailed_at = models.DateTimeField(null=True)
+
+
+class EditPresence(models.Model):
+    template = models.ForeignKey(Template,on_delete=models.CASCADE)
+    user = models.ForeignKey(User,on_delete=models.CASCADE)
+    seen_at = models.DateTimeField(default=timezone.now)
+    class Meta:constraints=[models.UniqueConstraint(fields=['template','user'],name='unique_edit_presence')]
