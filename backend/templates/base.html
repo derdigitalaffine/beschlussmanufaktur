@@ -1,6 +1,6 @@
 {% load static %}<!doctype html>
 <html lang="de">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Beschlussmanufaktur{% endblock %}</title><link rel="stylesheet" href="{% static 'app.css' %}"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Beschlussmanufaktur{% endblock %}</title><link rel="stylesheet" href="{% static 'app.css' %}"><script src="{% static 'auth-events.js' %}" defer></script></head>
 <body>
 <header class="topbar"><a class="brand" href="/"><span class="brand-mark">B</span><span>Beschlussmanufaktur<small>Gremienarbeit. Gemeinsam gestaltet.</small></span></a>
 {% if user.is_authenticated %}<form method="post" action="{% url 'sign_out' %}">{% csrf_token %}<button class="quiet" type="submit">Abmelden</button></form>{% endif %}</header>

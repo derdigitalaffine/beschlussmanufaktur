@@ -92,6 +92,8 @@ def detail(request,template_id):
     from .workflow import step_access
     steps=list(obj.review_steps.filter(version=obj.version).select_related('template','decided_by','assigned__user'))
     for step in steps:step.can_decide=step_access(context,step)
+    from .member_views import remember
+    remember(context,'template',obj.pk)
     return render(request,'template_detail.html',{'steps':steps,'can_publish':template_access(context,'publish',obj),'context':context,'obj':obj,'body':mark_safe(render_markdown(obj.markdown)),'can_edit':template_access(context,'edit',obj),'can_delegate':template_access(context,'delegate',obj),'versions':obj.versions.order_by('-version'),'comments':obj.comments.select_related('author','task_assignee'),'attachments':obj.attachments.filter(removed_at__isnull=True),'presence':EditPresence.objects.filter(template=obj,seen_at__gte=timezone.now()-timezone.timedelta(seconds=90)).select_related('user'),'eligible':Membership.objects.filter(organization=obj.organization).select_related('user'),'consultations':obj.consultations.select_related('committee'),'committees':RegistryRecord.objects.filter(kind='committee',organization_id__in=available_contexts(request.user).values('organization_id'))})
 
 @login_required

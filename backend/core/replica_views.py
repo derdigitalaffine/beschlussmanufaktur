@@ -31,6 +31,8 @@ def documents(request):
 def document(request,document_id):
     obj=get_object_or_404(ExternalDocument,pk=document_id)
     if not document_access(request,obj,'read'):raise PermissionDenied
+    from .member_views import remember
+    remember(active_context(request),'template',obj.pk)
     return render(request,'replica_document.html',{'context':active_context(request),'obj':obj,'body':mark_safe(render_markdown(obj.markdown)),'can_edit':document_access(request,obj,'edit')})
 
 @login_required

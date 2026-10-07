@@ -78,6 +78,8 @@ def detail(request,meeting_id):
     if not meeting_access(context,'read',obj):raise PermissionDenied
     data=meeting_snapshot(obj,context)
     deliveries=InvitationDelivery.objects.filter(invitation__meeting=obj,user=request.user).select_related('invitation').order_by('-invitation__revision')
+    from .member_views import remember
+    remember(context,'meeting',obj.pk)
     return render(request,'meeting_detail.html',{'context':context,'obj':obj,'data':data,'can_plan':meeting_access(context,'plan',obj),'can_invite':meeting_access(context,'invite',obj),'can_chair':meeting_access(context,'chair',obj),'amendments':MeetingAmendment.objects.filter(meeting=obj) if meeting_access(context,'plan',obj) or meeting_access(context,'chair',obj) else [],'deliveries':deliveries,'memberships':Membership.objects.filter(organization=obj.organization).select_related('user')})
 
 @login_required

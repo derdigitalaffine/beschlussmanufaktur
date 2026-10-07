@@ -32,9 +32,18 @@ def identity(request):
     return JsonResponse({'user_id':str(request.user.pk),'context_id':str(context.pk),'label':context.organization.name+' · '+context.get_role_display(),'email':request.user.email,'csrf':get_token(request),'server':settings.SERVER_ROLE})
 
 @login_required
+@require_GET
+def meetings(request):
+    context=active_context(request)
+    if not context:raise PermissionDenied
+    objects=[{'id':str(obj.pk),'title':obj.title+' · '+obj.starts_at.isoformat()} for obj in Meeting.objects.filter(organization=context.organization).order_by('-starts_at') if meeting_access(context,'read',obj)]
+    return JsonResponse({'meetings':objects})
+
+@login_required
 @require_POST
+@transaction.atomic
 def prepare(request,meeting_id):
-    obj=get_object_or_404(Meeting,pk=meeting_id);context=active_context(request)
+    obj=get_object_or_404(Meeting.objects.select_for_update(),pk=meeting_id);context=active_context(request)
     if not meeting_access(context,'read',obj):raise PermissionDenied
     try:hours=int(request.POST.get('hours',48))
     except ValueError:return JsonResponse({'error':'Ungültige Offline-Dauer.'},status=400)
