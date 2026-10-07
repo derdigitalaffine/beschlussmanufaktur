@@ -636,3 +636,44 @@ class Motion(models.Model):
     kind = models.CharField(max_length=30,choices=[('substantive','Sachantrag'),('amendment','Änderungsantrag'),('procedure','Geschäftsordnungsantrag')])
     position = models.PositiveIntegerField(default=1)
     state = models.CharField(max_length=30,default='pending')
+
+
+class Vote(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT,related_name='votes')
+    item = models.ForeignKey(AgendaItem,on_delete=models.PROTECT)
+    wording = models.TextField(max_length=100000)
+    mode = models.CharField(max_length=20,choices=[('manual','Handzeichen / Papier'),('named','Digitale namentliche Abstimmung'),('secret','Geheime Papierwahl')])
+    rule = models.CharField(max_length=30,default='majority_cast')
+    options = models.JSONField(default=list)
+    electorate = models.JSONField(default=list)
+    state = models.CharField(max_length=20,default='open')
+    result = models.JSONField(default=dict)
+    opened_version = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Ballot(models.Model):
+    vote = models.ForeignKey(Vote,on_delete=models.PROTECT,related_name='ballots')
+    participant = models.ForeignKey(MeetingParticipant,on_delete=models.PROTECT)
+    choice = models.CharField(max_length=200)
+    request_id = models.UUIDField(default=uuid.uuid4,unique=True)
+    class Meta:constraints=[models.UniqueConstraint(fields=['vote','participant'],name='one_ballot_per_elector')]
+    def save(self,*args,**kwargs):
+        if self.pk:raise ValidationError('Stimmabgaben sind unveränderlich.')
+        super().save(*args,**kwargs)
+
+
+class Decision(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    vote = models.OneToOneField(Vote,on_delete=models.PROTECT)
+    wording = models.TextField(max_length=100000)
+    result = models.JSONField(default=dict)
+    chair_confirmation = models.CharField(max_length=1000)
+    confirmed_by = models.ForeignKey(User,on_delete=models.PROTECT)
+    confirmed_at = models.DateTimeField(auto_now_add=True)
+    responsible = models.ForeignKey(User,null=True,blank=True,on_delete=models.PROTECT,related_name='assigned_decisions')
+    due_on = models.DateField(null=True,blank=True)
+    status = models.CharField(max_length=20,default='open')
+    progress = models.TextField(blank=True,max_length=100000)
+    version = models.PositiveIntegerField(default=1)
