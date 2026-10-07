@@ -752,3 +752,13 @@ class WorkspaceEntry(models.Model):
     favorite = models.BooleanField(default=False)
     viewed_at = models.DateTimeField(default=timezone.now)
     class Meta:constraints=[models.UniqueConstraint(fields=['owner','context','kind','resource_id'],name='unique_workspace_entry')]
+
+
+class OfflineReceipt(models.Model):
+    id = models.UUIDField(primary_key=True)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT)
+    owner = models.ForeignKey(User,on_delete=models.PROTECT)
+    context_id = models.UUIDField()
+    digest = models.CharField(max_length=64)
+    resulting_version = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
