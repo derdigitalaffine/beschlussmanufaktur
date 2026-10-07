@@ -36,7 +36,7 @@ Der gesamte bestätigte KERN-Katalog bleibt verbindlich. Der Stand ist zur Entwi
 
 ## Prüfungen und Entwicklung
 
-208 Backendtests laufen lokal mit In-Memory-SQLite. GitHub prüft zusätzlich PostgreSQL, getrennte öffentliche/geschützte Rollen, Migrationen, JavaScript-Syntax, Compose, Caddy und Imagebuild. Drei Node-Prüfungen decken Verschlüsselung, Manipulation, falsches Passwort und große Daten ab. Chromium prüft verschlüsselte Vorbereitung, echtes Offline-Neuladen, persönliche Notizen, sichere Textausgabe, Kontext-/Zentralstandkonflikte und ausschließlich statische Shell-Caches. Die Zahl wird bei weiteren Regressionstests angepasst.
+212 Backendtests laufen lokal mit In-Memory-SQLite. GitHub prüft zusätzlich PostgreSQL, getrennte öffentliche/geschützte Rollen, Migrationen, JavaScript-Syntax, Compose, Caddy und Imagebuild. Drei Node-Prüfungen decken Verschlüsselung, Manipulation, falsches Passwort und große Daten ab. Chromium prüft verschlüsselte Vorbereitung, echtes Offline-Neuladen, persönliche Notizen, sichere Textausgabe, Kontext-/Zentralstandkonflikte und ausschließlich statische Shell-Caches. Die Zahl wird bei weiteren Regressionstests angepasst.
 
 ```sh
 uv venv .venv

@@ -17,15 +17,29 @@ def event(obj,context,device,kind,payload,event_id=None,occurred_at=None):
     return MeetingEvent.objects.create(id=event_id or uuid.uuid4(),meeting=obj,item_id=payload.get('item_id') or obj.active_item_id,kind=kind,payload=payload,digest=digest(kind,payload),actor=context.user,context_id=context.pk,device=device,occurred_at=occurred_at or timezone.now(),version=obj.version)
 
 
-def effective_voters(obj,item=None):
+def voter_groups(obj,item=None):
     people=list(obj.roster.filter(present=True,voting=True).select_related('substitutes_for'))
     blocked=set(ConflictOfInterest.objects.filter(item=item,active=True).values_list('participant_id',flat=True)) if item else set()
+    # A primary seat takes precedence while its principal is present. Multiple
+    # replacements never silently acquire two votes for the same seat.
     present_ids={p.pk for p in people if p.pk not in blocked}
-    return [p for p in people if p.pk not in blocked and (not p.substitutes_for_id or p.substitutes_for_id not in present_ids)]
+    groups={}
+    for p in people:
+        if p.pk in blocked or p.substitutes_for_id and p.substitutes_for_id in present_ids:continue
+        seat=p.substitutes_for_id or p.pk;groups.setdefault(seat,[]).append(p)
+    return groups
+
+
+def effective_voters(obj,item=None):return [group[0] for group in voter_groups(obj,item).values() if len(group)==1]
+
+
+def ambiguous_voters(obj,item=None):return [p.name for group in voter_groups(obj,item).values() if len(group)>1 for p in group]
 
 
 def quorum(obj,item=None):
     count=len(effective_voters(obj,item));rules=obj.rules or {}
+    ambiguous=ambiguous_voters(obj,item)
+    if ambiguous:return {'present':count,'required':None,'calculated':None,'rule':'vertretung_unklar','ambiguous':ambiguous}
     method=rules.get('quorum','majority_statutory')
     if method=='repeated_minimum':required=int(rules.get('minimum',3))
     elif method=='majority_nonexcluded':
@@ -101,6 +115,7 @@ def roster(context,meeting_id,version,device,epoch):
 
 
 def apply_payload(obj,kind,data):
+    if kind in ('eligibility','conflict','quorum') and (not isinstance(data.get('reason'),str) or not data['reason'].strip() or len(data['reason'])>1000):raise ValidationError('Feststellungsgrund muss ein Text mit höchstens 1000 Zeichen sein.')
     if kind=='begin':
         if obj.state!='invited':raise ValidationError('Sitzung kann nur einmal begonnen werden.')
         obj.state='live'
@@ -117,6 +132,9 @@ def apply_payload(obj,kind,data):
         if obj.state not in ('invited','live'):raise ValidationError('Anwesenheit ist nur vor oder während der Sitzung erfassbar.')
         if not isinstance(data['present'],bool):raise ValidationError('Anwesenheitswert muss wahr/falsch sein.')
         person=MeetingParticipant.objects.get(pk=data['participant_id'],meeting=obj);person.present=data['present'];person.save(update_fields=['present'])
+    elif kind=='eligibility':
+        if not isinstance(data.get('voting'),bool) or not data.get('reason','').strip():raise ValidationError('Stimmrechtsfeststellung und Begründung erforderlich.')
+        person=MeetingParticipant.objects.get(pk=data['participant_id'],meeting=obj);person.voting=data['voting'];person.save(update_fields=['voting'])
     elif kind=='conflict':
         person=MeetingParticipant.objects.get(pk=data['participant_id'],meeting=obj)
         item=AgendaItem.objects.get(pk=data['item_id'],meeting=obj)
@@ -137,7 +155,7 @@ def apply_payload(obj,kind,data):
         data['calculation']=quorum(obj,item)
     else:raise ValidationError('Unbekanntes Sitzungsereignis.')
     # Any roster change invalidates an open ballot; implemented by the voting module.
-    if kind in ('presence','conflict','end','pause','top','roster'):
+    if kind in ('presence','eligibility','conflict','end','pause','top','roster'):
         from django.apps import apps
         try:vote_model=apps.get_model('core','Vote')
         except LookupError:vote_model=None
@@ -148,6 +166,8 @@ def apply_payload(obj,kind,data):
 def write(context,meeting_id,version,device,epoch,kind,data,event_id,occurred_at=None):
     obj=Meeting.objects.select_for_update().get(pk=meeting_id)
     assert_writer(obj,context,device,epoch)
+    if not isinstance(data,dict):raise ValidationError('Sitzungsereignis benötigt ein Objekt.')
+    if data.get('item_id') and not AgendaItem.objects.filter(pk=data['item_id'],meeting=obj).exists():raise ValidationError('TOP gehört nicht zu dieser Sitzung.')
     existing=MeetingEvent.objects.filter(pk=event_id).first()
     if existing:
         if existing.meeting_id!=obj.pk or existing.actor_id!=context.user_id or existing.digest!=digest(kind,data):raise ValidationError('Ereignis-ID wurde bereits anders verwendet.')

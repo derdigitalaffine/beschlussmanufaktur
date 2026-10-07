@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError,PermissionDenied
 from django.db import transaction
 from .models import Meeting,MeetingEvent,Vote,Ballot,Decision,Mandate,Membership,User
-from .live_service import assert_writer,effective_voters,event
+from .live_service import assert_writer,effective_voters,ambiguous_voters,event
 from .meetings_service import lock_meeting,meeting_access
 
 RULES=('majority_cast','majority_present','two_thirds_statutory','unanimous','election')
@@ -23,9 +23,10 @@ def eligible(context,vote):
 def open_vote(context,meeting_id,version,device,epoch,wording,mode,rule,options):
     obj=lock_meeting(context,meeting_id,'live',version);assert_writer(obj,context,device,epoch)
     if obj.state!='live' or obj.paused or not obj.active_item_id:raise ValidationError('Laufende Sitzung und aufgerufener TOP erforderlich.')
+    if ambiguous_voters(obj,obj.active_item):raise ValidationError('Mehrere Vertretungen für denselben Sitz anwesend. Stimmrecht vor Abstimmung ausdrücklich klären.')
     if obj.votes.filter(state='open').exists():raise ValidationError('Zuerst den laufenden Versuch abschließen oder abbrechen.')
     determination=obj.events.filter(kind='quorum',item=obj.active_item).order_by('-version').first()
-    changes=obj.events.filter(kind__in=['presence','conflict','top','roster']).order_by('-version').first()
+    changes=obj.events.filter(kind__in=['presence','eligibility','conflict','top','roster']).order_by('-version').first()
     if not determination or not determination.payload.get('confirmed') or changes and changes.version>determination.version:raise ValidationError('Aktuelle Beschlussfähigkeit durch Vorsitz feststellen lassen und dokumentieren.')
     if mode not in ('manual','named','secret') or rule not in RULES:raise ValidationError('Ungültiges Abstimmungsverfahren.')
     if not wording.strip() or len(wording)>100000:raise ValidationError('Abstimmungswortlaut erforderlich.')

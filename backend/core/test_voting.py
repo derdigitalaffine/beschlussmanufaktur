@@ -52,3 +52,19 @@ class VoteTests(MeetingFixture,TestCase):
         with patch.object(manager,'select_for_update',side_effect=close_before_lock):
             with self.assertRaises(ValidationError):cast(self.m,v.pk,'Ja',uuid.uuid4())
         self.assertFalse(Ballot.objects.exists())
+    def test_multiple_substitutes_never_produce_double_vote(self):
+        from .live_service import effective_voters,quorum
+        from .models import User
+        principal=MeetingParticipant.objects.get(user=self.member);principal.present=False;principal.save()
+        first=MeetingParticipant.objects.create(meeting=self.meeting,user=self.chair,name='Vertretung A',voting=True,present=True,substitutes_for=principal)
+        other=User.objects.create_user(username='replacement',email='replacement@example.org')
+        second=MeetingParticipant.objects.create(meeting=self.meeting,user=other,name='Vertretung B',voting=True,present=True,substitutes_for=principal)
+        self.meeting.refresh_from_db();self.assertEqual(effective_voters(self.meeting,self.meeting.active_item),[]);self.assertEqual(quorum(self.meeting,self.meeting.active_item)['rule'],'vertretung_unklar')
+        with self.assertRaises(ValidationError):self.open('manual')
+        self.send('eligibility',{'participant_id':str(second.pk),'voting':False,'reason':'Vorsitz bestätigt Vertretung A'})
+        with self.assertRaises(ValidationError):self.open('manual')
+        self.send('quorum',{'item_id':str(self.meeting.active_item_id),'confirmed':True,'reason':'Nach geklärter Vertretung erneut festgestellt'})
+        self.assertEqual(len(self.open('manual').electorate),1)
+    def test_eligibility_change_aborts_running_vote(self):
+        v=self.open();self.send('eligibility',{'participant_id':str(MeetingParticipant.objects.get(user=self.member).pk),'voting':False,'reason':'Vorsitz stellt fehlendes Stimmrecht fest'})
+        v.refresh_from_db();self.assertEqual(v.state,'aborted')

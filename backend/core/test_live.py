@@ -64,3 +64,10 @@ class LiveTests(MeetingFixture,TestCase):
         item=self.meeting.items.first();ItemNote.objects.create(item=item,markdown='INTERNER PROTOKOLLENTWURF');self.meeting.active_item=item;self.meeting.save()
         self.client.force_login(guest);s=self.client.session;s['context_id']=str(context.pk);s.save()
         r=self.client.get(f'/sitzungen/{self.meeting.pk}/live/');self.assertNotContains(r,'INTERNER PROTOKOLLENTWURF')
+
+    def test_presence_cannot_reference_foreign_top(self):
+        person=MeetingParticipant.objects.get(user=self.member)
+        with self.assertRaises(ValidationError):self.send('presence',{'participant_id':str(person.pk),'present':True,'item_id':str(uuid.uuid4())})
+        person.refresh_from_db();self.assertFalse(person.present)
+    def test_malformed_determination_returns_validation(self):
+        with self.assertRaises(ValidationError):self.send('eligibility',{'participant_id':str(MeetingParticipant.objects.get().pk),'voting':True,'reason':['invalid']})

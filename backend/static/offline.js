@@ -37,8 +37,8 @@
   $('writer-controls').hidden=!writer;$('readonly').hidden=writer;$('sync').hidden=!writer;$('packet').hidden=!data.packet||expired;
   $('personal-note').value=data.personal_note.markdown;
   const previous=$('item').value;$('item').replaceChildren();for(const item of data.meeting.items){const option=text('option',`${item.position} · ${item.title}`);option.value=item.id;$('item').append(option);}if(data.meeting.items.some(i=>i.id===previous))$('item').value=previous;
-  $('people').replaceChildren();$('conflict-person').replaceChildren();
-  for(const p of data.roster){const row=document.createElement('div');row.append(text('p',`${p.name} · ${p.present?'lokal anwesend':'lokal abwesend'}`));if(writer){const button=text('button',p.present?'Austritt lokal erfassen':'Eintritt lokal erfassen');button.type='button';button.addEventListener('click',action(async()=>{await queue('presence',{participant_id:p.id,present:!p.present});}));row.append(button);}$('people').append(row);const option=text('option',p.name);option.value=p.id;$('conflict-person').append(option);}
+  $('people').replaceChildren();$('conflict-person').replaceChildren();$('eligibility-person').replaceChildren();
+  for(const p of data.roster){const row=document.createElement('div');row.append(text('p',`${p.name} · ${p.present?'lokal anwesend':'lokal abwesend'} · ${p.voting?'lokal stimmberechtigt':'lokal ohne Stimmrecht'}`));if(writer){const button=text('button',p.present?'Austritt lokal erfassen':'Eintritt lokal erfassen');button.type='button';button.addEventListener('click',action(async()=>{await queue('presence',{participant_id:p.id,present:!p.present});}));row.append(button);}$('people').append(row);const option=text('option',p.name);option.value=p.id;$('conflict-person').append(option);$('eligibility-person').append(option.cloneNode(true));}
   $('queue').replaceChildren();for(const e of data.queue)$('queue').append(text('pre',`${new Date(e.occurred_at).toLocaleString('de-DE')} · ${e.kind}\n${JSON.stringify(e.payload,null,2)}`));showItem();
  }
  async function queue(kind,payload){
@@ -47,6 +47,7 @@
   if(new TextEncoder().encode(JSON.stringify([...data.queue,next])).length>1800000)throw Error('Lokaler Stapel erreicht die Übertragungsgrenze. Vor weiteren Ereignissen abgleichen oder zur Prüfung exportieren.');
   data.queue.push(next);
   if(kind==='presence'){const p=data.roster.find(p=>p.id===payload.participant_id);p.present=payload.present;}
+  if(kind==='eligibility'){const p=data.roster.find(p=>p.id===payload.participant_id);p.voting=payload.voting;}
   if(kind==='text'){data.notes[payload.item_id]=payload.markdown;if(data.drafts)delete data.drafts[payload.item_id];}
   await persist();render();say('Lokal verschlüsselt gespeichert. Noch nicht zentral übernommen.');
  }
@@ -71,6 +72,7 @@
  $('flow').addEventListener('submit',action(event=>queue(event.submitter.value,{})));
  $('motion').addEventListener('submit',action(()=>queue('motion',{item_id:selected().id,applicant:$('applicant').value,wording:$('wording').value,kind:$('motion-kind').value,position:Number($('position').value)})));
  $('quorum').addEventListener('submit',action(()=>queue('quorum',{item_id:selected().id,confirmed:$('confirmed').value==='true',reason:$('quorum-reason').value})));
+ $('eligibility').addEventListener('submit',action(()=>queue('eligibility',{participant_id:$('eligibility-person').value,voting:$('voting').value==='true',reason:$('eligibility-reason').value})));
  $('conflict').addEventListener('submit',action(()=>queue('conflict',{item_id:selected().id,participant_id:$('conflict-person').value,active:$('conflict-active').value==='true',reason:$('conflict-reason').value})));
  $('sync-note').addEventListener('click',action(async()=>{requireData();await persist();const result=await send(`/offline/notizen/${data.meeting_id}/`,{user_id:data.user_id,context_id:data.context_id,version:data.personal_note.version,markdown:data.personal_note.markdown});data.personal_note.version=result.version;data.noteDirty=false;await persist();say('Persönliche Notiz zentral gespeichert.');}));
  $('sync').addEventListener('click',action(async()=>{

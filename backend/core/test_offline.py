@@ -31,7 +31,7 @@ class OfflineTests(MeetingFixture,TestCase):
     def test_atomic_queue_no_partial_effect(self):
         self.data['events'].append({'id':str(uuid.uuid4()),'kind':'text','payload':{'item_id':str(uuid.uuid4()),'markdown':'Fremder TOP'},'occurred_at':timezone.now().isoformat()})
         from .models import AgendaItem
-        with self.assertRaises(AgendaItem.DoesNotExist):reconcile(self.c,self.data)
+        with self.assertRaises(ValidationError):reconcile(self.c,self.data)
         self.assertFalse(MeetingParticipant.objects.get().present);self.assertFalse(OfflineReceipt.objects.exists())
     def test_expired_prepare_rejected(self):
         self.data['expires_at']=(timezone.now()-timezone.timedelta(seconds=1)).isoformat()
