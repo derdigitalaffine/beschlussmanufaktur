@@ -25,3 +25,15 @@ Beschlussvorlage, Mitteilung, Antrag, Anfrage, Einwohnerfrage, Dringlichkeits-, 
 Jede gespeicherte Fassung enthält Texte, Zusatzfelder, Empfängerkreis und Anlagen-/Beratungsbezüge mit SHA-256. Archivfassungen sind unveränderlich. Parallele Bearbeitung wird angezeigt; beim Speichern prüft der Server die Ausgangsversion, statt Änderungen unbemerkt zu überschreiben. Konflikttexte bleiben im Formular. Vergleich zeigt Textunterschiede und vollständige archivierte Metadaten.
 
 Anlagen werden privat unter zufälligen Dateinamen abgelegt, in Größe/Dateikennung begrenzt und zunächst als ungeprüft geführt. Downloads prüfen Rechte erneut und liefern Dateien als Download statt ausführbarer Webinhalte. Eine Kennungsprüfung ist kein Malware-Nachweis; vor Bereitstellung ist eine Inhaltsprüfung erforderlich. Virenscanner-Anbindung bleibt im Betriebs-Härtungsschritt zu konfigurieren.
+
+## Zusammenarbeit, Prüfung und Exporte
+
+Autor und Sitzungsdienst können Beteiligte mit konkreten eigenen vergebbaren Rechten hinzufügen. Zuweisung gilt nur für die Vorlage und den gewählten Arbeitskontext. Kommentare und Aufgaben sind versionsbezogen. Portalhinweise bleiben gespeichert; der interne Notification-Worker versendet neutrale E-Mail-Digests ohne Betreff/Inhalt vertraulicher Vorlagen. Fehler führen zu erneuten Versandversuchen. SMTP muss vor Aktivierung konfiguriert werden.
+
+Einfacher Prüfweg: Sachbearbeitung erstellt → Fachbereichsleitung prüft → Sitzungsdienst stellt intern bereit. Erweiterte Konfiguration unterstützt Prüfgruppen (parallel innerhalb gleicher Gruppe), Feldbedingungen, Vertretungsrollen und manuell ausgewählte Prüfer. Eine laufende Prüfung erteilt genau für diesen Vorlagenstand Lesen/Prüfen, keine allgemeinen Dokumentrechte. Rückgabe erfordert Begründung. Fachliche Änderungen machen den laufenden Stand ungültig. Das optionale Vieraugenprinzip verhindert Freigabe durch den Autor sowie wiederholte Freigabe verschiedener Stufen durch dieselbe Person.
+
+Interne Bereitstellung prüft alle Schritte und Anlagen; die Nummer wird transaktionssicher je Körperschaft/Jahr vergeben und bleibt bei späterer Änderung/Rücknahme erhalten. Veröffentlichung ist ein weiterer ausdrücklicher Schritt und verwendet die gesonderte öffentliche Textfassung und geprüften Betreff. Eine spätere Entwurfsänderung überschreibt die bereits veröffentlichte Fassung nicht.
+
+Beratungsfolgen unterscheiden Vorberatung/Entscheidung, Reihenfolge, öffentlich/nichtöffentlich und ausdrücklich erlaubte lokale Ergänzungen. Weitere Körperschaften benötigen Zuständigkeit; lokale Ergänzungen besitzen eigenen Textstand und überschreiben die Ausgangsvorlage nicht. Verknüpfungen zu früheren Vorlagen werden nur bei Leserecht erlaubt.
+
+PDF und DOCX werden lokal aus einer konkreten Archivfassung erzeugt. Sie enthalten Text, Überschriften, Listen, Tabellen und Anlagenverzeichnis mit Prüfsummen; keine Wordvorlagen oder extern geladenen Assets. Amtliche Gesamtsitzungsmappen folgen im Sitzungsplanungsmodul.

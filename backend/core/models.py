@@ -411,3 +411,46 @@ class EditPresence(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
     seen_at = models.DateTimeField(default=timezone.now)
     class Meta:constraints=[models.UniqueConstraint(fields=['template','user'],name='unique_edit_presence')]
+
+
+class ReviewStep(models.Model):
+    template = models.ForeignKey(Template,on_delete=models.PROTECT,related_name='review_steps')
+    version = models.PositiveIntegerField()
+    name = models.CharField(max_length=100)
+    role = models.CharField(max_length=30)
+    substitute = models.CharField(max_length=30,blank=True)
+    group = models.PositiveIntegerField()
+    assigned = models.ForeignKey(Membership,null=True,blank=True,on_delete=models.PROTECT)
+    state = models.CharField(max_length=20,default='pending')
+    decided_by = models.ForeignKey(User,null=True,on_delete=models.PROTECT)
+    decided_at = models.DateTimeField(null=True)
+    comment = models.CharField(max_length=1000,blank=True)
+
+
+class NumberSequence(models.Model):
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    year = models.PositiveIntegerField()
+    value = models.PositiveIntegerField(default=0)
+    class Meta:constraints=[models.UniqueConstraint(fields=['organization','year'],name='unique_number_sequence')]
+
+
+class Publication(models.Model):
+    template = models.ForeignKey(Template,on_delete=models.PROTECT)
+    version = models.PositiveIntegerField()
+    subject = models.CharField(max_length=300)
+    markdown = models.TextField(max_length=100000)
+    approved_by = models.ForeignKey(User,on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    withdrawn_at = models.DateTimeField(null=True)
+
+
+class ExternalDocument(models.Model):
+    id = models.UUIDField(primary_key=True)
+    organization_id = models.UUIDField()
+    title = models.CharField(max_length=300)
+    markdown = models.TextField()
+    number = models.CharField(max_length=40,blank=True)
+    version = models.PositiveIntegerField()
+    permissions = models.JSONField(default=dict)
+    attachments = models.JSONField(default=list)
+    received_at = models.DateTimeField(default=timezone.now)
