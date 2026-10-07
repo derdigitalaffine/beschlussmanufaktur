@@ -731,3 +731,24 @@ class DecisionUpdate(models.Model):
     def save(self,*args,**kwargs):
         if self.pk and type(self).objects.filter(pk=self.pk).exists():raise ValidationError('Sachstände sind unveränderlich.')
         super().save(*args,**kwargs)
+
+
+class PersonalNote(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    owner = models.ForeignKey(User,on_delete=models.PROTECT)
+    context = models.ForeignKey(Membership,on_delete=models.PROTECT)
+    meeting = models.ForeignKey(Meeting,on_delete=models.PROTECT)
+    markdown = models.TextField(max_length=100000,blank=True)
+    version = models.PositiveIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:constraints=[models.UniqueConstraint(fields=['owner','context','meeting'],name='unique_personal_meeting_note')]
+
+
+class WorkspaceEntry(models.Model):
+    owner = models.ForeignKey(User,on_delete=models.CASCADE)
+    context = models.ForeignKey(Membership,on_delete=models.CASCADE)
+    kind = models.CharField(max_length=20)
+    resource_id = models.UUIDField()
+    favorite = models.BooleanField(default=False)
+    viewed_at = models.DateTimeField(default=timezone.now)
+    class Meta:constraints=[models.UniqueConstraint(fields=['owner','context','kind','resource_id'],name='unique_workspace_entry')]
