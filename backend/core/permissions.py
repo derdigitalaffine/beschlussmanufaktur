@@ -1,6 +1,6 @@
 from django.db.models import Q
 from django.utils import timezone
-from .models import Membership, AccessGrant, Mandate
+from .models import Membership, AccessGrant, Mandate, ExchangeState
 from django.conf import settings
 from datetime import timedelta
 
@@ -9,6 +9,8 @@ def available_contexts(user):
     if not user.is_authenticated or not user.is_active:
         return Membership.objects.none()
     now = timezone.now()
+    if settings.SERVER_ROLE == "protected" and not ExchangeState.objects.filter(channel="protected",received_at__gte=now-timedelta(seconds=settings.EXCHANGE_MAX_AGE)).exists():
+        return Membership.objects.none()
     return user.memberships.filter(starts_at__lte=now, revoked_at__isnull=True).filter(
         Q(ends_at__isnull=True) | Q(ends_at__gt=now),
     ).select_related("organization").order_by("organization__name", "role", "id")

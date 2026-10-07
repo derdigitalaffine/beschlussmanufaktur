@@ -16,8 +16,14 @@ services:
     restart: unless-stopped
   backend:
     build: .
-    environment:
+    environment: &internal_environment
       SERVER_ROLE: internal
+      EXCHANGE_SOURCE: ${EXCHANGE_SOURCE:-}
+      EXCHANGE_PROTECTED_KEY: ${EXCHANGE_PROTECTED_KEY:-}
+      EXCHANGE_PUBLIC_KEY: ${EXCHANGE_PUBLIC_KEY:-}
+      EXCHANGE_PROTECTED_URL: ${EXCHANGE_PROTECTED_URL:-}
+      EXCHANGE_PUBLIC_URL: ${EXCHANGE_PUBLIC_URL:-}
+      EXCHANGE_CA_FILE: ${EXCHANGE_CA_FILE:-}
       TRUST_PROXY_HEADERS: 'true'
       APPLICATION_URL: ${APPLICATION_URL:-https://localhost}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Bitte DJANGO_SECRET_KEY setzen}
@@ -41,6 +47,17 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  exchange-worker:
+    build: .
+    command: [python, manage.py, exchange_worker, --watch]
+    environment: *internal_environment
+    volumes: [files:/app/data]
+    networks: [data, edge]
+    depends_on:
+      db: {condition: service_healthy}
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     restart: unless-stopped
