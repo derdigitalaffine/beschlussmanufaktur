@@ -52,6 +52,7 @@ def workspace(request,meeting_id):
                 data={}
                 if request.POST.get('item_id'):data['item_id']=request.POST['item_id']
                 if kind=='presence':data.update(participant_id=request.POST.get('participant_id'),present=request.POST.get('present')=='true')
+                elif kind=='eligibility':data.update(participant_id=request.POST.get('participant_id'),voting=request.POST.get('voting')=='true',reason=request.POST.get('reason',''))
                 elif kind=='conflict':data.update(participant_id=request.POST.get('participant_id'),active=request.POST.get('active')=='true',reason=request.POST.get('reason',''))
                 elif kind=='text':data['markdown']=request.POST.get('markdown','');pending_text=data['markdown']
                 elif kind=='motion':data.update(applicant=request.POST.get('applicant',''),wording=request.POST.get('wording',''),kind=request.POST.get('motion_kind'),position=int(request.POST.get('position',1)))

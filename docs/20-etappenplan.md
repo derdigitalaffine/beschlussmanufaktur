@@ -10,7 +10,7 @@ Der aktuelle Arbeitsauftrag umfasst die Entwicklungsfunktionen bis einschließli
 | 4 | Sitzungsplanung, Tagesordnung, Einladungen, kontrollierte Nachträge und PDF-Gesamtmappen | Implementiert; PRs 9–11 |
 | 5 | Führender Sitzungsdienst, Live-Schriftführung, Anwesenheit/Befangenheit, Abstimmungen, Rückgabe | Implementiert für namentlich digital und Papier; PRs 12–14. Digitale geheime Verfahren bleiben offen |
 | 6 | Niederschriften, getrennte Prüfung, Berichtigung, Veröffentlichung und Beschlusskontrolle | Implementiert; PRs 15–16 |
-| 7 | Persönlicher Arbeitsbereich, Notizen, Favoriten, verschlüsselte Offline-Mappen und geprüfte Offline-Schriftführung | Implementiert; PRs 17–19, abschließendes Review in PRs 20–22 |
+| 7 | Persönlicher Arbeitsbereich, Notizen, Favoriten, verschlüsselte Offline-Mappen und geprüfte Offline-Schriftführung | Implementiert; PRs 17–19, abschließendes Review in PRs 20–23 |
 | 8 | Ausbau Bürgerportal: Suche/Kalender, Domain/CI, iframe und Integrationsgrenzen | Nächste Etappe; bestehende öffentliche Freigabeprojektion ist die Grundlage |
 | 9 | Weitergehende Administration/CI, konfigurierbare Komfort- und Importfunktionen | Offen |
 | 10 | TLS-/Domainverwaltung, TOTP/Passkeys, Notfallzugriff, Betriebs-/Backupfunktionen | Offen |

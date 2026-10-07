@@ -22,7 +22,7 @@ GRANT_FIELDS=('meeting_id','user_id','context_id','version','epoch','device','ex
 
 def permit(data):return signing.dumps({field:data[field] for field in GRANT_FIELDS},salt='offline-session-v1')
 
-ALLOWED={'begin','end','pause','resume','top','presence','conflict','text','motion','quorum'}
+ALLOWED={'begin','end','pause','resume','top','presence','eligibility','conflict','text','motion','quorum'}
 
 @login_required
 @require_GET
