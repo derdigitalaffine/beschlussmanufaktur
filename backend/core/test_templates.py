@@ -48,7 +48,7 @@ class TemplateTests(TestCase):
             self.create();obj=Template.objects.get()
             r=self.client.post(f'/vorlagen/{obj.pk}/anlagen/',{'expected_version':1,'file':SimpleUploadedFile('../../note.txt',b'Nicht oeffentlich',content_type='text/plain')})
             self.assertEqual(r.status_code,302);a=Attachment.objects.get();self.assertFalse(a.checked);self.assertFalse(a.public)
-            response=self.client.get(f'/anlagen/{a.pk}/');self.assertEqual(response.status_code,200);response.close()
+            response=self.client.get(f'/anlagen/{a.pk}/');self.assertEqual(response.status_code,200);self.assertEqual(b''.join(response.streaming_content),b'Nicht oeffentlich')
             self.context.role='member';self.context.save();self.assertEqual(self.client.get(f'/anlagen/{a.pk}/').status_code,403)
     def test_fake_pdf_rejected(self):
         with tempfile.TemporaryDirectory() as root,override_settings(MEDIA_ROOT=root):
