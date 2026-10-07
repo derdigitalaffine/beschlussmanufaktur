@@ -11,6 +11,7 @@ from .templates_service import template_access
 
 def meeting_access(context,action,obj):
     if not context or not available_contexts(context.user).filter(pk=context.pk).exists():return False
+    if settings.SERVER_ROLE=='protected':return action in obj.permission_snapshot.get(str(context.pk),[])
     same=context.organization_id==obj.organization_id
     if not same:return False
     if context.role=='clerk':return action in ('read','private','plan','invite','export','live','protocol')
@@ -39,6 +40,10 @@ def meeting_snapshot(obj,context=None):
         if item.template_id and (context is None or template_access(context,'read',item.template)):
             v=item.template.versions.get(version=item.template.version)
             data['template']={'id':str(item.template_id),'number':item.template.number,'version':v.version,'subject':v.snapshot['subject'],'markdown':v.snapshot['markdown'],'attachments':v.snapshot['attachments']}
+        if item.frozen_template and context is not None:
+            from .models import ExternalDocument
+            document=ExternalDocument.objects.filter(pk=item.frozen_template.get('id')).first()
+            if document and 'read' in document.permissions.get(str(context.pk),[]):data['template']=item.frozen_template
         result['items'].append(data)
     return result
 

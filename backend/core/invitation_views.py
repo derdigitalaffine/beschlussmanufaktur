@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied,ValidationError
 from django.http import HttpResponse,Http404
@@ -22,7 +23,17 @@ def download(request,invitation_id,format):
     elif meeting_access(context,'plan',invitation.meeting):data=invitation.snapshot
     else:raise PermissionDenied
     if format=='ics':binary=calendar(data);mime='text/calendar; charset=utf-8'
-    elif format=='pdf':binary=packet(data,context);mime='application/pdf'
+    elif format=='pdf':
+        if settings.SERVER_ROLE=='protected':
+            from .models import ExternalDocument
+            for item in data['items']:
+                if item.get('template'):
+                    doc=get_object_or_404(ExternalDocument,pk=item['template']['id'])
+                    if 'export' not in doc.permissions.get(str(context.pk),[]):raise PermissionDenied
+            def loader(meta):return bytes(get_object_or_404(ReplicaAsset,pk=meta['id'],digest=meta['digest']).data)
+            binary=packet(data,asset_loader=loader)
+        else:binary=packet(data,context)
+        mime='application/pdf'
     else:raise Http404
     response=HttpResponse(binary,content_type=mime);response['Content-Disposition']=f'attachment; filename="sitzung-{invitation.meeting_id}-r{invitation.revision}.{format}"';return response
 
