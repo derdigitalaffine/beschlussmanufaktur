@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -22,6 +22,21 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('vorlagenarten/',collaboration_views.kind_list,name='kind_list'),
+            path('vorlagenarten/neu/',collaboration_views.kind,name='kind_new'),
+            path('vorlagenarten/<uuid:kind_id>/',collaboration_views.kind,name='kind_edit'),
+            path('vorlagen/<uuid:template_id>/pruefer/',collaboration_views.add_step,name='template_add_step'),
+            path('vorlagen/<uuid:template_id>/aktion/',collaboration_views.action,name='template_action'),
+            path('vorlagen/<uuid:template_id>/beteiligung/',collaboration_views.participant,name='template_participant'),
+            path('vorlagen/<uuid:template_id>/kommentar/',collaboration_views.comment,name='template_comment'),
+            path('vorlagen/<uuid:template_id>/beratung/',collaboration_views.consultation,name='template_consultation'),
+            path('vorlagen/<uuid:template_id>/verknuepfung/',collaboration_views.link,name='template_link'),
+            path('vorlagen/<uuid:template_id>/export/<str:format>/',collaboration_views.document,name='template_export'),
+            path('vorlagen/<uuid:template_id>/export/<str:format>/<int:version>/',collaboration_views.document,name='template_version_export'),
+            path('pruefung/<int:step_id>/',collaboration_views.review,name='template_review'),
+            path('beratung/<uuid:consultation_id>/',collaboration_views.amendment,name='consultation_amendment'),
+            path('aufgaben/<int:comment_id>/erledigt/',collaboration_views.complete_task,name='template_task_complete'),
+            path('hinweise/<int:notification_id>/gelesen/',collaboration_views.notification_read,name='notification_read'),
             path('vorlagen/',template_views.index,name='templates'),
             path('vorlagen/neu/',template_views.edit,name='template_new'),
             path('vorlagen/vorschau/',template_views.preview,name='template_preview'),

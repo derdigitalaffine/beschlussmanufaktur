@@ -29,12 +29,16 @@ def validate_configuration(fields,workflow):
     for step in workflow:
         if not isinstance(step,dict) or set(step)-{'name','role','group','condition','substitute'} or step.get('role') not in ('reviewer','release','clerk') or not step.get('name'):raise ValidationError('Ungültiger Prüfschritt.')
         if 'condition' in step and (not isinstance(step['condition'],dict) or set(step['condition'])!={'field','equals'} or step['condition']['field'] not in keys):raise ValidationError('Bedingung muss sich auf ein Zusatzfeld beziehen.')
+        if 'group' in step and (not isinstance(step['group'],int) or not 1<=step['group']<=100):raise ValidationError('Prüfgruppe muss zwischen 1 und 100 liegen.')
         if 'substitute' in step and step['substitute'] not in ('reviewer','release','clerk'):raise ValidationError('Ungültige Vertretungsrolle.')
 
 def template_access(context,action,obj):
     if not context or not available_contexts(context.user).filter(pk=context.pk).exists():return False
     same=context.organization_id==obj.organization_id
     if same and can_access(context,action,'template',obj):return True
+    if same and action in ('read','review'):
+        from .workflow import step_access
+        if any(step_access(context,step) for step in obj.review_steps.filter(version=obj.version,state='pending').select_related('template')):return True
     if same and context.role=='clerk' and action in ('read','edit','export','review','release','publish','delegate'):return True
     if same and obj.author_id==context.user_id and context.role=='author' and action in ('read','edit','export','delegate'):return True
     if same and TemplateParticipant.objects.filter(template=obj,membership=context,revoked_at__isnull=True).filter(Q(expires_at__isnull=True)|Q(expires_at__gt=timezone.now())).exists():
