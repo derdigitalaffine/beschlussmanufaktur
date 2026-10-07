@@ -9,6 +9,7 @@ from django.utils import timezone
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
+    advanced_mode = models.BooleanField(default=False)
     last_context = models.ForeignKey("Membership", null=True, blank=True, on_delete=models.SET_NULL, related_name="remembered_by")
 
     class Meta:
@@ -31,6 +32,7 @@ class Organization(models.Model):
     kind = models.CharField(max_length=20, choices=Kind.choices)
     primary_parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
     created_at = models.DateTimeField(auto_now_add=True)
+    advanced_enabled = models.BooleanField(default=True)
     is_test_data = models.BooleanField(default=False)
 
     class Meta:
@@ -53,6 +55,10 @@ class OrganizationRelation(models.Model):
     source = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="outgoing_relations")
     target = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="incoming_relations")
     description = models.CharField(max_length=200)
+    starts_on = models.DateField(null=True, blank=True)
+    ends_on = models.DateField(null=True, blank=True)
+    responsibility = models.CharField(max_length=200, blank=True)
+    version = models.PositiveIntegerField(default=1)
 
     class Meta:
         constraints = [
@@ -130,3 +136,63 @@ class Invitation(models.Model):
             condition=models.Q(ends_at__isnull=True) | models.Q(ends_at__gt=models.F("starts_at")),
             name="invitation_valid_membership_period",
         )]
+
+
+class RegistryRecord(models.Model):
+    """Versioned municipal registry. Historical records are closed, never deleted."""
+    class Kind(models.TextChoices):
+        TERM = 'term', 'Legislaturperiode'
+        COMMITTEE = 'committee', 'Gremium'
+        UNIT = 'unit', 'Organisationseinheit'
+        FUNCTION = 'function', 'Funktion'
+        PERSON = 'person', 'Person ohne Konto'
+        FACTION = 'faction', 'Fraktion'
+        ROOM = 'room', 'Raum'
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.PROTECT)
+    kind = models.CharField(max_length=20, choices=Kind.choices)
+    name = models.CharField(max_length=200)
+    starts_on = models.DateField(null=True, blank=True)
+    ends_on = models.DateField(null=True, blank=True)
+    details = models.TextField(blank=True, max_length=2000)
+    version = models.PositiveIntegerField(default=1)
+    archived = models.BooleanField(default=False)
+    class Meta:
+        ordering = ['kind', 'name', 'id']
+        constraints = [models.CheckConstraint(condition=models.Q(starts_on__isnull=True) | models.Q(ends_on__isnull=True) | models.Q(ends_on__gte=models.F('starts_on')), name='registry_period')]
+    def clean(self):
+        if self.kind == self.Kind.TERM and (not self.starts_on or not self.ends_on):
+            raise ValidationError('Eine Legislaturperiode benötigt Beginn und Ende.')
+        if self.starts_on and self.ends_on and self.ends_on < self.starts_on:
+            raise ValidationError('Das Ende darf nicht vor dem Beginn liegen.')
+    def __str__(self):
+        return self.name
+
+
+class Mandate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    committee = models.ForeignKey(RegistryRecord, on_delete=models.PROTECT, related_name='mandates')
+    term = models.ForeignKey(RegistryRecord, on_delete=models.PROTECT, related_name='term_mandates')
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.PROTECT)
+    person = models.ForeignKey(RegistryRecord, null=True, blank=True, on_delete=models.PROTECT, related_name='person_mandates')
+    function = models.ForeignKey(RegistryRecord, on_delete=models.PROTECT, related_name='function_mandates')
+    faction = models.ForeignKey(RegistryRecord, null=True, blank=True, on_delete=models.PROTECT, related_name='faction_mandates')
+    substitutes_for = models.ForeignKey('self', null=True, blank=True, on_delete=models.PROTECT)
+    starts_on = models.DateField()
+    ends_on = models.DateField()
+    voting = models.BooleanField(default=True)
+    archived = models.BooleanField(default=False)
+    version = models.PositiveIntegerField(default=1)
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(ends_on__gte=models.F('starts_on')), name='mandate_period'), models.CheckConstraint(condition=(models.Q(user__isnull=False, person__isnull=True) | models.Q(user__isnull=True, person__isnull=False)), name='mandate_identity')]
+    def clean(self):
+        if bool(self.user_id) == bool(self.person_id):
+            raise ValidationError('Genau ein Konto oder eine Person auswählen.')
+        for field, kind in [('committee','committee'),('term','term'),('person','person'),('function','function'),('faction','faction')]:
+            obj = getattr(self, field, None)
+            if obj and (obj.kind != kind or obj.organization_id != self.committee.organization_id):
+                raise ValidationError('Gremium, Periode, Person und Funktionen müssen zur Körperschaft gehören.')
+        if self.ends_on < self.starts_on:
+            raise ValidationError('Ungültiger Zeitraum.')
+        if self.substitutes_for_id and (self.substitutes_for_id == self.pk or self.substitutes_for.committee_id != self.committee_id or self.substitutes_for.term_id != self.term_id or self.substitutes_for.substitutes_for_id):
+            raise ValidationError('Vertretung muss ein reguläres Mandat desselben Gremiums und derselben Periode betreffen.')
