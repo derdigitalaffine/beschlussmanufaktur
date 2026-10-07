@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -22,6 +22,16 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('sitzungen/',meeting_views.index,name='meetings'),
+            path('sitzungen/neu/',meeting_views.edit,name='meeting_new'),
+            path('sitzungen/<uuid:meeting_id>/',meeting_views.detail,name='meeting_detail'),
+            path('sitzungen/<uuid:meeting_id>/bearbeiten/',meeting_views.edit,name='meeting_edit'),
+            path('sitzungen/<uuid:meeting_id>/top/neu/',meeting_views.agenda,name='meeting_agenda_new'),
+            path('sitzungen/<uuid:meeting_id>/top/<uuid:item_id>/',meeting_views.agenda,name='meeting_agenda_edit'),
+            path('sitzungen/<uuid:meeting_id>/einladen/',meeting_views.invite,name='meeting_invite'),
+            path('sitzungen/<uuid:meeting_id>/nachtrag/',meeting_views.amendment,name='meeting_amendment'),
+            path('sitzungen/<uuid:meeting_id>/gast/',meeting_views.guest,name='meeting_guest'),
+            path('nachtraege/<uuid:change_id>/genehmigen/',meeting_views.approve,name='meeting_amendment_approve'),
             path('vorlagenarten/',collaboration_views.kind_list,name='kind_list'),
             path('vorlagenarten/neu/',collaboration_views.kind,name='kind_new'),
             path('vorlagenarten/<uuid:kind_id>/',collaboration_views.kind,name='kind_edit'),
