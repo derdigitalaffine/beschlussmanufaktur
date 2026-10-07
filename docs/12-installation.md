@@ -40,7 +40,19 @@ docker compose -f compose.external.yaml run --rm public python manage.py migrate
 docker compose -f compose.external.yaml up -d
 ```
 
-Der geschützte Dienst hat noch keine zentrale Kontenprovisionierung; dort weder Passwortkopien improvisieren noch öffentlichen Bootstrap öffnen. Der Bürgerdienst liefert aktuell nur den gekennzeichneten Leerzustand. Vollständiger Zweiserverbetrieb mit Fachdatenaustausch folgt in weiteren PRs.
+Konten und Rechte werden intern verwaltet und geschützt provisioniert. Keinen externen Bootstrap öffnen und keine Passwortkopien improvisieren. Der öffentliche Dienst zeigt ausschließlich ausdrücklich freigegebene Daten. Für Datenaustausch auf beiden Hosts dieselbe Installations-UUID in `EXCHANGE_SOURCE` setzen; für jeden Kanal einen eigenen zufälligen Schlüssel (mindestens 32 Zeichen) erzeugen. Der interne Host erhält beide Schlüssel, der geschützte Dienst nur `EXCHANGE_PROTECTED_KEY`, der öffentliche Dienst nur `EXCHANGE_PUBLIC_KEY`. Interne Origins `EXCHANGE_PROTECTED_URL`/`EXCHANGE_PUBLIC_URL` als feste HTTPS-Origins ohne Pfad konfigurieren.
+
+Bei lokaler externer Caddy-CA deren öffentliches Root-PEM sicher zum internen Host kopieren, im internen Dateivolume beispielsweise unter `/app/data/exchange-ca.pem` ablegen und `EXCHANGE_CA_FILE` entsprechend setzen. Niemals TLS-Prüfung abschalten oder private CA-Schlüssel kopieren. Dieses CA-Zertifikat muss außerdem auf den vorgesehenen Endgeräten vertrauenswürdig installiert sein, damit Offline-Funktionen einen sicheren Browserkontext haben.
+
+Intern „Datenbereitstellung“ je Körperschaft ausdrücklich konfigurieren. Nach Migrationen Worker starten und den ersten Transfer prüfen:
+
+```sh
+docker compose run --rm backend python manage.py exchange_worker --snapshot
+```
+
+Der regelmäßige Worker überträgt freigegebene Metadaten/Dateien und holt externe Vorschläge und Sitzungsrückgaben ab. Beim Transferfehler wird erneut versucht; nach 24 Stunden ohne frischen geschützten Rechtebestand sind externe Arbeitskontexte gesperrt. Details: docs/14–16. Das externe Netz darf keinen initiierbaren Zugang zum internen Host bekommen; Host-Firewall/VLAN-Regeln sind zusätzlich erforderlich.
+
+Für externe Sitzungsführung intern Einladung ausgeben, führenden Dienst aktivieren und erfolgreiche Bereitstellung prüfen. Extern Schriftführung übernehmen und Besetzung vorbereiten. Nach Abschluss Sitzung/Niederschrift über „Kontrollierte Rückgabe“ einfrieren. Intern das abgeholte Journal prüfen und genehmigen. Erst die folgende Übertragung macht die externe Fassung zur internen Lesekopie. Offline-Arbeit: docs/19.
 
 ## Betriebshinweise
 
@@ -49,3 +61,8 @@ Keine Datenbankports sind veröffentlicht. Caddy ist der einzige veröffentlicht
 Die Compose-Dienste vertrauen Caddys Forwarded-Clientadresse ausdrücklich, damit Anmelde-/Einladungslimits nicht alle Nutzer hinter dem Proxy gemeinsam treffen. `TRUST_PROXY_HEADERS=true` ist nur bei diesem privaten, ausschließlich über Caddy erreichbaren Backend zulässig; bei direktem Backendzugang deaktivieren. Caddy muss eingehende Forwarded-Header weiterhin aus nicht vertrauenswürdigen Quellen überschreiben.
 
 Backup/Restore und TLS-/Domainverwaltung sind noch nicht automatisiert. Containerimages verwenden zurzeit Major-Tags; geprüfte Digest-Pins folgen im Releaseprozess. Vor öffentlichem Produktiveinsatz müssen die im Anforderungskatalog beschriebenen Kernfunktionen und Abnahmen abgeschlossen sein.
+
+
+## Aktualisierung dieses Entwicklungsstands
+
+Alle Worker vor Schema-/Vertragsänderungen anhalten. Neue Images auf beiden Hosts bauen, Datenbankbackup anlegen, Migrationen intern sowie geschützt/öffentlich ausführen und erst danach Dienste/Worker wieder starten. Kompatible Codeversionen auf beiden Hosts verwenden; nicht einzelne alte Transferdienste mit einem neuen Vertrag weiterbetreiben. Migration 0022 entfernt ausschließlich hostlokale Stimm-/Befangenheitsnummern aus wartenden Austauschverträgen; Fachwerte und dauerhafte Stimm-IDs bleiben erhalten. Rollback nach Fachänderungen benötigt einen konsistenten Restore, nicht nur ein älteres Image. Automatisierte Update-/Restoreverwaltung folgt später.

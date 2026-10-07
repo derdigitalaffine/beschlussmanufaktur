@@ -2,7 +2,7 @@
 
 Ein geplantes, vollständig webbasiertes Ratsinformationssystem für kommunale Verwaltung, Mandatsträger und Öffentlichkeit. Schwerpunkt sind eine verständliche Bedienung und die Schriftführung während der Sitzung. Das System soll auf Linux vollständig mit Docker Compose betreibbar sein und getrennte interne und externe Server unterstützen.
 
-**Projektstand: Implementierung begonnen, Entwicklungsstand 0.2.** Das Django-Fundament enthält E-Mail-Code-Anmeldung, Organisationen, Arbeitskontext, organisationsbezogene Benutzer-/Rollenverwaltung und Einladungen sowie Docker Compose. Das vollständige Ratsinformationssystem ist noch nicht fertig oder produktiv abgenommen. Die folgenden Zielanforderungen bleiben gültig; tatsächlich verfügbare Funktionen stehen im [Implementierungsstand](docs/11-implementierungsstand.md).
+**Projektstand: Entwicklungsstand 0.7.** Implementiert sind Organisationen/Rechte, geschützter Datenaustausch, Vorlagen mit Freigaben, Sitzungsvorbereitung und PDF-Mappen, Live-Schriftführung und namentliche digitale Abstimmungen, Niederschriften, Beschlusskontrolle sowie persönlicher Arbeitsbereich mit verschlüsselter Offline-Vorbereitung und geprüftem Abgleich. Noch keine Produktivfreigabe. Umfang, Tests und offene Teilanforderungen stehen im [Implementierungsstand](docs/11-implementierungsstand.md).
 
 ## Start und Entwicklung
 
@@ -31,6 +31,14 @@ Von der Vorlage über Freigabe, Einladung und Tagesordnung bis zur Live-Sitzung,
 | [Implementierungsstand](docs/11-implementierungsstand.md) | Verfügbare Funktionen und noch offene Umsetzung |
 | [Installation](docs/12-installation.md) | Docker-Start, Einrichtung und TLS-Vertrauen |
 | [Konten und Rollen bedienen](docs/13-konten-rollen.md) | Einladungen, Gültigkeitszeiträume und Entzug |
+| [Vorlagen und Rechte](docs/14-etappen-1-3.md) | Stammdaten, Vorlagen, Freigaben und Export |
+| [Sitzungsvorbereitung](docs/15-sitzungsplanung.md) | Termine, Einladungen, Nachträge und PDF-Mappen |
+| [Live-Sitzung](docs/16-live-sitzung.md) | Führerschaft, Anwesenheit und kontrollierte Rückgabe |
+| [Abstimmungen](docs/16-live-sitzungsfuehrung.md) | Digitale Stimmen, Papierverfahren und Beschlüsse |
+| [Niederschriften](docs/17-niederschrift.md) | Fassungen, Prüfung, Berichtigungen und öffentliche Freigabe |
+| [Beschlusskontrolle](docs/18-beschlusskontrolle.md) | Zuständigkeit, Fristen und Sachstände |
+| [Persönlicher Bereich und Offline](docs/19-mandatstraeger-offline.md) | Notizen, verschlüsselte Mappen und Offline-Schriftführung |
+| [Etappenplan](docs/20-etappenplan.md) | Implementierungsfolge und verbleibende Arbeit |
 
 ## Erster produktiver Umfang
 
@@ -52,7 +60,7 @@ Keine Migration aus Bestands-RIS, Bürgerkonten, Themenabonnements, Browser-Push
 
 ## Technische Richtung
 
-Bestätigt sind Python im Backend, Linux, Docker Compose, Caddy und administrierbare TLS-Zertifikate. Vorgeschlagen sind Django mit REST-API, PostgreSQL, ein React/TypeScript-Frontend und getrennte Hintergrundprozesse. Diese Komponenten sind Architekturvorschläge, noch keine festgelegten Versions- oder Paketlisten.
+Bestätigt sind Python im Backend, Linux, Docker Compose, Caddy und administrierbare TLS-Zertifikate. Umgesetzt sind Django, PostgreSQL, lokal gerenderte Weboberflächen mit JavaScript und getrennte Hintergrundprozesse. Fachaktionen und kleine JSON-Verträge werden serverseitig autorisiert. Die Offline-Oberfläche benötigt HTTPS und einen aktuellen Browser. Ein zusätzliches React-Frontend ist aktuell nicht erforderlich; es bleibt eine mögliche spätere Umstellung.
 
 ## Verbindlichkeit und Lizenz
 

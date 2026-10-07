@@ -37,5 +37,6 @@ def workspace(request,meeting_id):
     votes=list(obj.votes.select_related('item').order_by('-created_at'))
     for vote in votes:
         vote.may_cast=bool(vote.state=='open' and vote.mode=='named' and voting.eligible(context,vote) and not vote.ballots.filter(participant__user=request.user).exists())
+        vote.named_ballots=vote.ballots.select_related('participant').all() if vote.mode=='named' and vote.state in ('closed','confirmed') else []
         vote.count_fields=list(enumerate(vote.options));vote.ballot_count=vote.ballots.count()
     return render(request,'votes.html',{'context':context,'obj':obj,'votes':votes,'writer':writer,'epoch':lease.epoch if lease else 0,'error':error,'request_id':uuid.uuid4()})

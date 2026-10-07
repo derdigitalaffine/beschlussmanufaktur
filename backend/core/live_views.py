@@ -69,12 +69,12 @@ def workspace(request,meeting_id):
     conflicts=ConflictOfInterest.objects.filter(item=obj.active_item,active=True).values_list('participant_id',flat=True) if obj.active_item_id else []
     if not private:people=[]
     for person in people:person.conflicted=person.pk in conflicts
-    note=ItemNote.objects.filter(item=obj.active_item).first() if obj.active_item_id else None
+    note=ItemNote.objects.filter(item=obj.active_item).first() if private and obj.active_item_id else None
     items=obj.items.filter(removed=False)
     if not meeting_access(context,'private',obj):items=items.filter(public=True)
     events=obj.events.order_by('-version')
-    if not meeting_access(context,'private',obj):events=events.filter(item__public=True)
-    return render(request,'live_workspace.html',{'context':context,'obj':obj,'items':items,'people':people,'writer':writer,'epoch':lease.epoch if lease else 0,'can_claim':obj.leading_server==settings.SERVER_ROLE and request.user.pk in (obj.chair_id,obj.scribe_id),'quorum':quorum(obj,obj.active_item) if private else {'present':'nicht freigegeben','required':None,'calculated':None},'note':pending_text if error and pending_text is not None else note.markdown if note else '', 'events':events[:100],'motions':Motion.objects.filter(item=obj.active_item).order_by('position') if obj.active_item_id else [],'error':error,'event_id':uuid.uuid4()})
+    if not meeting_access(context,'private',obj):events=events.none()
+    return render(request,'live_workspace.html',{'context':context,'obj':obj,'items':items,'people':people,'writer':writer,'epoch':lease.epoch if lease else 0,'can_claim':obj.leading_server==settings.SERVER_ROLE and request.user.pk in (obj.chair_id,obj.scribe_id),'quorum':quorum(obj,obj.active_item) if private else {'present':'nicht freigegeben','required':None,'calculated':None},'note':pending_text if error and pending_text is not None else note.markdown if note else '', 'events':events[:100],'motions':Motion.objects.filter(item=obj.active_item).order_by('position') if private and obj.active_item_id else [],'error':error,'event_id':uuid.uuid4()})
 
 @login_required
 @require_POST

@@ -41,3 +41,14 @@ class VoteTests(MeetingFixture,TestCase):
     def test_election_needs_chair_determination(self):
         v=self.close(self.open('manual','election',['A','B']),{'A':1,'B':0});self.assertEqual(v.result['outcome'],'chair_determination_required')
     def test_view(self):self.assertContains(self.client.get(f'/sitzungen/{self.meeting.pk}/abstimmungen/'),'Abstimmungen')
+
+    def test_close_committed_before_lock_is_respected(self):
+        from unittest.mock import patch
+        from .models import Meeting
+        v=self.open();manager=Meeting.objects;original=manager.select_for_update
+        def close_before_lock(*args,**kwargs):
+            Vote.objects.filter(pk=v.pk).update(state='closed')
+            return original(*args,**kwargs)
+        with patch.object(manager,'select_for_update',side_effect=close_before_lock):
+            with self.assertRaises(ValidationError):cast(self.m,v.pk,'Ja',uuid.uuid4())
+        self.assertFalse(Ballot.objects.exists())

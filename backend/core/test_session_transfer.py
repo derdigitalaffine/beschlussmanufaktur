@@ -42,3 +42,14 @@ class SessionTransferTests(MeetingFixture,TestCase):
             with self.assertRaises(ValidationError):write(self.c,self.meeting.pk,self.meeting.version,self.device,self.epoch,'text',{'item_id':str(self.meeting.items.first().pk),'markdown':'zu spät'},uuid.uuid4())
     def test_internal_journal_replica(self):
         epoch=claim(self.c,self.meeting.pk,self.meeting.version,self.device);self.meeting.refresh_from_db();roster(self.c,self.meeting.pk,self.meeting.version,self.device,epoch);self.meeting.refresh_from_db();data=bundle(self.meeting);apply(data,self.meeting);self.assertEqual(self.meeting.roster.count(),1)
+    def test_integer_ids_are_local_not_transport_identity(self):
+        from .models import ConflictOfInterest,Vote,Ballot
+        part=MeetingParticipant.objects.create(meeting=self.meeting,user=self.member,name='Mitglied',voting=True,present=True)
+        item=self.meeting.items.first();conflict=ConflictOfInterest.objects.create(participant=part,item=item,active=False,reason='aufgehoben')
+        vote=Vote.objects.create(meeting=self.meeting,item=item,wording='Wortlaut',mode='named',opened_version=1,electorate=[str(part.pk)],options=['Ja','Nein','Enthaltung'])
+        ballot=Ballot.objects.create(vote=vote,participant=part,choice='Ja');data=bundle(self.meeting)
+        self.assertNotIn('id',data['tables']['ballots'][0]);self.assertNotIn('id',data['tables']['conflicts'][0])
+        ballot.delete();conflict.delete()
+        # Different host-local primary keys must not duplicate or reassign votes.
+        ConflictOfInterest.objects.create(id=999,participant=part,item=item,active=False,reason='aufgehoben')
+        apply(data,self.meeting);apply(data,self.meeting);self.assertEqual(Ballot.objects.count(),1);self.assertEqual(ConflictOfInterest.objects.get().pk,999)

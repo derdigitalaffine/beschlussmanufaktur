@@ -24,8 +24,12 @@ def generated(meeting):
         note=ItemNote.objects.filter(item=item).first()
         if note:text+=note.markdown+'\n\n'
         for motion in item.motions.all():text+=f'### Antrag · {motion.applicant}\n\n{motion.wording}\n\n'
-        for d in Decision.objects.filter(vote__item=item):text+=f'### Beschluss {d.pk}\n\n{d.wording}\n\nErgebnis: {d.result}\n\nFeststellung: {d.chair_confirmation}\n\n'
-    return text[:200000]
+        for d in Decision.objects.filter(vote__item=item):
+            text+=f'### Beschluss {d.pk}\n\n{d.wording}\n\nErgebnis: {d.result}\n\nFeststellung: {d.chair_confirmation}\n\n'
+            if d.vote.mode=='named':
+                for ballot in d.vote.ballots.select_related('participant'):text+=f'- {ballot.participant.name}: {ballot.choice}\n'
+    if len(text)>200000:raise ValidationError('Journal überschreitet die Niederschriftsgrenze. Vor Erstellung fachlich aufteilen; es wurde nichts gekürzt.')
+    return text
 
 @transaction.atomic
 def create(context,meeting_id,meeting_version):

@@ -1,6 +1,6 @@
 # Umsetzung Etappen 1–3
 
-Die Umsetzung erfolgt über kleine, einzeln geprüfte Pull Requests. Der Gesamtauftrag bleibt bis Abschluss von Etappe 3 offen.
+Die Umsetzung erfolgt über kleine, einzeln geprüfte Pull Requests. Diese Etappen wurden gemergt; der aktuelle Auftrag wurde bis einschließlich Etappe 7 erweitert. Der aktuelle Gesamtstand steht in docs/11 und docs/20.
 
 ## Organisation und Gremien
 

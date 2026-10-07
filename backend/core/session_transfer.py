@@ -17,11 +17,11 @@ TABLES={
 'decision_updates':(models.DecisionUpdate,['id','decision_id','version','snapshot','actor_id']),
 'participants':(models.MeetingParticipant,['id','meeting_id','user_id','person_id','mandate_id','name','function','voting','present','substitutes_for_id']),
 'events':(models.MeetingEvent,['id','meeting_id','item_id','kind','payload','digest','actor_id','context_id','device','occurred_at','version']),
-'conflicts':(models.ConflictOfInterest,['id','participant_id','item_id','active','reason']),
+'conflicts':(models.ConflictOfInterest,['participant_id','item_id','active','reason']),
 'notes':(models.ItemNote,['item_id','markdown']),
 'motions':(models.Motion,['id','item_id','applicant','wording','kind','position','state']),
 'votes':(models.Vote,['id','meeting_id','item_id','wording','mode','rule','options','electorate','state','result','opened_version']),
-'ballots':(models.Ballot,['id','vote_id','participant_id','choice','request_id']),
+'ballots':(models.Ballot,['vote_id','participant_id','choice','request_id']),
 'decisions':(models.Decision,['id','vote_id','wording','result','chair_confirmation','confirmed_by_id','responsible_id','due_on','status','progress','version']),
 }
 
@@ -34,11 +34,13 @@ def bundle(obj,known_users=None):
         for row in tables['decisions']:
             if row['responsible_id'] and row['responsible_id'] not in known_users:row['responsible_id']=None
         tables['decision_updates']=[row for row in tables['decision_updates'] if row['actor_id'] in known_users]
+        for row in tables['minutes_versions']:row['correction_meeting_id']=None
     return {'meeting_id':str(obj.pk),'version':obj.version,'state':obj.state,'active_item_id':str(obj.active_item_id) if obj.active_item_id else None,'paused':obj.paused, 'tables':tables}
 
 
 def validate(data,obj,check_actors=False):
     expect_keys(data,['meeting_id','version','state','active_item_id','paused','tables']);expect_keys(data['tables'],list(TABLES))
+    if data['state'] not in ('invited','live','finished','protocol_review','approved'):raise ValidationError('Unzulässiger Sitzungsstatus.')
     if data['meeting_id']!=str(obj.pk) or type(data['version'])!=int or data['version']<obj.authority_base or type(data['paused'])!=bool:raise ValidationError('Ungültiger Sitzungsstand.')
     items={str(pk) for pk in obj.items.values_list('pk',flat=True)}
     if data['active_item_id'] and data['active_item_id'] not in items:raise ValidationError('Fremder aktiver TOP.')
@@ -64,7 +66,10 @@ def validate(data,obj,check_actors=False):
                     if not c or not meeting_access(c,'live',obj) or c.user_id not in (obj.scribe_id,obj.chair_id):raise ValidationError('Ereignisakteur besitzt keine aktuelle Sitzungserlaubnis.')
             if key=='ballots' and not any(v['id']==row['vote_id'] and v['mode']=='named' and row['participant_id'] in v['electorate'] and row['choice'] in v['options'] for v in data['tables']['votes']):raise ValidationError('Ungültige Stimmzuordnung.')
             # A UUID cannot be used to overwrite a row belonging to another session.
-            pk=row.get('id',row.get('item_id'));old=model.objects.filter(pk=pk).first()
+            pk=row.get('id',row.get('item_id'))
+            if key=='conflicts':old=model.objects.filter(participant_id=row['participant_id'],item_id=row['item_id']).first()
+            elif key=='ballots':old=model.objects.filter(request_id=row['request_id']).first()
+            else:old=model.objects.filter(pk=pk).first()
             if old:
                 if key in ('participants','events','votes','minutes'):foreign=old.meeting_id!=obj.pk
                 elif key in ('notes','motions','conflicts'):foreign=old.item.meeting_id!=obj.pk
@@ -83,11 +88,13 @@ def apply(data,obj):
             rows=sorted(rows,key=lambda r:bool(r['substitutes_for_id']))
         for row in rows:
             if key in ('events','ballots','minutes_versions','decision_updates'):
-                old=model.objects.filter(pk=row['id']).first()
+                old=model.objects.filter(request_id=row['request_id']).first() if key=='ballots' else model.objects.filter(pk=row['id']).first()
                 if old:
                     if scalar(old,fields)!=row:raise ValidationError('Unveränderlicher Stand widerspricht dem Journal.')
                     continue
-            if key=='notes':model.objects.update_or_create(item_id=row['item_id'],defaults={'markdown':row['markdown']})
+            if key=='ballots':model.objects.create(**row)
+            elif key=='conflicts':model.objects.update_or_create(participant_id=row['participant_id'],item_id=row['item_id'],defaults={'active':row['active'],'reason':row['reason']})
+            elif key=='notes':model.objects.update_or_create(item_id=row['item_id'],defaults={'markdown':row['markdown']})
             else:upsert(model,[row],fields)
     obj.active_item_id=data['active_item_id'];obj.paused=data['paused'];obj.state=data['state'];obj.version=data['version'];obj.save()
 
@@ -109,6 +116,9 @@ def accept(context,return_id,reason):
     c=models.Membership.objects.filter(pk=change.context_id,user=change.requested_by).first()
     if not c or not meeting_access(c,'protocol',obj):raise PermissionDenied
     if change.digest!=hashlib.sha256(json.dumps(change.bundle,sort_keys=True).encode()).hexdigest():raise ValidationError('Rückgabe verändert.')
+    if change.bundle['state'] not in ('finished','protocol_review','approved'):raise ValidationError('Nur abgeschlossene Sitzungen übernehmen.')
+    for row in change.bundle['tables']['minutes']:
+        if row['published_version'] is not None or row['public_snapshot']:raise ValidationError('Externe Rückgabe darf keine öffentliche Freigabe setzen.')
     validate(change.bundle,obj,True);apply(change.bundle,obj)
     obj.leading_server='internal';obj.version+=2;obj.save(update_fields=['leading_server','version'])
     change.state='accepted';change.reviewed_by=context.user;change.reason=reason[:1000];change.save()
@@ -119,13 +129,15 @@ def accept(context,return_id,reason):
 @require_GET
 def returns_endpoint(request):
     if settings.SERVER_ROLE!='protected':raise PermissionDenied
-    authorize(request,'protected')
+    try:authorize(request,'protected')
+    except (PermissionDenied,ValueError,ValidationError):return JsonResponse({'error':'unauthorized'},status=403)
     return JsonResponse({'returns':[scalar(r,['id','meeting_id','base_version','bundle','digest','requested_by_id','context_id']) for r in models.SessionReturn.objects.filter(state='pending')[:20]]})
 
 def pull_returns():
     data=transport('protected','/transfer/sessions/');expect_keys(data,['returns'])
     for row in data['returns']:
         expect_keys(row,['id','meeting_id','base_version','bundle','digest','requested_by_id','context_id'])
+        if models.SessionReturn.objects.filter(pk=row['id'],state='accepted',digest=row['digest']).exists():continue
         obj=models.Meeting.objects.get(pk=row['meeting_id']);validate(row['bundle'],obj)
         if obj.leading_server!='protected' or obj.authority_base!=row['base_version']:raise ValidationError('Keine passende externe Führerschaft.')
         models.SessionReturn.objects.get_or_create(pk=row['id'],defaults={k:v for k,v in row.items() if k!='id'})

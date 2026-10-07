@@ -47,6 +47,9 @@ def import_meetings(data,upsert,expect_keys,member_ids):
         if existing and existing.leading_server=='protected' and existing.state in ('invited','live','finished','protocol_review','approved','return_pending') and existing.version>row['version']:
             existing.permission_snapshot=row['permission_snapshot'];existing.save(update_fields=['permission_snapshot']);continue
         upsert(Meeting,[row],MEETING_FIELDS)
+        if row['leading_server']=='internal':
+            from .models import SessionReturn
+            SessionReturn.objects.filter(meeting_id=row['id'],state='pending').update(state='accepted')
     pending=list(data['items']);ordered=[];known=set(str(pk) for pk in AgendaItem.objects.values_list('pk',flat=True))
     while pending:
         ready=[r for r in pending if not r['parent_id'] or r['parent_id'] in known]

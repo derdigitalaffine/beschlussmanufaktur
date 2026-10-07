@@ -43,14 +43,16 @@
  }
  async function queue(kind,payload){
   requireData();if(!data.writer)throw Error('Nur vorbereitete Schriftführung erfasst Sitzungsereignisse.');if(data.pendingBatch)throw Error('Ein übermittelter Stapel wartet auf Rückmeldung. Unverändert erneut abgleichen oder exportieren.');if(data.queue.length>=500)throw Error('500 lokale Ereignisse erreicht. Erst abgleichen.');
-  data.queue.push({id:crypto.randomUUID(),kind,payload,occurred_at:new Date().toISOString()});
+  const next={id:crypto.randomUUID(),kind,payload,occurred_at:new Date().toISOString()};
+  if(new TextEncoder().encode(JSON.stringify([...data.queue,next])).length>1800000)throw Error('Lokaler Stapel erreicht die Übertragungsgrenze. Vor weiteren Ereignissen abgleichen oder zur Prüfung exportieren.');
+  data.queue.push(next);
   if(kind==='presence'){const p=data.roster.find(p=>p.id===payload.participant_id);p.present=payload.present;}
   if(kind==='text'){data.notes[payload.item_id]=payload.markdown;if(data.drafts)delete data.drafts[payload.item_id];}
   await persist();render();say('Lokal verschlüsselt gespeichert. Noch nicht zentral übernommen.');
  }
  $('prepare').addEventListener('submit',action(async()=>{
   const chosenPassword=$('password').value;if(chosenPassword.length<12)throw Error('Offline-Passwort benötigt mindestens zwölf Zeichen.');
-  if(data?.queue.length||data?.pendingBatch||data?.noteDirty)throw Error('Lokale Änderungen zuerst abgleichen oder exportieren. Eine neue Vorbereitung würde sie ersetzen.');
+  if(data?.queue.length||data?.pendingBatch||data?.noteDirty||Object.values(data?.drafts??{}).some(text=>text.trim()))throw Error('Lokale Änderungen zuerst abgleichen oder exportieren. Eine neue Vorbereitung würde sie ersetzen.');
   await online();const form=new FormData();form.set('hours',$('hours').value);const prepared=await send(`/offline/sitzungen/${$('meeting').value}/`,form,true);const id=key(prepared);
   if(await store.get(id)&&!confirm('Vorhandene lokale Fassung dieser Sitzung ersetzen? Vorher alle lokalen Änderungen abgleichen oder exportieren.'))return;
   if($('with-packet').checked&&prepared.packet_url){const r=await fetch(prepared.packet_url,{credentials:'same-origin',cache:'no-store'});if(!r.ok||!r.headers.get('Content-Type')?.includes('application/pdf'))throw Error('PDF-Mappe nicht freigegeben oder noch nicht verfügbar.');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.length>20*1024*1024)throw Error('PDF-Mappe überschreitet 20 MB. Ohne PDF erneut vorbereiten.');let value='';for(let i=0;i<bytes.length;i+=32768)value+=String.fromCharCode(...bytes.subarray(i,i+32768));prepared.packet=btoa(value);}

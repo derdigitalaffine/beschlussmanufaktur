@@ -4,7 +4,7 @@ from collections import Counter
 from django.conf import settings
 from django.core.exceptions import ValidationError,PermissionDenied
 from django.db import transaction
-from .models import Meeting,MeetingEvent,Vote,Ballot,Decision,Mandate
+from .models import Meeting,MeetingEvent,Vote,Ballot,Decision,Mandate,Membership,User
 from .live_service import assert_writer,effective_voters,event
 from .meetings_service import lock_meeting,meeting_access
 
@@ -43,7 +43,14 @@ def open_vote(context,meeting_id,version,device,epoch,wording,mode,rule,options)
 @transaction.atomic
 def cast(context,vote_id,choice,request_id):
     vote=Vote.objects.select_related('meeting','item').get(pk=vote_id)
-    obj=Meeting.objects.select_for_update().get(pk=vote.meeting_id);vote.meeting=obj
+    obj=Meeting.objects.select_for_update().get(pk=vote.meeting_id)
+    # Closing can commit while we wait for the meeting lock. Reload the vote
+    # after acquiring it; the pre-lock snapshot must never authorize a ballot.
+    vote.refresh_from_db();vote.meeting=obj
+    if not context:raise PermissionDenied
+    User.objects.select_for_update().get(pk=context.user_id)
+    context=Membership.objects.select_for_update(of=('self',)).select_related('user').get(pk=context.pk)
+    list(Mandate.objects.select_for_update().filter(user=context.user,committee=obj.committee))
     if obj.leading_server!=settings.SERVER_ROLE or obj.state!='live' or obj.paused or vote.state!='open' or vote.mode!='named':raise ValidationError('Abstimmung nicht geöffnet.')
     person=eligible(context,vote)
     if not person:raise PermissionDenied('Kein Stimmrecht im aktiven Kontext.')
