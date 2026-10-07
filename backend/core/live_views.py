@@ -18,6 +18,7 @@ class ActivationForm(forms.Form):
     quorum=forms.ChoiceField(label='Beschlussfähigkeitsregel',choices=[('majority_statutory','Mehr als die Hälfte der gesetzlichen Mitgliederzahl'),('majority_nonexcluded','Mehr als die Hälfte nach Abzug festgestellter Ausschlüsse'),('repeated_minimum','Wiederholungssitzung: konfigurierte Mindestzahl'),('manual','Nur manuelle Feststellung')])
     minimum=forms.IntegerField(label='Mindestzahl bei Wiederholungssitzung',min_value=1,max_value=1000,initial=3)
     statutory_confirmed=forms.BooleanField(label='Gesetzliche Mitgliederzahl und Regelprofil fachlich geprüft; Sondervoraussetzungen sind dokumentiert')
+    offline_enabled=forms.BooleanField(label='Offline-Vorbereitung dieser Sitzung erlauben',required=False,initial=True)
     expected_version=forms.IntegerField(widget=forms.HiddenInput)
 
 @login_required
@@ -27,7 +28,7 @@ def activation(request,meeting_id):
     if settings.SERVER_ROLE!='internal' or not meeting_access(context,'invite',obj):raise PermissionDenied
     form=ActivationForm(request.POST if request.method=='POST' else None,initial={'expected_version':obj.version,'quorum':'majority_statutory'})
     if request.method=='POST' and form.is_valid():
-        try:activate(context,obj.pk,form.cleaned_data['expected_version'],form.cleaned_data['server'],{'quorum':form.cleaned_data['quorum'],'minimum':form.cleaned_data['minimum'],'confirmed':True})
+        try:activate(context,obj.pk,form.cleaned_data['expected_version'],form.cleaned_data['server'],{'quorum':form.cleaned_data['quorum'],'minimum':form.cleaned_data['minimum'],'confirmed':True,'offline_enabled':form.cleaned_data['offline_enabled']})
         except ValidationError as e:form.add_error(None,ValidationError(e.messages))
         else:messages.success(request,'Führerschaft festgelegt. Bei externer Führung vor Beginn die erfolgreiche Übertragung prüfen.');return redirect('meeting_detail',meeting_id=obj.pk)
     return render(request,'registry_form.html',{'context':context,'form':form,'title':'Sitzungsführung aktivieren'})
