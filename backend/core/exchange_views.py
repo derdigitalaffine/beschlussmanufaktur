@@ -50,7 +50,7 @@ def propose(request,record_id):
     if not can_access(context,'edit','registry',obj):raise PermissionDenied
     form=ChangeForm(request.POST if request.method=='POST' else None,initial={'content':obj.details,'base_version':obj.version})
     if request.method=='POST' and form.is_valid():
-        RemoteChange.objects.create(organization_id=context.organization_id,resource_id=obj.pk,base_version=form.cleaned_data['base_version'],actor_id=request.user.pk,content=form.cleaned_data['content'],reason=form.cleaned_data['reason'])
+        RemoteChange.objects.create(organization_id=context.organization_id,resource_id=obj.pk,base_version=form.cleaned_data['base_version'],context_id=context.pk,actor_id=request.user.pk,content=form.cleaned_data['content'],reason=form.cleaned_data['reason'])
         messages.success(request,'Vorschlag gespeichert. Intern wird er abgeholt und geprüft; der freigegebene Stand bleibt bis dahin erhalten.')
         return redirect('external_records')
     return render(request,'registry_form.html',{'context':context,'form':form,'title':'Intern zu prüfender Änderungsvorschlag'})
@@ -74,14 +74,20 @@ def review(request,change_id):
             obj=RemoteChange.objects.select_for_update().get(pk=obj.pk)
             if obj.state!='pending':raise PermissionDenied
             if request.POST.get('decision')=='accept':
-                if obj.resource_kind!='registry':raise PermissionDenied
-                target=get_object_or_404(RegistryRecord.objects.select_for_update(),pk=obj.resource_id,organization=context.organization)
+                if obj.resource_kind not in ('registry','template'):raise PermissionDenied
+                from .models import Template
+                from .templates_service import template_access,touch
+                model=Template if obj.resource_kind=='template' else RegistryRecord
+                target=get_object_or_404(model.objects.select_for_update(),pk=obj.resource_id,organization=context.organization)
                 # Revalidate the original actor's current authority, not just the transfer signature.
-                contexts=Membership.objects.filter(user_id=obj.actor_id,organization=context.organization)
-                if not any(can_access(c,'edit','registry',target) for c in contexts):raise PermissionDenied('Urheber hat keine aktuelle Berechtigung.')
+                contexts=Membership.objects.filter(pk=obj.context_id,user_id=obj.actor_id,organization=context.organization,role__in=['member','clerk','chair','mayor','local_mayor'])
+                if not ExchangePolicy.objects.filter(organization=context.organization,protected_enabled=True).exists():raise PermissionDenied('Externe Freigabe wurde beendet.')
+                if not any(template_access(c,'edit',target) if obj.resource_kind=='template' else can_access(c,'edit','registry',target) for c in contexts):raise PermissionDenied('Urheber hat keine aktuelle Berechtigung.')
                 if target.version!=obj.base_version:
                     messages.error(request,'Konflikt: Der interne Stand hat sich geändert. Vorschlag bleibt zur Prüfung erhalten.');return redirect('review_remote',change_id=obj.pk)
-                before=registry_snapshot(target);target.details=obj.content;target.version+=1;target.full_clean();target.save()
+                before=registry_snapshot(target)
+                if obj.resource_kind=='template':target.markdown=obj.content;touch(target,request.user,'Extern geprüft: '+obj.reason[:470])
+                else:target.details=obj.content;target.version+=1;target.full_clean();target.save()
                 AuditEvent.objects.create(actor=request.user,action='exchange.approved',object_id=str(target.pk),metadata={'change':str(obj.pk),'before':before,'after':registry_snapshot(target),'reason':obj.reason})
                 obj.state='accepted'
             else:obj.state='rejected'

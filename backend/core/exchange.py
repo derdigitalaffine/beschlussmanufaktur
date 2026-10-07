@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from .models import Organization, RegistryRecord, Mandate, User, Membership, AccessGrant, ExchangeState, ExchangeNonce, ExchangePolicy, TransferBatch, PublicRecord, RemoteChange
+from .models import Organization, RegistryRecord, Mandate, User, Membership, AccessGrant, ExchangeState, ExchangeNonce, ExchangePolicy, TransferBatch, PublicRecord, RemoteChange, Template, Publication, ExternalDocument, Attachment, ReplicaAsset
 
 REMOTE_ROLES={'member','chair','clerk','mayor','local_mayor'}
 MAX_BODY=8*1024*1024
@@ -58,8 +58,12 @@ def snapshot(channel):
     orgs=Organization.objects.filter(pk__in=policies.values('organization_id'))
     ids=set(orgs.values_list('id',flat=True))
     if channel=='public':
-        records=[{'id':str(o.pk),'organization_id':str(o.pk),'kind':'organization','title':o.name,'body':'','version':1} for o in orgs]
-        records += [{'id':str(r.pk),'organization_id':str(r.organization_id),'kind':'committee','title':r.name,'body':'','version':r.version} for r in RegistryRecord.objects.filter(organization_id__in=ids,kind='committee',archived=False)]
+        records=[{'id':str(o.pk),'organization_id':str(o.pk),'kind':'organization','title':o.name,'body':'','version':1,'attachments':[]} for o in orgs]
+        records += [{'id':str(r.pk),'organization_id':str(r.organization_id),'kind':'committee','title':r.name,'body':'','version':r.version,'attachments':[]} for r in RegistryRecord.objects.filter(organization_id__in=ids,kind='committee',archived=False)]
+        for publication in Publication.objects.filter(template__organization_id__in=ids,withdrawn_at__isnull=True).select_related('template'):
+            version=publication.template.versions.get(version=publication.version)
+            files=[a for a in version.snapshot['attachments'] if a['public'] and a['checked']]
+            records.append({'id':str(publication.template_id),'organization_id':str(publication.template.organization_id),'kind':'template','title':publication.subject,'body':publication.markdown,'version':publication.version,'attachments':files})
         return {'records':records}
     memberships=Membership.objects.filter(organization_id__in=ids,role__in=REMOTE_ROLES)
     users=User.objects.filter(pk__in=memberships.values('user_id'))
@@ -72,7 +76,15 @@ def snapshot(channel):
         row=scalar(m,MANDATE_FIELDS)
         if m.substitutes_for_id not in mandate_ids:row['substitutes_for_id']=None
         rows.append(row)
-    return {'organizations':[dict(id=str(o.pk),name=o.name,kind=o.kind,primary_parent_id=str(o.primary_parent_id) if o.primary_parent_id in ids else None) for o in orgs],
+    documents=[]
+    from .templates_service import template_access
+    for obj in Template.objects.filter(organization_id__in=ids,state='ready').select_related('organization','kind','author','unit'):
+        permissions={str(c.pk):[a for a in ('read','export','edit') if template_access(c,a,obj)] for c in memberships}
+        permissions={k:v for k,v in permissions.items() if 'read' in v}
+        if permissions:
+            version=obj.versions.get(version=obj.version)
+            documents.append({'id':str(obj.pk),'organization_id':str(obj.organization_id),'title':obj.subject,'markdown':obj.markdown,'number':obj.number,'version':obj.version,'permissions':permissions,'attachments':version.snapshot['attachments']})
+    return {'documents':documents,'organizations':[dict(id=str(o.pk),name=o.name,kind=o.kind,primary_parent_id=str(o.primary_parent_id) if o.primary_parent_id in ids else None) for o in orgs],
         'users':[scalar(u,['id','email','password','first_name','last_name','is_active']) for u in users],
         'memberships':[scalar(m,MEMBERSHIP_FIELDS) for m in memberships],
         'registry':[scalar(r,REGISTRY_FIELDS) for r in registry],
@@ -114,12 +126,12 @@ def receive(payload,channel):
     if channel=='public':
         expect_keys(data,['records'])
         for row in data['records']:
-            expect_keys(row,['id','organization_id','kind','title','body','version'])
+            expect_keys(row,['id','organization_id','kind','title','body','version','attachments'])
             if row['kind'] not in ('organization','committee','template'):raise ValidationError('Unzulässiges öffentliches Objekt.')
-        upsert(PublicRecord,data['records'],['id','organization_id','kind','title','body','version'])
+        upsert(PublicRecord,data['records'],['id','organization_id','kind','title','body','version','attachments'])
         PublicRecord.objects.exclude(pk__in=[row['id'] for row in data['records']]).delete()
     else:
-        expect_keys(data,['organizations','users','memberships','registry','mandates','grants'])
+        expect_keys(data,['organizations','users','memberships','registry','mandates','grants','documents'])
         # Receiver is a dedicated replica; public storage never reaches this branch.
         org_ids={row['id'] for row in data['organizations']};user_ids={row['id'] for row in data['users']}
         for row in data['users']:
@@ -150,6 +162,18 @@ def receive(payload,channel):
         Mandate.objects.exclude(pk__in=[r['id'] for r in mandate_rows]).update(archived=True)
         AccessGrant.objects.all().delete()
         upsert(AccessGrant,data['grants'],GRANT_FIELDS)
+        member_ids={str(r['id']) for r in data['memberships']}
+        for doc in data['documents']:
+            expect_keys(doc,['id','organization_id','title','markdown','number','version','permissions','attachments'])
+            if doc['organization_id'] not in org_ids or set(doc['permissions'])-member_ids:raise ValidationError('Unzulässige Vorlagenfreigabe.')
+            for rights in doc['permissions'].values():
+                if not isinstance(rights,list) or set(rights)-{'read','export','edit'}:raise ValidationError('Unzulässiges Vorlagenrecht.')
+        upsert(ExternalDocument,data['documents'],['id','organization_id','title','markdown','number','version','permissions','attachments'])
+        ExternalDocument.objects.exclude(pk__in=[d['id'] for d in data['documents']]).delete()
+    # Files no longer referenced by the current replica are removed with withdrawal.
+    manifests=PublicRecord.objects.values_list('attachments',flat=True) if channel=='public' else ExternalDocument.objects.values_list('attachments',flat=True)
+    asset_ids=[a['id'] for files in manifests for a in files]
+    ReplicaAsset.objects.exclude(pk__in=asset_ids).delete()
     state.revision=payload['revision'];state.received_at=timezone.now();state.save()
 
 @csrf_exempt
@@ -170,7 +194,7 @@ def events(request):
     try:authorize(request,'protected')
     except (PermissionDenied,ValueError):return JsonResponse({'error':'unauthorized'},status=403)
     rows=RemoteChange.objects.filter(state='pending').order_by('created_at')[:100]
-    return JsonResponse({'events':[scalar(r,['id','organization_id','resource_id','resource_kind','base_version','actor_id','content','reason','created_at']) for r in rows]})
+    return JsonResponse({'events':[scalar(r,['id','organization_id','resource_id','resource_kind','base_version','context_id','actor_id','content','reason','created_at']) for r in rows]})
 
 def transport(channel,path,body=None):
     if settings.SERVER_ROLE!='internal':raise PermissionDenied
@@ -194,13 +218,25 @@ def deliver(batch):
     try:transport(batch.channel,'/transfer/inbox/',batch.payload)
     except Exception:
         batch.error='Übertragung fehlgeschlagen; Verbindung und Konfiguration prüfen.';batch.save(update_fields=['error']);return False
+    try:
+        data=batch.payload['data']
+        documents=data['records'] if batch.channel=='public' else data['documents']
+        for manifest in documents:
+            for meta in manifest.get('attachments',[]):
+                asset=Attachment.objects.filter(pk=meta['id'],digest=meta['digest']).first()
+                if not asset:raise ValidationError('Anlage nicht verfügbar.')
+                import base64
+                with asset.file.open('rb') as file:
+                    transport(batch.channel,'/transfer/assets/',{'id':meta['id'],'digest':meta['digest'],'data':base64.b64encode(file.read()).decode()})
+    except Exception:
+        batch.error='Dateiübertragung fehlgeschlagen; Wiederholung ausstehend.';batch.save(update_fields=['error']);return False
     batch.delivered_at=timezone.now();batch.error='';batch.save(update_fields=['delivered_at','error']);return True
 
 def pull_events():
     data=transport('protected','/transfer/events/')
     expect_keys(data,['events'])
     for row in data['events']:
-        expect_keys(row,['id','organization_id','resource_id','resource_kind','base_version','actor_id','content','reason','created_at'])
+        expect_keys(row,['id','organization_id','resource_id','resource_kind','base_version','context_id','actor_id','content','reason','created_at'])
         if row['resource_kind'] not in ('registry','template'):raise ValidationError('Unbekannte Änderungsart.')
         # Arrival never applies a change to authoritative content.
         if len(row['content'])>100000 or len(row['reason'])>500:raise ValidationError('Änderung zu groß.')
@@ -218,3 +254,20 @@ def acknowledge(request):
         RemoteChange.objects.filter(pk__in=data['ids'],state='pending').update(state='collected')
     except (ValueError,TypeError,ValidationError,PermissionDenied):return JsonResponse({'error':'invalid'},status=400)
     return JsonResponse({'status':'acknowledged'})
+
+
+@csrf_exempt
+@require_http_methods(['POST'])
+def receive_asset(request):
+    channel=settings.SERVER_ROLE
+    if channel not in ('public','protected'):raise PermissionDenied
+    try:
+        authorize(request,channel);data=json.loads(request.body);expect_keys(data,['id','digest','data'])
+        import base64
+        binary=base64.b64decode(data['data'],validate=True)
+        if len(binary)>4*1024*1024 or hashlib.sha256(binary).hexdigest()!=data['digest']:raise ValidationError('Ungültige Datei.')
+        manifests=PublicRecord.objects.values_list('attachments',flat=True) if channel=='public' else ExternalDocument.objects.values_list('attachments',flat=True)
+        if not any(a['id']==data['id'] and a['digest']==data['digest'] for files in manifests for a in files):raise PermissionDenied
+        ReplicaAsset.objects.update_or_create(pk=data['id'],defaults={'digest':data['digest'],'data':binary})
+    except (ValueError,TypeError,KeyError,ValidationError,PermissionDenied):return JsonResponse({'error':'invalid-asset'},status=400)
+    return JsonResponse({'status':'accepted'})
