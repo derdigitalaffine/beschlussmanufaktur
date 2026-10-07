@@ -32,6 +32,9 @@ services:
     build: .
     environment:
       SERVER_ROLE: protected
+      EXCHANGE_SOURCE: ${EXCHANGE_SOURCE:-}
+      EXCHANGE_PROTECTED_KEY: ${EXCHANGE_PROTECTED_KEY:-}
+      EXCHANGE_MAX_AGE: ${EXCHANGE_MAX_AGE:-86400}
       TRUST_PROXY_HEADERS: 'true'
       DJANGO_SECRET_KEY: ${PROTECTED_SECRET_KEY:?Bitte PROTECTED_SECRET_KEY setzen}
       DJANGO_ALLOWED_HOSTS: ${PROTECTED_HOST:-gremien.localhost}
@@ -62,6 +65,8 @@ services:
     build: .
     environment:
       SERVER_ROLE: public
+      EXCHANGE_SOURCE: ${EXCHANGE_SOURCE:-}
+      EXCHANGE_PUBLIC_KEY: ${EXCHANGE_PUBLIC_KEY:-}
       DJANGO_SECRET_KEY: ${PUBLIC_SECRET_KEY:?Bitte PUBLIC_SECRET_KEY setzen}
       DJANGO_ALLOWED_HOSTS: ${PUBLIC_HOST:-info.localhost}
       POSTGRES_HOST: public-db

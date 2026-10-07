@@ -33,7 +33,8 @@ def ready(request):
 
 
 def public_home(request):
-    return render(request, "public.html")
+    from .models import PublicRecord
+    return render(request, "public.html", {"records":PublicRecord.objects.order_by("organization_id","kind","title")})
 
 
 def sign_in(request):

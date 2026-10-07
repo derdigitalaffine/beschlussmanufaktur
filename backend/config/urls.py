@@ -1,11 +1,15 @@
 from django.conf import settings
 from django.urls import path
-from core import access_views, registry, user_views, views
+from core import exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
     path("health/ready/", views.ready, name="ready"),
 ]
+if settings.SERVER_ROLE in ('protected','public'):
+    urlpatterns += [path('transfer/inbox/', exchange.inbox)]
+if settings.SERVER_ROLE == 'protected':
+    urlpatterns += [path('transfer/events/',exchange.events),path('transfer/ack/',exchange.acknowledge),path('unterlagen/',exchange_views.external_records,name='external_records'),path('unterlagen/<uuid:record_id>/vorschlag/',exchange_views.propose,name='propose')]
 if settings.SERVER_ROLE == "public":
     urlpatterns += [path("", views.public_home, name="home")]
 else:
@@ -18,6 +22,8 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('austausch/',exchange_views.index,name='exchange'),
+            path('austausch/<uuid:change_id>/',exchange_views.review,name='review_remote'),
             path('rechte/', access_views.grants, name='grants'),
             path('rechte/<uuid:grant_id>/entziehen/', access_views.revoke, name='revoke_grant'),
             path('struktur/', registry.structure, name='structure'),

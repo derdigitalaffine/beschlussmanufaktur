@@ -9,6 +9,7 @@ from django.utils import timezone
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
+    exchange_managed = models.BooleanField(default=False)
     advanced_mode = models.BooleanField(default=False)
     last_context = models.ForeignKey("Membership", null=True, blank=True, on_delete=models.SET_NULL, related_name="remembered_by")
 
@@ -224,3 +225,59 @@ class AccessGrant(models.Model):
             from django.apps import apps
             valid=apps.get_model('core','Template').objects.filter(pk=self.resource_id,organization=self.organization).exists()
         if not valid:raise ValidationError('Rechteobjekt gehört nicht zur Körperschaft.')
+
+
+class ExchangePolicy(models.Model):
+    organization = models.OneToOneField(Organization,on_delete=models.PROTECT,primary_key=True)
+    protected_enabled = models.BooleanField(default=False)
+    public_enabled = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True)
+    approved_by = models.ForeignKey(User,null=True,on_delete=models.SET_NULL)
+
+
+class ExchangeState(models.Model):
+    channel = models.CharField(max_length=20,primary_key=True)
+    revision = models.PositiveBigIntegerField(default=0)
+    received_at = models.DateTimeField(null=True)
+
+
+class ExchangeNonce(models.Model):
+    digest = models.CharField(max_length=64,primary_key=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class TransferBatch(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    channel = models.CharField(max_length=20)
+    revision = models.PositiveBigIntegerField()
+    payload = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    delivered_at = models.DateTimeField(null=True)
+    attempts = models.PositiveIntegerField(default=0)
+    error = models.CharField(max_length=200,blank=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['channel','revision'],name='unique_exchange_revision')]
+
+
+class RemoteChange(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    organization_id = models.UUIDField()
+    resource_id = models.UUIDField()
+    resource_kind = models.CharField(max_length=20,default='registry')
+    base_version = models.PositiveIntegerField()
+    actor_id = models.PositiveBigIntegerField()
+    content = models.TextField(max_length=100000)
+    reason = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+    state = models.CharField(max_length=20,default='pending')
+    reviewed_by = models.ForeignKey(User,null=True,on_delete=models.SET_NULL)
+    reviewed_at = models.DateTimeField(null=True)
+
+
+class PublicRecord(models.Model):
+    id = models.UUIDField(primary_key=True)
+    organization_id = models.UUIDField()
+    kind = models.CharField(max_length=30)
+    title = models.CharField(max_length=200)
+    body = models.TextField(blank=True)
+    version = models.PositiveIntegerField(default=1)
