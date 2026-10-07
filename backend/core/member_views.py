@@ -12,6 +12,9 @@ from .permissions import active_context,available_contexts
 from .meetings_service import meeting_access
 from .templates_service import template_access,render_markdown
 
+def remember(context,kind,resource_id):
+    WorkspaceEntry.objects.update_or_create(owner=context.user,context=context,kind=kind,resource_id=resource_id,defaults={'viewed_at':timezone.now()})
+
 def resources(context,query=''):
     if not context or not available_contexts(context.user).filter(pk=context.pk).exists():raise PermissionDenied
     text=query.casefold();rows=[]
