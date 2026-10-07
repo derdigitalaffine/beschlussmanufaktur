@@ -23,7 +23,7 @@ def export_meetings(org_ids,memberships,scalar):
         meetings.append(row)
         if obj.leading_server=='internal':
             from .session_transfer import bundle
-            journals.append(bundle(obj))
+            journals.append(bundle(obj,user_ids))
         latest=obj.invitations.order_by('-revision').first()
         frozen={i['id']:i.get('template') for i in latest.snapshot['items']} if latest else {}
         for item in obj.items.all():

@@ -25,10 +25,16 @@ TABLES={
 'decisions':(models.Decision,['id','vote_id','wording','result','chair_confirmation','confirmed_by_id','responsible_id','due_on','status','progress','version']),
 }
 
-def bundle(obj):
+def bundle(obj,known_users=None):
     item_ids=list(obj.items.values_list('pk',flat=True));participant_ids=list(obj.roster.values_list('pk',flat=True));vote_ids=list(obj.votes.values_list('pk',flat=True))
     filters={'minutes':{'meeting':obj},'minutes_versions':{'minutes__meeting':obj},'decision_updates':{'decision__vote__meeting':obj},'participants':{'meeting':obj},'events':{'meeting':obj},'conflicts':{'item_id__in':item_ids},'notes':{'item_id__in':item_ids},'motions':{'item_id__in':item_ids},'votes':{'meeting':obj},'ballots':{'vote_id__in':vote_ids},'decisions':{'vote_id__in':vote_ids}}
-    return {'meeting_id':str(obj.pk),'version':obj.version,'state':obj.state,'active_item_id':str(obj.active_item_id) if obj.active_item_id else None,'paused':obj.paused, 'tables':{key:[scalar(r,fields) for r in model.objects.filter(**filters[key])] for key,(model,fields) in TABLES.items()}}
+    tables={key:[scalar(r,fields) for r in model.objects.filter(**filters[key])] for key,(model,fields) in TABLES.items()}
+    if known_users is not None:
+        known_users={str(v) for v in known_users}
+        for row in tables['decisions']:
+            if row['responsible_id'] and row['responsible_id'] not in known_users:row['responsible_id']=None
+        tables['decision_updates']=[row for row in tables['decision_updates'] if row['actor_id'] in known_users]
+    return {'meeting_id':str(obj.pk),'version':obj.version,'state':obj.state,'active_item_id':str(obj.active_item_id) if obj.active_item_id else None,'paused':obj.paused, 'tables':tables}
 
 
 def validate(data,obj,check_actors=False):
