@@ -778,3 +778,18 @@ class PortalConfiguration(models.Model):
     def clean(self):
         from .portal_configuration import validate
         validate(self)
+
+class PersonProfile(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    user = models.ForeignKey(User,null=True,blank=True,on_delete=models.SET_NULL)
+    name = models.CharField(max_length=200)
+    function = models.CharField(max_length=200,blank=True)
+    faction = models.CharField(max_length=200,blank=True)
+    starts_on = models.DateField(null=True,blank=True)
+    ends_on = models.DateField(null=True,blank=True)
+    contact = models.CharField(max_length=300,blank=True)
+    photo = models.TextField(blank=True)  # Sanitized small JPEG, no file path/metadata.
+    public_fields = models.JSONField(default=list,blank=True)
+    published = models.BooleanField(default=False)
+    version = models.PositiveIntegerField(default=1)
