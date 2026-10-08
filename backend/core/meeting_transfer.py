@@ -91,7 +91,7 @@ def public_meetings(org_ids):
             # Private original titles/content never enter the public record.
             title=item['title'] if item['public'] else titles.get(item['id'],'Nichtöffentliche Angelegenheit')
             text+=f"- {item['position']}. {title}\n"
-        rows.append({'id':str(obj.pk),'organization_id':str(obj.organization_id),'kind':'meeting','title':data['title'],'body':text,'version':invitation.revision,'attachments':[]})
+        rows.append({'id':str(obj.pk),'organization_id':str(obj.organization_id),'kind':'meeting','title':data['title'],'body':text,'version':invitation.revision,'attachments':[],'metadata':{'starts_at':data['starts_at'],'ends_at':data['ends_at'],'location':data['location'],'committee_id':str(obj.committee_id)}})
     return rows
 
 def referenced_assets(channel):

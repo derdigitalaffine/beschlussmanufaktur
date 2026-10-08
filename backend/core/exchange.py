@@ -135,9 +135,12 @@ def receive(payload,channel):
     if channel=='public':
         expect_keys(data,['records'])
         for row in data['records']:
-            expect_keys(row,['id','organization_id','kind','title','body','version','attachments'])
-            if row['kind'] not in ('organization','committee','template','meeting'):raise ValidationError('Unzulässiges öffentliches Objekt.')
-        upsert(PublicRecord,data['records'],['id','organization_id','kind','title','body','version','attachments'])
+            row.setdefault('metadata',{})
+            expect_keys(row,['id','organization_id','kind','title','body','version','attachments','metadata'])
+            from .public_portal import validate_metadata
+            validate_metadata(row['metadata'], row['kind'])
+            if row['kind'] not in ('organization','committee','template','meeting','minutes'):raise ValidationError('Unzulässiges öffentliches Objekt.')
+        upsert(PublicRecord,data['records'],['id','organization_id','kind','title','body','version','attachments','metadata'])
         PublicRecord.objects.exclude(pk__in=[row['id'] for row in data['records']]).delete()
     else:
         expect_keys(data,['organizations','users','memberships','registry','mandates','grants','documents','meeting_data'])
