@@ -780,6 +780,7 @@ class PortalConfiguration(models.Model):
         validate(self)
 
 class PersonProfile(models.Model):
+    identity = models.ForeignKey("PersonIdentity",null=True,blank=True,on_delete=models.PROTECT)
     id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
     user = models.ForeignKey(User,null=True,blank=True,on_delete=models.SET_NULL)
@@ -831,3 +832,15 @@ class InvitationDispatch(models.Model):
     delivered_at = models.DateTimeField(null=True)
     attempts = models.PositiveIntegerField(default=0)
     last_error = models.CharField(max_length=100,blank=True)
+
+class PersonIdentity(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    name = models.CharField(max_length=200)
+    user = models.OneToOneField(User,null=True,blank=True,on_delete=models.SET_NULL)
+    def __str__(self):return self.name
+
+class SampleBundle(models.Model):
+    organization = models.OneToOneField(Organization,on_delete=models.CASCADE)
+    parent = models.ForeignKey(Organization,on_delete=models.PROTECT,related_name='sample_bundles')
+    record_ids = models.JSONField(default=list)
+    membership = models.OneToOneField(Membership,on_delete=models.CASCADE)
