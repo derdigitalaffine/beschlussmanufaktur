@@ -62,6 +62,7 @@ jobs:
           docker run --rm -v "$PWD/deploy/Caddyfile.external:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
           docker compose build backend tls-agent
           bash tests/tls_agent_smoke.sh
+          bash tests/backup_restore_smoke.sh
 
   offline-browser:
     runs-on: ubuntu-latest
