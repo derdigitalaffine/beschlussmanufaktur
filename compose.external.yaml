@@ -103,6 +103,7 @@ services:
     network_mode: none
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
+    cap_add: [DAC_READ_SEARCH]
   restore-tools:
     profiles: [operations]
     build: {context: ., dockerfile: deploy/Dockerfile.tls-agent}
@@ -111,6 +112,7 @@ services:
     network_mode: none
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
+    cap_add: [CHOWN]
   tls-agent:
     build: {context: ., dockerfile: deploy/Dockerfile.tls-agent}
     environment:

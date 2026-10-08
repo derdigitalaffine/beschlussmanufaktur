@@ -12,6 +12,8 @@ elif sys.argv[1]=='check-empty':
     if any(root.iterdir()):raise SystemExit('Zielvolume muss leer sein.')
 elif sys.argv[1]=='restore':
     if any(root.iterdir()):raise SystemExit('Zielvolume muss leer sein.')
+    app_files=str(root)=='/backup/files'
+    if app_files:os.chown(root,10001,10001)
     with tarfile.open(fileobj=sys.stdin.buffer,mode='r|') as archive:
         count=0
         for member in archive:
@@ -21,5 +23,10 @@ elif sys.argv[1]=='restore':
             with path.open('xb') as out:
                 stream=archive.extractfile(member)
                 while block:=stream.read(1024*1024):out.write(block)
-            path.chmod(member.mode & 0o777);count+=1
+            path.chmod(member.mode & 0o777)
+            if app_files:
+                os.chown(path,10001,10001)
+                parent=path.parent
+                while parent!=root:os.chown(parent,10001,10001);parent=parent.parent
+            count+=1
 else:raise SystemExit('Unbekannte Aktion.')
