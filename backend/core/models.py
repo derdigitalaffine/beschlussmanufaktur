@@ -793,3 +793,23 @@ class PersonProfile(models.Model):
     public_fields = models.JSONField(default=list,blank=True)
     published = models.BooleanField(default=False)
     version = models.PositiveIntegerField(default=1)
+
+class MailReceipt(models.Model):
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    mailbox = models.CharField(max_length=64)
+    uidvalidity = models.PositiveBigIntegerField()
+    uid = models.PositiveBigIntegerField()
+    category = models.CharField(max_length=30)
+    subject = models.CharField(max_length=200,blank=True)
+    sender = models.CharField(max_length=200,blank=True)
+    preview = models.TextField(max_length=4000,blank=True)
+    received_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True)
+    reviewed_by = models.ForeignKey(User,null=True,on_delete=models.SET_NULL)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['mailbox','uidvalidity','uid'],name='unique_mail_receipt')]
+
+class MailCursor(models.Model):
+    mailbox = models.CharField(primary_key=True,max_length=64)
+    uidvalidity = models.PositiveBigIntegerField()
+    last_uid = models.PositiveBigIntegerField(default=0)
