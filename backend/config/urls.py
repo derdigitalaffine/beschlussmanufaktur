@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -15,7 +15,7 @@ if settings.SERVER_ROLE=='protected':
 if settings.SERVER_ROLE in ('internal','protected'):
     urlpatterns += [path('offline/sitzungen/',offline_views.meetings,name='offline_meetings'),path('offline/identitaet/',offline_views.identity,name='offline_identity'),path('offline/abgleich/',offline_views.sync,name='offline_sync'),path('offline/sitzungen/<uuid:meeting_id>/',offline_views.prepare,name='offline_prepare'),path('offline/notizen/<uuid:meeting_id>/',offline_views.sync_note,name='offline_note_sync'),path('mein-bereich/',member_views.desk,name='member_desk'),path('sitzungen/<uuid:meeting_id>/notiz/',member_views.note,name='personal_note'),path('sitzungen/<uuid:meeting_id>/niederschrift/',minutes_views.workspace,name='minutes'),path('sitzungen/<uuid:meeting_id>/niederschrift/<int:version>/<str:format>/',minutes_views.download,name='minutes_export'),path('sitzungen/<uuid:meeting_id>/rueckgabe/',session_views.returns,name='session_returns'),path('sitzungen/<uuid:meeting_id>/abstimmungen/',vote_views.workspace,name='votes'),path('sitzungen/<uuid:meeting_id>/live/',live_views.workspace,name='live_workspace'),path('sitzungen/<uuid:meeting_id>/live/status/',live_views.status,name='live_status'),path('sitzungen/<uuid:meeting_id>/live/heartbeat/',live_views.heartbeat,name='live_heartbeat')]
 if settings.SERVER_ROLE == "public":
-    urlpatterns += [path("", public_portal.index, name="home"),path("kalender.ics",public_portal.calendar_feed,name="public_calendar"),path("informationen/<uuid:record_id>/",public_portal.detail,name="public_detail"),path("api/v1/veroeffentlichungen/",public_portal.api,name="public_api")]
+    urlpatterns += [path("portal.css",portal_configuration.stylesheet,name="portal_css"),path("", public_portal.index, name="home"),path("kalender.ics",public_portal.calendar_feed,name="public_calendar"),path("informationen/<uuid:record_id>/",public_portal.detail,name="public_detail"),path("api/v1/veroeffentlichungen/",public_portal.api,name="public_api")]
 else:
     urlpatterns += [
         path("", views.dashboard, name="home"),
@@ -26,6 +26,7 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('verwaltung/portal/',portal_configuration.configure,name='portal_configure'),
             path('beschluesse/',decision_views.index,name='decisions'),
             path('beschluesse/<uuid:decision_id>/',decision_views.detail,name='decision'),
             path('sitzungen/<uuid:meeting_id>/aktivieren/',live_views.activation,name='meeting_activate'),

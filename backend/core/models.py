@@ -763,3 +763,18 @@ class OfflineReceipt(models.Model):
     digest = models.CharField(max_length=64)
     resulting_version = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+class PortalConfiguration(models.Model):
+    """Only positive public branding fields are transferred; no executable CSS/HTML."""
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    organization_id = models.UUIDField(unique=True)
+    title = models.CharField(max_length=120,default='Bürgerinformation')
+    introduction = models.CharField(max_length=500,blank=True)
+    color = models.CharField(max_length=7,default='#245846')
+    domains = models.JSONField(default=list,blank=True)
+    organizations = models.JSONField(default=list,blank=True)
+    frame_origins = models.JSONField(default=list,blank=True)
+    version = models.PositiveIntegerField(default=1)
+    def clean(self):
+        from .portal_configuration import validate
+        validate(self)
