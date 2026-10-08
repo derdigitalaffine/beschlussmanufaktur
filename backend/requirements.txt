@@ -19,3 +19,5 @@ pypdf==6.19.0
 cryptography==50.0.2
 
 pyotp==2.10.0
+
+webauthn==3.0.1

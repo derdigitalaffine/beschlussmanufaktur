@@ -74,7 +74,7 @@ def security(request):
             with transaction.atomic():
                 user=User.objects.select_for_update().get(pk=request.user.pk,is_active=True)
                 profile=AuthenticationProfile.objects.select_for_update().get(user=user)
-                if profile.method!='email' and not consume(profile,form.cleaned_data['code']):raise ValidationError('Aktuellen zweiten Faktor oder Wiederherstellungscode bestätigen.')
+                if profile.method!='email' and not (profile.method=='passkey' and request.session.get('passkey_reauthenticated_at',0)>time.time()-300) and not consume(profile,form.cleaned_data['code']):raise ValidationError('Aktuellen zweiten Faktor oder Wiederherstellungscode bestätigen.')
                 action=request.POST.get('action')
                 if action=='start_totp':
                     secret=pyotp.random_base32();profile.pending_secret=encrypt(secret);profile.pending_expires_at=timezone.now()+timedelta(minutes=5);uri=pyotp.TOTP(secret).provisioning_uri(name=user.email,issuer_name='Beschlussmanufaktur')
