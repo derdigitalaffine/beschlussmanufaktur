@@ -1,6 +1,6 @@
 # Implementierungsfolge
 
-Der aktuelle Arbeitsauftrag umfasst die Entwicklungsfunktionen bis einschließlich Etappe 7. Etappe 8 und spätere Betriebs-/Abnahmearbeit werden durch diesen Auftrag nicht begonnen. Kleine Branches/PRs werden nach erfolgreichen relevanten Prüfungen gemergt. Entwicklungsstand bedeutet keine fachliche oder rechtliche Produktivabnahme; verbleibende Teilanforderungen werden ausdrücklich ausgewiesen.
+Der aktuelle Arbeitsauftrag umfasst die Entwicklungsfunktionen bis einschließlich Etappe 10. Die Produktivabnahme in Etappe 11 folgt separat. Kleine Branches/PRs werden nach erfolgreichen relevanten Prüfungen gemergt. Entwicklungsstand bedeutet keine fachliche oder rechtliche Produktivabnahme; verbleibende Teilanforderungen werden ausdrücklich ausgewiesen.
 
 | Etappe | Umfang | Stand |
 |---|---|---|

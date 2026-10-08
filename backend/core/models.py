@@ -281,6 +281,7 @@ class PublicRecord(models.Model):
     kind = models.CharField(max_length=30)
     title = models.CharField(max_length=300)
     attachments = models.JSONField(default=list,blank=True)
+    metadata = models.JSONField(default=dict,blank=True)
     body = models.TextField(blank=True)
     version = models.PositiveIntegerField(default=1)
 
