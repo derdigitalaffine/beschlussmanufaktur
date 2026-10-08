@@ -71,5 +71,5 @@ def document_export(request,document_id,format):
         obj=get_object_or_404(ExternalDocument,pk=document_id)
         if not request.user.is_authenticated or not document_access(request,obj,'export'):raise PermissionDenied
         title=obj.title;text=obj.markdown
-    data,mime=export(title,text,format,subtitle=f'Version {obj.version}',metadata=[a['name'] for a in obj.attachments])
+    data,mime=export(title,text,format,subtitle=f'Version {obj.version}',metadata=[a['name'] for a in obj.attachments],organization_id=obj.organization_id)
     response=HttpResponse(data,content_type=mime);response['Content-Disposition']=f'attachment; filename="vorlage-{obj.pk}.{format}"';return response

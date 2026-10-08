@@ -40,5 +40,5 @@ def download(request,meeting_id,version,format):
     if not meeting_access(context,'private',obj) or not meeting_access(context,'export',obj):raise PermissionDenied
     v=get_object_or_404(MinutesVersion,minutes__meeting=obj,version=version)
     if format not in ('pdf','docx'):raise Http404
-    data,mime=export('Niederschrift · '+obj.title,v.snapshot['markdown'],format,subtitle=f'Fassung {v.version} · {v.snapshot["state"]}')
+    data,mime=export('Niederschrift · '+obj.title,v.snapshot['markdown'],format,subtitle=f'Fassung {v.version} · {v.snapshot["state"]}',organization_id=obj.organization_id)
     response=HttpResponse(data,content_type=mime);response['Content-Disposition']=f'attachment; filename="niederschrift-{obj.pk}-{version}.{format}"';return response

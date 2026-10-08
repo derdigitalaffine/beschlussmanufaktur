@@ -76,6 +76,7 @@ else:
             path('austausch/<uuid:change_id>/',exchange_views.review,name='review_remote'),
             path('rechte/', access_views.grants, name='grants'),
             path('rechte/<uuid:grant_id>/entziehen/', access_views.revoke, name='revoke_grant'),
+            path('struktur/beziehungen/<int:relation_id>/',registry.relation,name='relation_edit'),
             path('struktur/', registry.structure, name='structure'),
             path('stammdaten/', registry.index, name='registry'),
             path('stammdaten/<str:kind>/neu/', registry.edit, name='registry_new'),

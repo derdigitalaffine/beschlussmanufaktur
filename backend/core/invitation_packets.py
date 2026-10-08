@@ -62,13 +62,13 @@ def packet(data,context=None,asset_loader=None):
             converted=attachment_pdf(binary,meta['name'],meta['media_type'])
             files.append((meta['name'],converted,len(PdfReader(io.BytesIO(converted)).pages)))
     text=paper_markdown(data)
-    base=export(data['title'],text,'pdf')[0]
+    base=export(data['title'],text,'pdf',organization_id=data.get('organization_id'))[0]
     # Resolve page references after rendering; iterate until the cover page count stabilizes.
     for attempt in range(4):
         base_count=len(PdfReader(io.BytesIO(base)).pages);start=base_count+1
         metadata=[]
         for name,binary,count in files:metadata.append(f'{name} · Seiten {start}–{start+count-1}');start+=count
-        updated=export(data['title'],text,'pdf',metadata=metadata)[0]
+        updated=export(data['title'],text,'pdf',metadata=metadata,organization_id=data.get('organization_id'))[0]
         if len(PdfReader(io.BytesIO(updated)).pages)==base_count:base=updated;break
         base=updated
     writer=PdfWriter()
