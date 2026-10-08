@@ -1,0 +1,10 @@
+[Unit]
+Description=Beschlussmanufaktur verschlüsselte Sicherung (%i)
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/beschlussmanufaktur
+EnvironmentFile=/etc/beschlussmanufaktur/backup-%i.env
+ExecStart=/usr/bin/python3 /srv/beschlussmanufaktur/ops/backup.py backup --stack %i --target ${BACKUP_TARGET} --key-file ${BACKUP_KEY_FILE}
+UMask=0077

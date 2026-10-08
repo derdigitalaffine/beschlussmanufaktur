@@ -95,6 +95,22 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     restart: unless-stopped
+  backup-tools:
+    profiles: [operations]
+    build: {context: ., dockerfile: deploy/Dockerfile.tls-agent}
+    command: [python, volume_stream.py, pack, /backup/files]
+    volumes: [protected_files:/backup/files:ro, caddy_data:/backup/caddy:ro, tls_runtime:/backup/tls:ro]
+    network_mode: none
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  restore-tools:
+    profiles: [operations]
+    build: {context: ., dockerfile: deploy/Dockerfile.tls-agent}
+    command: [python, volume_stream.py, pack, /backup/files]
+    volumes: [protected_files:/backup/files, caddy_data:/backup/caddy, tls_runtime:/backup/tls]
+    network_mode: none
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
   tls-agent:
     build: {context: ., dockerfile: deploy/Dockerfile.tls-agent}
     environment:

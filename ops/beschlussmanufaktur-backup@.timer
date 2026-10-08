@@ -1,0 +1,9 @@
+[Unit]
+Description=Tägliche verschlüsselte Beschlussmanufaktur-Sicherung (%i)
+[Timer]
+OnCalendar=*-*-* 02:30:00
+RandomizedDelaySec=10m
+Persistent=true
+Unit=beschlussmanufaktur-backup@%i.service
+[Install]
+WantedBy=timers.target
