@@ -17,3 +17,5 @@ charset-normalizer==3.5.2
 pypdf==6.19.0
 
 cryptography==50.0.2
+
+pyotp==2.10.0

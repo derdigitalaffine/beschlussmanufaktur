@@ -32,6 +32,7 @@ services:
     build: .
     environment: &protected_environment
       APPLICATION_URL: https://${PROTECTED_HOST:-gremien.localhost}
+      DATA_ENCRYPTION_KEY: ${PROTECTED_DATA_ENCRYPTION_KEY:-}
       SERVER_ROLE: protected
       EXCHANGE_SOURCE: ${EXCHANGE_SOURCE:-}
       EXCHANGE_PROTECTED_KEY: ${EXCHANGE_PROTECTED_KEY:-}

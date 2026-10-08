@@ -51,6 +51,12 @@ def sign_in(request):
             candidate = User.objects.filter(email=email).first()
             user = authenticate(request, username=candidate.username if candidate else email, password=form.cleaned_data["password"])
             if user and candidate and user.pk == candidate.pk:
+                from .factors import method
+                selected=method(user)
+                if selected!='email':
+                    import time
+                    request.session.cycle_key();request.session['pending_factor']={'user':user.pk,'method':selected,'expires':int(time.time())+300}
+                    return redirect('factor_verify')
                 try:
                     challenge = issue_challenge(user)
                 except Exception:
@@ -71,9 +77,10 @@ def verify_code(request):
     form = CodeForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = verify_challenge(challenge_id, form.cleaned_data["code"])
-        if user:
+        from .factors import method,authenticated
+        if user and method(user)=='email':
             request.session.pop("pending_challenge", None)
-            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            authenticated(request,user)
             if settings.SERVER_ROLE == "internal" and request.session.get("pending_invitation"):
                 return redirect("accept_invitation")
             return redirect("home")
