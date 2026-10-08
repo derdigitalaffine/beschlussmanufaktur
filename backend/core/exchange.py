@@ -70,6 +70,9 @@ def snapshot(channel):
         for minutes in Minutes.objects.filter(meeting__organization_id__in=ids,published_version__isnull=False).select_related('meeting'):
             public=minutes.public_snapshot
             records.append({'id':str(minutes.pk),'organization_id':str(minutes.meeting.organization_id),'kind':'minutes','title':public['title'],'body':public['markdown'],'version':public['version'],'attachments':[]})
+        from .models import PersonProfile
+        from .person_profiles import projection
+        records += [projection(p) for p in PersonProfile.objects.filter(organization_id__in=ids,published=True)]
         from .models import PortalConfiguration
         from .portal_configuration import FIELDS
         portals=[scalar(p,FIELDS) for p in PortalConfiguration.objects.filter(organization_id__in=ids)]
@@ -148,7 +151,7 @@ def receive(payload,channel):
             expect_keys(row,['id','organization_id','kind','title','body','version','attachments','metadata'])
             from .public_portal import validate_metadata
             validate_metadata(row['metadata'], row['kind'])
-            if row['kind'] not in ('organization','committee','template','meeting','minutes'):raise ValidationError('Unzulässiges öffentliches Objekt.')
+            if row['kind'] not in ('organization','committee','template','meeting','minutes','person'):raise ValidationError('Unzulässiges öffentliches Objekt.')
         upsert(PublicRecord,data['records'],['id','organization_id','kind','title','body','version','attachments','metadata'])
         PublicRecord.objects.exclude(pk__in=[row['id'] for row in data['records']]).delete()
     else:

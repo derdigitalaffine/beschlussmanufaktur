@@ -11,6 +11,22 @@ from .models import PublicRecord
 from .templates_service import render_markdown
 
 def validate_metadata(value, kind):
+    if kind=='person':
+        import base64,io
+        from PIL import Image
+        allowed={'name','function','faction','starts_on','ends_on','contact','photo'}
+        if not isinstance(value,dict) or set(value)-allowed:raise ValidationError('Unzulässige Personendaten.')
+        for k,v in value.items():
+            if v is not None and (not isinstance(v,str) or len(v)>(500000 if k=='photo' else 300)):raise ValidationError('Ungültiges Personenfeld.')
+        if value.get('photo'):
+            try:
+                raw=base64.b64decode(value['photo'],validate=True)
+                with Image.open(io.BytesIO(raw)) as image:
+                    if image.format!='JPEG' or image.width>600 or image.height>600:raise ValueError
+                    image.verify()
+            except (ValueError,OSError):raise ValidationError('Ungültiges öffentliches Foto.')
+        return
+
     if not isinstance(value,dict) or set(value)-{'starts_at','ends_at','location','committee_id'}:raise ValidationError('Unzulässige öffentliche Metadaten.')
     if value and (kind!='meeting' or set(value)!={'starts_at','ends_at','location','committee_id'}):raise ValidationError('Unvollständige Terminmetadaten.')
     if value:
@@ -33,7 +49,7 @@ def selection(request):
             except (ValueError,TypeError):return records.none()
             records=records.filter(**{field:value})
     kind=request.GET.get('art','')
-    if kind:records=records.filter(kind=kind) if kind in ('meeting','template','minutes','committee','organization') else records.none()
+    if kind:records=records.filter(kind=kind) if kind in ('meeting','template','minutes','committee','organization','person') else records.none()
     for key,lookup in [('von','gte'),('bis','lte')]:
         if request.GET.get(key):
             try:day=parse_date(request.GET[key])
