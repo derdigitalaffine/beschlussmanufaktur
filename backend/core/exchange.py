@@ -102,7 +102,9 @@ def snapshot(channel):
     meeting_data=export_meetings(ids,list(memberships),scalar)
     from .models import PortalConfiguration
     from .portal_configuration import FIELDS
-    return {'portals':[scalar(p,FIELDS) for p in PortalConfiguration.objects.filter(organization_id__in=ids)],'meeting_data':meeting_data,'documents':documents,'organizations':[dict(id=str(o.pk),name=o.name,kind=o.kind,primary_parent_id=str(o.primary_parent_id) if o.primary_parent_id in ids else None) for o in orgs],
+    from .models import RecoveryTicket
+    from .recovery import FIELDS as RECOVERY_FIELDS
+    return {'recovery':[scalar(r,RECOVERY_FIELDS) for r in RecoveryTicket.objects.filter(user__in=users,state__in=['pending','approved'],expires_at__gt=timezone.now())],'portals':[scalar(p,FIELDS) for p in PortalConfiguration.objects.filter(organization_id__in=ids)],'meeting_data':meeting_data,'documents':documents,'organizations':[dict(id=str(o.pk),name=o.name,kind=o.kind,primary_parent_id=str(o.primary_parent_id) if o.primary_parent_id in ids else None) for o in orgs],
         'users':[scalar(u,['id','email','password','first_name','last_name','is_active']) for u in users],
         'memberships':[scalar(m,MEMBERSHIP_FIELDS) for m in memberships],
         'registry':[scalar(r,REGISTRY_FIELDS) for r in registry],
@@ -157,8 +159,8 @@ def receive(payload,channel):
         upsert(PublicRecord,data['records'],['id','organization_id','kind','title','body','version','attachments','metadata'])
         PublicRecord.objects.exclude(pk__in=[row['id'] for row in data['records']]).delete()
     else:
-        data.setdefault('portals',[])
-        expect_keys(data,['organizations','users','memberships','registry','mandates','grants','documents','meeting_data','portals'])
+        data.setdefault('portals',[]);data.setdefault('recovery',[])
+        expect_keys(data,['organizations','users','memberships','registry','mandates','grants','documents','meeting_data','portals','recovery'])
         from .models import PortalConfiguration
         from .portal_configuration import FIELDS
         PortalConfiguration.objects.all().delete()
@@ -177,6 +179,18 @@ def receive(payload,channel):
             expect_keys(row,['id','name','kind','primary_parent_id'])
             if row['primary_parent_id'] and row['primary_parent_id'] not in org_ids:raise ValidationError('Fremde Hauptzuordnung.')
             Organization.objects.update_or_create(pk=row['id'],defaults={'name':row['name'],'kind':row['kind']})
+        from .models import RecoveryTicket
+        from .recovery import FIELDS as RECOVERY_FIELDS,reset_local_factor
+        for row in data['recovery']:
+            expect_keys(row,RECOVERY_FIELDS)
+            if row['user_id'] not in user_ids or row['organization_id'] not in org_ids:raise ValidationError('Fremde Wiederherstellung.')
+            previous=RecoveryTicket.objects.filter(pk=row['id']).first()
+            local=dict(row)
+            if previous and previous.state=='submitted' and row['state']=='pending':local['state']='submitted'
+            upsert(RecoveryTicket,[local],RECOVERY_FIELDS)
+            ticket=RecoveryTicket.objects.get(pk=row['id'])
+            if ticket.state=='approved' and ticket.reset_factor and not ticket.factor_reset_applied:
+                reset_local_factor(ticket.user);ticket.factor_reset_applied=True;ticket.save(update_fields=['factor_reset_applied'])
         for row in data['organizations']:Organization.objects.filter(pk=row['id']).update(primary_parent_id=row['primary_parent_id'])
         for o in Organization.objects.filter(pk__in=org_ids):o.full_clean()
         for row in data['memberships']:
@@ -275,7 +289,7 @@ def pull_events():
     expect_keys(data,['events'])
     for row in data['events']:
         expect_keys(row,['id','organization_id','resource_id','resource_kind','base_version','context_id','actor_id','content','reason','created_at'])
-        if row['resource_kind'] not in ('registry','template'):raise ValidationError('Unbekannte Änderungsart.')
+        if row['resource_kind'] not in ('registry','template','recovery_request','credential'):raise ValidationError('Unbekannte Änderungsart.')
         # Arrival never applies a change to authoritative content.
         if len(row['content'])>100000 or len(row['reason'])>500:raise ValidationError('Änderung zu groß.')
         RemoteChange.objects.get_or_create(pk=row['id'],defaults={k:v for k,v in row.items() if k!='id'})

@@ -17,6 +17,8 @@ class Command(BaseCommand):
         while True:
             from core.account_mail import send_pending
             send_pending()
+            from core.recovery import send_pending as send_recovery
+            send_recovery()
             deliveries=InvitationDelivery.objects.filter(delivered_at__isnull=True).select_related('invitation__meeting','user').order_by('invitation__created_at')[:50]
             for delivery in deliveries:
                 delivery.attempts+=1;delivery.save(update_fields=['attempts'])
