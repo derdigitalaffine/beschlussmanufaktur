@@ -13,7 +13,9 @@ class Compose:
  def __init__(self,stack):self.config=STACKS[stack];self.base=['docker','compose','-f',str(ROOT/self.config['file'])]
  def run(self,*args,output=None,input=None):
     result=subprocess.run([*self.base,*args],cwd=ROOT,stdin=input,stdout=output or subprocess.PIPE,stderr=subprocess.PIPE,check=False)
-    if result.returncode:raise RuntimeError('Compose-Betriebsaktion fehlgeschlagen: '+' '.join(args[:6])+'; Dienstkonfiguration lokal prüfen.')
+    if result.returncode:
+       detail=(' Volumewerkzeug: '+result.stderr.decode(errors='replace')[-1500:]) if 'volume_stream.py' in args else ''
+       raise RuntimeError('Compose-Betriebsaktion fehlgeschlagen: '+' '.join(args[:6])+'; Dienstkonfiguration lokal prüfen.'+detail)
     return result.stdout.decode().strip() if output is None else ''
  def manage(self,app,*args):return self.run('exec','-T',app,'python','manage.py',*args)
 
