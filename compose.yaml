@@ -17,6 +17,7 @@ services:
   backend:
     build: .
     environment: &internal_environment
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-}
       SERVER_ROLE: internal
       EXCHANGE_SOURCE: ${EXCHANGE_SOURCE:-}
       EXCHANGE_PROTECTED_KEY: ${EXCHANGE_PROTECTED_KEY:-}

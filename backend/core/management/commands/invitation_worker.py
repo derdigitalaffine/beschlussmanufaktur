@@ -15,6 +15,8 @@ class Command(BaseCommand):
     def add_arguments(self,parser):parser.add_argument('--watch',action='store_true')
     def handle(self,*args,**options):
         while True:
+            from core.account_mail import send_pending
+            send_pending()
             deliveries=InvitationDelivery.objects.filter(delivered_at__isnull=True).select_related('invitation__meeting','user').order_by('invitation__created_at')[:50]
             for delivery in deliveries:
                 delivery.attempts+=1;delivery.save(update_fields=['attempts'])
