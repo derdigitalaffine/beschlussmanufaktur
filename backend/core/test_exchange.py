@@ -38,7 +38,7 @@ class ExchangeTests(TestCase):
         with self.assertRaises(ValidationError):receive(self.payload('public',data),'public')
         self.assertFalse(PublicRecord.objects.exists())
     def test_no_opt_in_no_export(self):
-        ExchangePolicy.objects.all().delete();self.assertEqual(snapshot('public'),{'records':[]});self.assertEqual(snapshot('protected')['users'],[])
+        ExchangePolicy.objects.all().delete();self.assertEqual(snapshot('public'),{'records':[],'portals':[]});self.assertEqual(snapshot('protected')['users'],[])
     def test_internal_admin_not_transferred(self):
         self.context.role='organization_admin';self.context.save();self.assertEqual(snapshot('protected')['users'],[])
     def test_wrong_source_stale_revision(self):

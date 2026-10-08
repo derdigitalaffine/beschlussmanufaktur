@@ -21,7 +21,11 @@ def validate_metadata(value, kind):
         except (TypeError,ValueError):raise ValidationError('Ungültige Terminmetadaten.')
 
 def selection(request):
-    records=PublicRecord.objects.all();query=request.GET.get('q','').strip()[:200]
+    records=PublicRecord.objects.all()
+    from .portal_configuration import for_request
+    portal=for_request(request)
+    if portal:records=records.filter(organization_id__in=portal.organizations)
+    query=request.GET.get('q','').strip()[:200]
     if query:records=records.filter(Q(title__icontains=query)|Q(body__icontains=query))
     for key,field in [('organisation','organization_id'),('gremium','metadata__committee_id')]:
         if request.GET.get(key):
@@ -46,11 +50,11 @@ def selection(request):
 @require_GET
 def index(request):
     page=Paginator(selection(request),20).get_page(request.GET.get('page'));query=request.GET.copy();query.pop('page',None)
-    return render(request,'public.html',{'page':page,'filters':request.GET,'query_string':query.urlencode(),'organizations':PublicRecord.objects.filter(kind='organization').order_by('title'),'committees':PublicRecord.objects.filter(kind='committee').order_by('title')})
+    return render(request,'public.html',{'page':page,'filters':request.GET,'query_string':query.urlencode(),'organizations':selection(request).filter(kind='organization'),'committees':selection(request).filter(kind='committee')})
 
 @require_GET
 def detail(request,record_id):
-    obj=get_object_or_404(PublicRecord,pk=record_id)
+    obj=get_object_or_404(selection(request),pk=record_id)
     return render(request,'public_detail.html',{'record':obj,'body':render_markdown(obj.body)})
 
 @require_GET

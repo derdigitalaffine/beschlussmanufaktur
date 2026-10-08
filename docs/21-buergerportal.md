@@ -7,3 +7,9 @@ Der öffentliche Dienst bietet Volltextsuche in veröffentlichten Titeln und Mar
 Neue Terminmetadaten enthalten ausschließlich Terminbeginn/-ende, öffentlichen Ort und Gremien-ID. Zeitangaben benötigen eine Zeitzone. Empfänger akzeptieren ältere öffentliche Stände ohne Metadaten weiterhin; diese erscheinen in der Suche, aber nicht im Kalender. Öffentliche Niederschriften sind jetzt ausdrücklich im Empfangsvertrag zugelassen.
 
 Tests prüfen Filterkombinationen, ungültige IDs/Datumsangaben, Zeitzonen und ICS-Injection sowie die öffentliche Feldfreigabe. Die getrennten Serverrollen bleiben Bestandteil der CI.
+
+## Eigene Portale, CI und Einbettung
+
+Unter „Bürgerportal und CI“ verwaltet die interne Organisationsadministration Portalname, Einleitung, eine kontrastgeprüfte Hauptfarbe, exakte Domainnamen und HTTPS-Origins für iframe. In einem Portal können ausschließlich Körperschaften ausgewählt werden, für die die Person ausdrücklich eine aktuell gültige Organisationsverwaltungsrolle besitzt. Daten bleiben zentral; die Portalzuordnung ist eine Darstellung öffentlicher Daten, kein Vertraulichkeitsrecht. Unzugeordnete erlaubte Hosts zeigen das gemeinsame Portal.
+
+Domainzuordnung im Fachsystem allein ändert weder DNS noch Caddy oder `DJANGO_ALLOWED_HOSTS`. Diese Betriebsfreigaben werden separat eingerichtet. Kein beliebiges HTML, CSS, JavaScript, SVG oder Logo-Upload. iframe gilt nur für öffentliche Übersichten/Detailseiten; Transfer-, Authentifizierungs- und geschützte Routen bleiben gesperrt. Zulässige Frame-Origins sind exakt, HTTPS und ohne Pfad/Port/Platzhalter. Für iFrames werden keine Benutzerkonten oder Drittanbieter-Cookies benötigt. Fremde Skripte und Analytics werden nicht geladen.

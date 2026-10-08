@@ -70,7 +70,11 @@ def snapshot(channel):
         for minutes in Minutes.objects.filter(meeting__organization_id__in=ids,published_version__isnull=False).select_related('meeting'):
             public=minutes.public_snapshot
             records.append({'id':str(minutes.pk),'organization_id':str(minutes.meeting.organization_id),'kind':'minutes','title':public['title'],'body':public['markdown'],'version':public['version'],'attachments':[]})
-        return {'records':records}
+        from .models import PortalConfiguration
+        from .portal_configuration import FIELDS
+        portals=[scalar(p,FIELDS) for p in PortalConfiguration.objects.filter(organization_id__in=ids)]
+        for portal in portals:portal['organizations']=[x for x in portal['organizations'] if uuid.UUID(x) in ids]
+        return {'records':records,'portals':portals}
     memberships=Membership.objects.filter(organization_id__in=ids,role__in=REMOTE_ROLES)
     users=User.objects.filter(pk__in=memberships.values('user_id'))
     registry=RegistryRecord.objects.filter(organization_id__in=ids)
@@ -133,7 +137,12 @@ def receive(payload,channel):
     if payload['revision']==state.revision:return
     data=payload['data']
     if channel=='public':
-        expect_keys(data,['records'])
+        data.setdefault('portals',[])
+        expect_keys(data,['records','portals'])
+        from .models import PortalConfiguration
+        from .portal_configuration import FIELDS
+        PortalConfiguration.objects.all().delete()
+        upsert(PortalConfiguration,data['portals'],FIELDS)
         for row in data['records']:
             row.setdefault('metadata',{})
             expect_keys(row,['id','organization_id','kind','title','body','version','attachments','metadata'])
