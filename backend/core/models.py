@@ -854,3 +854,24 @@ class AuthenticationProfile(models.Model):
     last_counter = models.BigIntegerField(default=-1)
     recovery_hashes = models.JSONField(default=list,blank=True)
     version = models.PositiveIntegerField(default=0)
+
+class Passkey(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    user = models.ForeignKey(User,on_delete=models.CASCADE)
+    credential_id = models.CharField(max_length=2048,unique=True)
+    public_key = models.BinaryField()
+    user_handle = models.CharField(max_length=64)
+    sign_count = models.PositiveBigIntegerField(default=0)
+    name = models.CharField(max_length=80)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class WebAuthnCeremony(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    user = models.ForeignKey(User,null=True,on_delete=models.CASCADE)
+    purpose = models.CharField(max_length=20)
+    challenge = models.CharField(max_length=100)
+    session_digest = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    consumed_at = models.DateTimeField(null=True)
+    factor_version = models.PositiveIntegerField(default=0)
+    name = models.CharField(max_length=80,blank=True)
