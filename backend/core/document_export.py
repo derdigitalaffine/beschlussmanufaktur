@@ -33,10 +33,19 @@ class Blocks(HTMLParser):
 def blocks(markdown):
     parser=Blocks();parser.feed(render_markdown(markdown));parser.flush();return parser.blocks
 
-def export(title,markdown,format='pdf',subtitle='',metadata=None):
+def export(title,markdown,format='pdf',subtitle='',metadata=None,organization_id=None):
+    from .models import PortalConfiguration
+    brand=PortalConfiguration.objects.filter(organization_id=organization_id).first() if organization_id else None
+    brand_name=brand.title if brand else 'Beschlussmanufaktur'
+    brand_color=brand.color if brand and re.fullmatch(r'#[0-9a-fA-F]{6}',brand.color) else '#245846'
     parts=blocks(markdown)
     if format=='docx':
-        doc=Document();doc.add_heading(title,0)
+        doc=Document()
+        from docx.shared import RGBColor
+        doc.sections[0].header.paragraphs[0].text=brand_name
+        doc.sections[0].footer.paragraphs[0].text=brand_name
+        for name in ('Title','Heading 1','Heading 2','Heading 3','Heading 4'):doc.styles[name].font.color.rgb=RGBColor.from_string(brand_color[1:])
+        doc.add_heading(title,0)
         if subtitle:doc.add_paragraph(subtitle)
         for tag,text in parts:
             if tag=='table':
@@ -52,6 +61,7 @@ def export(title,markdown,format='pdf',subtitle='',metadata=None):
         buffer=io.BytesIO();doc.save(buffer);return buffer.getvalue(),'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     if format!='pdf':raise ValueError('Unbekanntes Exportformat')
     styles=getSampleStyleSheet();styles['Normal'].leading=15
+    for name in ('Title','Heading1','Heading2','Heading3'):styles[name].textColor=colors.HexColor(brand_color)
     elements=[Paragraph(escape(title),styles['Title'])]
     if subtitle:elements.append(Paragraph(escape(subtitle),styles['Normal']))
     elements.append(Spacer(1,14))
@@ -71,6 +81,6 @@ def export(title,markdown,format='pdf',subtitle='',metadata=None):
         elements.append(Paragraph('Anlagen / Stand',styles['Heading2']))
         for line in metadata:elements.append(Paragraph(escape(line),styles['Normal']))
     buffer=io.BytesIO()
-    def footer(canvas,doc):canvas.saveState();canvas.setFont('Helvetica',9);canvas.drawRightString(A4[0]-44,24,f'Seite {doc.page}');canvas.restoreState()
+    def footer(canvas,doc):canvas.saveState();canvas.setFont('Helvetica',9);canvas.drawString(44,24,brand_name);canvas.drawRightString(A4[0]-44,24,f'Seite {doc.page}');canvas.restoreState()
     SimpleDocTemplate(buffer,pagesize=A4,leftMargin=44,rightMargin=44,topMargin=44,bottomMargin=44,title=title,author='Beschlussmanufaktur').build(elements,onFirstPage=footer,onLaterPages=footer)
     return buffer.getvalue(),'application/pdf'

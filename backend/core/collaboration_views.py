@@ -16,25 +16,29 @@ from .invitations import lock_admin
 from .workflow import submit,decide,publish,step_access
 from .document_export import export
 
-class KindForm(forms.ModelForm):
-    class Meta:
-        model=TemplateKind
-        fields=['name','initial_markdown','fields','workflow','four_eyes']
-        labels={'name':'Vorlagenart','initial_markdown':'Standardabschnitte (Markdown)','fields':'Zusatzfelder / Pflichtfelder (JSON)','workflow':'Prüfschritte / parallele Gruppen / Bedingungen (JSON)','four_eyes':'Vieraugenprinzip'}
-        widgets={'fields':forms.Textarea(attrs={'rows':8}),'workflow':forms.Textarea(attrs={'rows':8})}
+from .configuration_editor import KindForm,sets,build,fingerprint
 
 @login_required
 @require_http_methods(['GET','POST'])
 def kind(request,kind_id=None):
     context=admin_context(request)
     obj=get_object_or_404(TemplateKind,pk=kind_id,organization=context.organization) if kind_id else TemplateKind(organization=context.organization)
-    form=KindForm(request.POST if request.method=='POST' else None,instance=obj)
-    if request.method=='POST' and form.is_valid():
-        with transaction.atomic():
-            lock_admin(request.user,context.pk,context.organization_id)
-            saved=form.save();AuditEvent.objects.create(actor=request.user,action='template.kind',object_id=str(saved.pk),metadata={'fields':saved.fields,'workflow':saved.workflow,'four_eyes':saved.four_eyes})
-        return redirect('kind_list')
-    return render(request,'kind_form.html',{'context':context,'form':form})
+    advanced=request.user.advanced_mode and context.organization.advanced_enabled
+    form=KindForm(request.POST if request.method=='POST' else None,instance=obj,initial={'expected':fingerprint(obj)})
+    fieldset,stepset=sets(request,obj)
+    if request.method=='POST' and form.is_valid() and (not advanced or fieldset.is_valid() and stepset.is_valid()):
+        try:
+            with transaction.atomic():
+                lock_admin(request.user,context.pk,context.organization_id)
+                current=TemplateKind.objects.select_for_update().filter(pk=obj.pk).first()
+                if current and fingerprint(current)!=form.cleaned_data['expected']:raise ValidationError('Konfiguration wurde parallel geändert. Neu laden.')
+                saved=form.save(commit=False)
+                if advanced:saved.fields,saved.workflow=build(fieldset,stepset)
+                saved.full_clean();saved.save()
+                AuditEvent.objects.create(actor=request.user,action='template.kind',object_id=str(saved.pk),metadata={'fingerprint':fingerprint(saved),'four_eyes':saved.four_eyes})
+        except ValidationError as error:form.add_error(None,error)
+        else:return redirect('kind_list')
+    return render(request,'kind_form.html',{'context':context,'form':form,'fieldset':fieldset,'stepset':stepset,'advanced':advanced})
 
 @login_required
 @require_http_methods(['GET'])
@@ -158,7 +162,7 @@ def document(request,template_id,format,version=None):
     if not template_access(context,'export',obj):raise PermissionDenied
     if format not in ('pdf','docx'):raise Http404
     archived=get_object_or_404(obj.versions,version=version or obj.version)
-    data,mime=export(archived.snapshot['subject'],archived.snapshot['markdown'],format,subtitle=f'{obj.organization} · {obj.number or "Entwurf"} · Version {archived.version}',metadata=[a['name']+' · SHA-256 '+a['digest'] for a in archived.snapshot['attachments']])
+    data,mime=export(archived.snapshot['subject'],archived.snapshot['markdown'],format,subtitle=f'{obj.organization} · {obj.number or "Entwurf"} · Version {archived.version}',metadata=[a['name']+' · SHA-256 '+a['digest'] for a in archived.snapshot['attachments']],organization_id=obj.organization_id)
     response=HttpResponse(data,content_type=mime);response['Content-Disposition']=f'attachment; filename="vorlage-{obj.pk}-v{archived.version}.{format}"';return response
 
 @login_required

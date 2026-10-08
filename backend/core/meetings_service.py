@@ -36,7 +36,7 @@ def lock_meeting(context,meeting_id,action,version):
 
 def meeting_snapshot(obj,context=None):
     private=context is None or meeting_access(context,'private',obj)
-    result={'id':str(obj.pk),'title':obj.title,'committee':obj.committee.name,'organization':obj.organization.name,'starts_at':obj.starts_at.isoformat(),'ends_at':obj.ends_at.isoformat(),'location':obj.location,'chair':obj.chair.get_full_name() or obj.chair.email,'scribe':obj.scribe.get_full_name() or obj.scribe.email,'version':obj.version,'state':obj.state,'items':[]}
+    result={'id':str(obj.pk),'organization_id':str(obj.organization_id),'title':obj.title,'committee':obj.committee.name,'organization':obj.organization.name,'starts_at':obj.starts_at.isoformat(),'ends_at':obj.ends_at.isoformat(),'location':obj.location,'chair':obj.chair.get_full_name() or obj.chair.email,'scribe':obj.scribe.get_full_name() or obj.scribe.email,'version':obj.version,'state':obj.state,'items':[]}
     for item in obj.items.filter(removed=False).select_related('template'):
         if not item.public and not private:continue
         data={'id':str(item.pk),'parent':str(item.parent_id) if item.parent_id else None,'position':item.position,'title':item.title,'public':item.public,'markdown':item.markdown,'estimated_minutes':item.estimated_minutes,'template':None}

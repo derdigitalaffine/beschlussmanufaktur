@@ -17,3 +17,11 @@ Profile können dieselbe zentrale Personenidentität verwenden. Ein bereits zuge
 Bootstrap erzeugt zusätzlich eine klar markierte Testkörperschaft mit Rat, Raum und Legislaturperiode und einer ausdrücklichen Verwaltungsrolle für die einrichtende Person. Keine künstlichen Benutzerkonten, Standardpasswörter, Fachvorlagen oder öffentlichen Veröffentlichungen. Bereits bestehende Installationen können diese kleinen Beispieldaten bewusst anlegen.
 
 Die Administration sieht den Umfang vor dem Löschknopf. Entfernt werden ausschließlich unveränderte markierte Beispieldaten. Neue Fachreferenzen, zusätzliche Rollen oder Änderungen an Beispielstammdaten sperren das Löschen. Produktive Daten werden nicht mit entfernt. Nach Löschen erzeugen Neustart und Update nichts erneut. Wer die Beispiele produktiv verwendet hat, muss diese Beziehungen zuerst bewusst bereinigen.
+
+## Einfache und erweiterte Konfiguration
+
+Vorlagenarten verwenden im einfachen Modus Standardabschnitte und Vieraugenoption; bereits konfigurierte Zusatzfelder/Prüfschritte bleiben erhalten. Im erweiterten Modus werden Feldtyp, Pflichtstatus, Auswahlwerte, Prüferrolle, Parallelgruppe, Vertretung und Bedingungen in beschrifteten Formularzeilen bearbeitet. Keine JSON-Eingabe erforderlich. Die Anzahl der Zeilen ist vor Bearbeitungsbeginn wählbar, maximal 40 Felder/12 Prüfschritte. Parallele Änderungen werden anhand einer Konfigurationsprüfsumme erkannt.
+
+Einzelrechte wählen Körperschaft, Gremium, Einheit oder Vorlage direkt aus einer benannten Liste. Vorlageninhalte/-titel bleiben bei fehlendem Fachleserecht verborgen. Jedes Recht ist weiter an die ausdrücklich gewählte Mitgliedschaft gebunden.
+
+Portalname und Hauptfarbe werden auch in PDF/DOCX-Ausgaben verwendet. PDF enthält Seitenzahlen, DOCX Kopf-/Fußzeile und passende Überschriftenfarben. Anlagen werden nicht umgestaltet. Exporte verwenden die aktuell konfigurierte CI; eine unveränderliche Geschäftsfassung ist weiterhin das archivierte Markdown mit Metadaten, nicht die byteidentische Neugenerierung unter einer später geänderten CI. Komplexe Typografie und Drucklayout brauchen praktische Abnahme.

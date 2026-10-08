@@ -5,28 +5,42 @@ from django.db import transaction
 from django.shortcuts import render,redirect,get_object_or_404
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods,require_POST
-from .models import AccessGrant, Membership, AuditEvent, RegistryRecord
+from .models import AccessGrant, Membership, AuditEvent, RegistryRecord,Template
 from .user_views import admin_context
 from .invitations import lock_admin
 
 class GrantForm(forms.ModelForm):
+    resource=forms.ChoiceField(label='Geltungsbereich und Objekt')
     actions=forms.MultipleChoiceField(label='Einzelrechte',choices=[(x,x) for x in ['read','edit','review','release','publish','export','delegate']],widget=forms.CheckboxSelectMultiple)
     class Meta:
         model=AccessGrant
-        fields=['membership','resource_kind','resource_id','actions','expires_at','reason']
+        fields=['membership','actions','expires_at','reason']
         labels={'membership':'Arbeitskontext','resource_kind':'Geltungsbereich','resource_id':'Objekt-ID','expires_at':'Gültig bis','reason':'Begründung'}
         widgets={'expires_at':forms.DateTimeInput(attrs={'type':'datetime-local'},format='%Y-%m-%dT%H:%M')}
-    def __init__(self,*args,organization,**kwargs):
+    def __init__(self,*args,organization,context=None,**kwargs):
         super().__init__(*args,**kwargs)
         self.instance.organization=organization
         self.fields['membership'].queryset=Membership.objects.filter(organization=organization)
-        self.fields['resource_kind'].choices=[('organization','Gesamte Körperschaft'),('registry','Gremium / Stammdatensatz'),('unit','Organisationseinheit'),('template','Vorlage')]
+        choices=[('organization:'+str(organization.pk),'Gesamte Körperschaft: '+organization.name)]
+        choices += [('registry:'+str(r.pk),r.get_kind_display()+': '+r.name) for r in RegistryRecord.objects.filter(organization=organization)]
+        choices += [('unit:'+str(r.pk),'Einheit: '+r.name) for r in RegistryRecord.objects.filter(organization=organization,kind='unit')]
+        from .templates_service import template_access
+        choices += [('template:'+str(t.pk),'Vorlage: '+(t.subject if context and template_access(context,'read',t) else 'Inhalt nicht freigegeben · '+str(t.pk))) for t in Template.objects.filter(organization=organization)]
+        self.fields['resource'].choices=choices
+        self.initial['resource']='organization:'+str(organization.pk)
+    def clean(self):
+        cleaned=super().clean()
+        if cleaned.get('resource'):
+            kind,identifier=cleaned['resource'].split(':',1)
+            import uuid
+            self.instance.resource_kind=kind;self.instance.resource_id=uuid.UUID(identifier)
+        return cleaned
 
 @login_required
 @require_http_methods(['GET','POST'])
 def grants(request):
     context=admin_context(request)
-    form=GrantForm(request.POST if request.method=='POST' else None,organization=context.organization,initial={'resource_kind':'organization','resource_id':context.organization_id})
+    form=GrantForm(request.POST if request.method=='POST' else None,organization=context.organization,context=context,initial={'resource_kind':'organization','resource_id':context.organization_id})
     if request.method=='POST' and form.is_valid():
         with transaction.atomic():
             lock_admin(request.user,context.pk,context.organization_id)

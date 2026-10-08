@@ -100,7 +100,9 @@ def snapshot(channel):
             documents.append({'id':str(obj.pk),'organization_id':str(obj.organization_id),'title':obj.subject,'markdown':obj.markdown,'number':obj.number,'version':obj.version,'permissions':permissions,'attachments':version.snapshot['attachments']})
     from .meeting_transfer import export_meetings
     meeting_data=export_meetings(ids,list(memberships),scalar)
-    return {'meeting_data':meeting_data,'documents':documents,'organizations':[dict(id=str(o.pk),name=o.name,kind=o.kind,primary_parent_id=str(o.primary_parent_id) if o.primary_parent_id in ids else None) for o in orgs],
+    from .models import PortalConfiguration
+    from .portal_configuration import FIELDS
+    return {'portals':[scalar(p,FIELDS) for p in PortalConfiguration.objects.filter(organization_id__in=ids)],'meeting_data':meeting_data,'documents':documents,'organizations':[dict(id=str(o.pk),name=o.name,kind=o.kind,primary_parent_id=str(o.primary_parent_id) if o.primary_parent_id in ids else None) for o in orgs],
         'users':[scalar(u,['id','email','password','first_name','last_name','is_active']) for u in users],
         'memberships':[scalar(m,MEMBERSHIP_FIELDS) for m in memberships],
         'registry':[scalar(r,REGISTRY_FIELDS) for r in registry],
@@ -155,7 +157,12 @@ def receive(payload,channel):
         upsert(PublicRecord,data['records'],['id','organization_id','kind','title','body','version','attachments','metadata'])
         PublicRecord.objects.exclude(pk__in=[row['id'] for row in data['records']]).delete()
     else:
-        expect_keys(data,['organizations','users','memberships','registry','mandates','grants','documents','meeting_data'])
+        data.setdefault('portals',[])
+        expect_keys(data,['organizations','users','memberships','registry','mandates','grants','documents','meeting_data','portals'])
+        from .models import PortalConfiguration
+        from .portal_configuration import FIELDS
+        PortalConfiguration.objects.all().delete()
+        upsert(PortalConfiguration,data['portals'],FIELDS)
         # Receiver is a dedicated replica; public storage never reaches this branch.
         org_ids={row['id'] for row in data['organizations']};user_ids={row['id'] for row in data['users']}
         for row in data['users']:

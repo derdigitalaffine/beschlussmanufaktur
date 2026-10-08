@@ -144,3 +144,24 @@ def structure(request):
         except ValidationError as e:form.add_error(None,e)
         else:return redirect('registry')
     return render(request,'registry_form.html',{'context':context,'form':form,'title':'Körperschaft und Hauptzuordnung'})
+
+@login_required
+@require_http_methods(['GET','POST'])
+def relation(request,relation_id):
+    context=admin_context(request)
+    obj=get_object_or_404(OrganizationRelation,pk=relation_id,source=context.organization)
+    class EditRelationForm(RelationForm):
+        expected_version=forms.IntegerField(min_value=1,widget=forms.HiddenInput)
+        reason=forms.CharField(label='Begründung',max_length=500)
+    form=EditRelationForm(request.POST or None,instance=obj,user=request.user,initial={'expected_version':obj.version})
+    if request.method=='POST' and form.is_valid():
+        try:
+            with transaction.atomic():
+                lock_admin(request.user,context.pk,context.organization_id)
+                current=OrganizationRelation.objects.select_for_update().get(pk=obj.pk)
+                if current.version!=form.cleaned_data['expected_version']:raise ValidationError('Beziehung parallel geändert. Neu laden.')
+                obj=form.save(commit=False);obj.version=current.version+1;obj.full_clean();obj.save()
+                AuditEvent.objects.create(actor=request.user,action='organization.relation_updated',object_id=str(obj.pk),metadata={'version':obj.version,'reason':form.cleaned_data['reason']})
+        except ValidationError as error:form.add_error(None,error)
+        else:return redirect('registry')
+    return render(request,'admin_form.html',{'context':context,'form':form,'title':'Mehrfachbeziehung bearbeiten','description':'Verantwortung und Gültigkeit bearbeiten; ein Ende schließt die historische Beziehung.'})
