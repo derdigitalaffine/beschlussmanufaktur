@@ -51,7 +51,7 @@ def parse_upload(upload,kind,organization):
             PersonProfile(organization=organization,name=row['name'],function=row['function'],faction=row['faction']).full_clean()
         else:
             validate_email(row['email']);row['email']=row['email'].lower();key=(row['email'],row['role'])
-            if row['role'] not in Membership.Role.values:raise ValidationError(f'Zeile {i}: Rolle ungültig.')
+            if row['role'] not in set(Membership.Role.values)-{'emergency'}:raise ValidationError(f'Zeile {i}: Rolle ungültig.')
             start=parse_datetime(row['starts_at']) if row['starts_at'] else timezone.now()
             end=parse_datetime(row['ends_at']) if row['ends_at'] else None
             if not start or start.utcoffset() is None or row['ends_at'] and (not end or end.utcoffset() is None) or end and end<=start:raise ValidationError(f'Zeile {i}: Zeitraum mit Zeitzone angeben.')

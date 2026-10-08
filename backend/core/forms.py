@@ -18,7 +18,7 @@ class OrganizationForm(forms.ModelForm):
 
 
 class MembershipPeriodForm(forms.Form):
-    role = forms.ChoiceField(label="Rolle", choices=Membership.Role.choices)
+    role = forms.ChoiceField(label="Rolle", choices=[choice for choice in Membership.Role.choices if choice[0]!='emergency'])
     starts_at = forms.DateTimeField(label="Gültig ab", required=False,
         input_formats=["%Y-%m-%dT%H:%M"], widget=forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"))
     ends_at = forms.DateTimeField(label="Gültig bis (optional)", required=False,

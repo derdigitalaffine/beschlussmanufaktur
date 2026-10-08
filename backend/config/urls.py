@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import passkeys, factors, identities, sample_data, imports, mail_views, person_profiles, portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import emergency, passkeys, factors, identities, sample_data, imports, mail_views, person_profiles, portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -28,6 +28,7 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('betrieb/notfall/',emergency.request_access,name='emergency_request'),path('verwaltung/notfall/',emergency.review,name='emergency_review'),
             path('verwaltung/identitaeten/',identities.workspace,name='person_identities'),
             path('verwaltung/beispieldaten/',sample_data.workspace,name='sample_data'),
             path('verwaltung/import/',imports.workspace,name='imports'),path('verwaltung/import/<uuid:batch_id>/',imports.workspace,name='import_detail'),

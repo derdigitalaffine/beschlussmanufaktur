@@ -39,6 +39,8 @@ class Command(BaseCommand):
             membership = Membership.objects.create(user=user, organization=organization, role=Membership.Role.ORGANIZATION_ADMIN)
             user.last_context = membership
             user.save(update_fields=["last_context"])
+            from core.models import SystemOperator
+            SystemOperator.objects.create(user=user)
             from core.sample_data import create
             create(user,membership)
             AuditEvent.objects.create(actor=user, action="installation.bootstrapped", object_id=str(organization.pk))

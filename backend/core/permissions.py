@@ -13,7 +13,7 @@ def available_contexts(user):
         return Membership.objects.none()
     return user.memberships.filter(starts_at__lte=now, revoked_at__isnull=True).filter(
         Q(ends_at__isnull=True) | Q(ends_at__gt=now),
-    ).select_related("organization").order_by("organization__name", "role", "id")
+    ).filter(~Q(role='emergency') | Q(role='emergency',user__systemoperator__enabled=True,emergencyaccess__state='approved')).select_related("organization").order_by("organization__name", "role", "id")
 
 
 def active_context(request):
