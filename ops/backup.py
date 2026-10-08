@@ -56,15 +56,21 @@ def backup(args):
         validate(final,key,work/'verified')
         status={'ok':True,'created_at':manifest['created_at'],'stack':args.stack,'archive':name,'sha256':sha(final)}
         write_status(target,status)
-        if args.status_file:
-            summary_path=Path(args.status_file);summary_path.parent.mkdir(parents=True,exist_ok=True);summary_path.parent.chmod(0o755);summary_path.write_text(json.dumps(status));summary_path.chmod(0o644)
+        if args.status_file:write_summary(args.status_file,status)
         print(str(final))
     except Exception:
-        write_status(target,{'ok':False,'created_at':datetime.now(UTC).isoformat(),'stack':args.stack,'error':'Sicherung fehlgeschlagen; lokalen Betriebszustand prüfen.'});raise
+        status={'ok':False,'created_at':datetime.now(UTC).isoformat(),'stack':args.stack,'error':'Sicherung fehlgeschlagen; lokalen Betriebszustand prüfen.'}
+        write_status(target,status)
+        if args.status_file:write_summary(args.status_file,status)
+        raise
     finally:
         for app,state in previous.items():
             if state=='off':c.manage(app,'maintenance','off')
         if pause:c.run('start',*pause)
+
+def write_summary(filename,status):
+ path=Path(filename);path.parent.mkdir(parents=True,exist_ok=True);path.parent.chmod(0o755)
+ tmp=path.with_suffix('.new');tmp.write_text(json.dumps({k:status[k] for k in ('ok','created_at','stack')}));tmp.chmod(0o644);tmp.replace(path)
 
 def write_status(target,status):
  tmp=target/'last-backup.new';tmp.write_text(json.dumps(status));tmp.chmod(0o600);tmp.replace(target/'last-backup.json')
@@ -98,6 +104,8 @@ def restore(args):
  if not args.apply:print('Authentifizierte Sicherung vollständig geprüft: '+str(destination));return
  c=Compose(args.stack);running=set(c.run('ps','--status','running','--services').splitlines())
  if running-set(x[0] for x in c.config['databases']):raise ValueError('Restore nur auf neuem Ziel mit ausschließlich laufenden Datenbanken.')
+ # Build missing target images separately: BuildKit progress is not manifest JSON.
+ c.run('build',*c.config['apps'],'restore-tools')
  for app,code in manifest['apps'].items():
     current=json.loads(c.run('run','-T','--rm','--no-deps',app,'python','manage.py','backup_manifest'))
     if current!=code:raise ValueError('Code-/Migrationsstand abweichend. Passenden Release bereitstellen.')
