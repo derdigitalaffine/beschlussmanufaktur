@@ -81,7 +81,9 @@ def apply(context,batch_id):
             from .models import User
             # Reuse central account only when already related to this organization.
             user=User.objects.filter(email=row['email'],memberships__organization=context.organization).distinct().first() if row['email'] else None
-            PersonProfile.objects.create(organization=context.organization,user=user,name=row['name'],function=row['function'],faction=row['faction'])
+            profile=PersonProfile(organization=context.organization,user=user,name=row['name'],function=row['function'],faction=row['faction'])
+            from .identities import assign
+            assign(profile);profile.save()
         else:
             import secrets
             from .secret_store import encrypt

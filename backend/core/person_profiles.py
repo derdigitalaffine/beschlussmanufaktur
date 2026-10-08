@@ -38,11 +38,14 @@ class ProfileForm(forms.ModelForm):
     expected_version=forms.IntegerField(min_value=1,widget=forms.HiddenInput)
     reason=forms.CharField(label='Begründung der Änderung/Freigabe',max_length=500)
     class Meta:
-        model=PersonProfile;fields=['user','name','function','faction','starts_on','ends_on','contact','public_fields','published']
-        labels={'user':'Zugehöriges Konto (optional)','name':'Name','function':'Funktion','faction':'Fraktion','starts_on':'Amtszeitbeginn','ends_on':'Amtszeitende','contact':'Freigebbarer Kontakt','published':'Ausgewählte Felder veröffentlichen'}
+        model=PersonProfile;fields=['identity','user','name','function','faction','starts_on','ends_on','contact','public_fields','published']
+        labels={'identity':'Zentrale Person (vorhandene Identität auswählen)','user':'Zugehöriges Konto (optional)','name':'Name','function':'Funktion','faction':'Fraktion','starts_on':'Amtszeitbeginn','ends_on':'Amtszeitende','contact':'Freigebbarer Kontakt','published':'Ausgewählte Felder veröffentlichen'}
         widgets={k:forms.DateInput(attrs={'type':'date'}) for k in ('starts_on','ends_on')}
     def __init__(self,*args,context,**kwargs):
-        super().__init__(*args,**kwargs);self.fields['user'].queryset=User.objects.filter(memberships__organization=context.organization).distinct();self.initial['expected_version']=self.instance.version
+        super().__init__(*args,**kwargs)
+        from .identities import visible
+        self.fields['identity'].queryset=visible(context.user)
+        self.fields['user'].queryset=User.objects.filter(memberships__organization=context.organization).distinct();self.initial['expected_version']=self.instance.version
     def clean(self):
         data=super().clean()
         if data.get('starts_on') and data.get('ends_on') and data['ends_on']<data['starts_on']:raise ValidationError('Amtszeitende liegt vor Beginn.')
@@ -61,7 +64,10 @@ def profiles(request,profile_id=None):
                 lock_admin(request.user,context.pk,context.organization_id)
                 current=PersonProfile.objects.filter(pk=obj.pk).first()
                 if current and current.version!=form.cleaned_data['expected_version']:raise ValidationError('Parallel geändert. Neu laden.')
-                obj=form.save(commit=False);obj.version+=1;obj.full_clean();obj.save()
+                obj=form.save(commit=False)
+                from .identities import assign
+                assign(obj)
+                obj.version+=1;obj.full_clean();obj.save()
                 AuditEvent.objects.create(actor=request.user,action='person_profile.saved',object_id=str(obj.pk),metadata={'public_fields':obj.public_fields,'published':obj.published,'reason':form.cleaned_data['reason']})
         except ValidationError as error:form.add_error(None,error)
         else:return redirect('person_profiles')
