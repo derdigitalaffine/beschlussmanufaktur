@@ -844,3 +844,13 @@ class SampleBundle(models.Model):
     parent = models.ForeignKey(Organization,on_delete=models.PROTECT,related_name='sample_bundles')
     record_ids = models.JSONField(default=list)
     membership = models.OneToOneField(Membership,on_delete=models.CASCADE)
+
+class AuthenticationProfile(models.Model):
+    user = models.OneToOneField(User,on_delete=models.CASCADE)
+    method = models.CharField(max_length=20,default='email')
+    secret = models.TextField(blank=True)
+    pending_secret = models.TextField(blank=True)
+    pending_expires_at = models.DateTimeField(null=True)
+    last_counter = models.BigIntegerField(default=-1)
+    recovery_hashes = models.JSONField(default=list,blank=True)
+    version = models.PositiveIntegerField(default=0)

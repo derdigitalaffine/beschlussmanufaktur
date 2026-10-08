@@ -15,3 +15,14 @@ class SecurityHeadersMiddleware:
         if not request.path.startswith("/static/"):
             response["Cache-Control"] = "no-store"
         return response
+
+class FactorVersionMiddleware:
+    """Changing/resetting a factor ends other sessions without touching Fachrechte."""
+    def __init__(self,get_response):self.get_response=get_response
+    def __call__(self,request):
+        if request.user.is_authenticated:
+            from .models import AuthenticationProfile
+            from django.contrib.auth import logout
+            profile=AuthenticationProfile.objects.filter(user=request.user).first()
+            if profile and request.session.get('factor_version',0)!=profile.version:logout(request)
+        return self.get_response(request)
