@@ -1,0 +1,7 @@
+# Betriebssicherung und Wiederherstellung
+
+Betriebswerkzeuge laufen beim lokalen Betreiber, niemals mit Docker-Socket in einer Fachanwendung. Der Wartungsmodus friert HTTP-Schreibanfragen ein und erhält lesenden Zugriff. Auf PostgreSQL warten exklusiver Wartungswechsel und gemeinsame Schreibsperren auf bereits laufende Transaktionen; danach beginnen keine neuen Änderungen. Antworten enthalten 503/Retry-After, keine scheinbar gespeicherten Änderungen. Offline-Schriftführung bleibt lokal und wird nach Wartung abgeglichen. Lokale administrative Managementbefehle bleiben in der Verantwortung des Betreibers.
+
+`manage.py maintenance on|off|status` ist die kontrollierte lokale Schnittstelle. Fach-/Transfer-/Mailworker müssen während einer konsistenten Sicherung ebenfalls pausieren. `manage.py backup_manifest` liefert die Rolle und Prüfsummen aller Codemigrationen ohne Fachinhalte. Backup enthält Datenbank inklusive offener Journale/Prüfaufträge und Dateien; Laufzeitschlüssel werden getrennt gesichert.
+
+Die folgenden Hostwerkzeuge ergänzen verschlüsselte Sicherung, prüfbaren Restore und tägliche Ausführung. Für zusammenhängende Zwei-Host-Restorepunkte beide Seiten in Wartung nehmen, intern initiierte Übertragung pausieren und erst nach Sicherung beider Seiten in kontrollierter Reihenfolge wieder freigeben. Eine beliebige Mischung unterschiedlicher Sicherungszeiten ist kein konsistenter Gesamtstand.

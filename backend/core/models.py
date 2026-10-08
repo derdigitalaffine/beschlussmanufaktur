@@ -927,3 +927,8 @@ class TLSPlan(models.Model):
     error = models.CharField(max_length=200,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     applied_at = models.DateTimeField(null=True)
+
+class OperationalState(models.Model):
+    key = models.CharField(primary_key=True,max_length=40)
+    value = models.JSONField(default=dict)
+    updated_at = models.DateTimeField(auto_now=True)
