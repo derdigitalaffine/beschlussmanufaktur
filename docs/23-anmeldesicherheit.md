@@ -13,3 +13,9 @@ Browsergestützte Registrierung verlangt eine aktuelle vollständige Anmeldung, 
 Interner und geschützter Dienst haben getrennte Origins und Registrierungen. Domainänderungen benötigen deshalb vorab einen kontrollierten Faktorwechsel oder geeignete Wiederherstellung. Die CI prüft echte Registrierung und kryptografische Anmeldung mit einem virtuellen Chromium-Authenticator, zusätzlich zu Ablehnung falscher Sitzungen, fehlender Berechtigung und wiederholter Challenges. Reale iPad-/Firefox-/Windows-Hello-Geräte bleiben Teil der praktischen Abnahme.
 
 Verifikation durch die etablierte Bibliothek `py_webauthn`, keine selbst geschriebene WebAuthn-Kryptografie: https://duo-labs.github.io/py_webauthn/registration.html und https://duo-labs.github.io/py_webauthn/authentication.html .
+
+## Technischer Betrieb und Notfallzugriff
+
+Die ausdrücklich zugewiesene technische Betriebsrolle ist getrennt von Fachrollen. Bootstrap weist sie dem Betreiber zu; spätere Änderungen benötigen den lokalen Befehl `manage.py operator EMAIL [--revoke]`. Superuserstatus oder kommunale Organisationsverwaltung ersetzen diese Rolle nicht. Betriebsaktionen benötigen eine frische vollständige Anmeldung.
+
+Notfallzugriff benötigt benanntes Objekt (Vorlage oder Sitzung), Zweck, maximal zwei Stunden und vorherige Freigabe durch eine andere Organisationsadministration. Freigabe erzeugt einen eigenen ausdrücklich auszuwählenden Notfallkontext mit ausschließlich lesendem Zugriff/Export auf dieses Objekt. Keine Mandats-, Schreib-, Freigabe- oder Administrationsrechte. Die technische Rolle selbst enthält keine Inhalte. Ablauf, Entzug der Betriebsrolle und fehlende Freigabe sperren den Kontext. Antrag/Freigabe und Zweck werden auditiert; die Admingruppe der betroffenen Körperschaft erhält neutrale Hinweise. Notfallkontexte werden nicht extern repliziert.

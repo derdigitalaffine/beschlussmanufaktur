@@ -70,6 +70,7 @@ class OrganizationRelation(models.Model):
 
 class Membership(models.Model):
     class Role(models.TextChoices):
+        EMERGENCY = "emergency", "Befristeter Notfallzugriff"
         ORGANIZATION_ADMIN = "organization_admin", "Organisationsverwaltung"
         REVIEWER = "reviewer", "Fachbereichsleitung / Prüfung"
         RELEASE = "release", "Freigabe"
@@ -875,3 +876,20 @@ class WebAuthnCeremony(models.Model):
     consumed_at = models.DateTimeField(null=True)
     factor_version = models.PositiveIntegerField(default=0)
     name = models.CharField(max_length=80,blank=True)
+
+class SystemOperator(models.Model):
+    user = models.OneToOneField(User,on_delete=models.CASCADE)
+    enabled = models.BooleanField(default=True)
+
+class EmergencyAccess(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    operator = models.ForeignKey(User,on_delete=models.PROTECT,related_name='emergency_requests')
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    resource_kind = models.CharField(max_length=20)
+    resource_id = models.UUIDField()
+    reason = models.CharField(max_length=500)
+    expires_at = models.DateTimeField()
+    state = models.CharField(max_length=20,default='pending')
+    reviewed_by = models.ForeignKey(User,null=True,on_delete=models.SET_NULL,related_name='emergency_reviews')
+    membership = models.OneToOneField(Membership,null=True,on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
