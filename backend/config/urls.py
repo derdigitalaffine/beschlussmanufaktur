@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import recovery, emergency, passkeys, factors, identities, sample_data, imports, mail_views, person_profiles, portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import tls_management, recovery, emergency, passkeys, factors, identities, sample_data, imports, mail_views, person_profiles, portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -29,6 +29,7 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('betrieb/tls/',tls_management.workspace,name='tls_management'),
             path('verwaltung/wiederherstellung/',recovery.administrative,name='recovery_admin'),
             path('betrieb/notfall/',emergency.request_access,name='emergency_request'),path('verwaltung/notfall/',emergency.review,name='emergency_review'),
             path('verwaltung/identitaeten/',identities.workspace,name='person_identities'),

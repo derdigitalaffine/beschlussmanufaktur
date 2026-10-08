@@ -15,6 +15,9 @@ if SERVER_ROLE not in {"internal", "protected", "public"}:
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 if "127.0.0.1" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("127.0.0.1")  # Private container readiness probe.
+PUBLIC_BASE_HOSTS = list(ALLOWED_HOSTS)
+if SERVER_ROLE == "public":
+    ALLOWED_HOSTS = ["*"]  # PublicHostMiddleware checks signed portal domains before redirect/render.
 CSRF_TRUSTED_ORIGINS = list(filter(None, os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")))
 APPLICATION_URL = os.environ.get("APPLICATION_URL", "https://localhost").rstrip("/")
 application_url = urlparse(APPLICATION_URL)
@@ -25,7 +28,7 @@ INSTALLED_APPS = [
     "django.contrib.messages", "django.contrib.staticfiles", "core",
 ]
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware", "core.middleware.SecurityHeadersMiddleware",
+    "core.middleware.PublicHostMiddleware", "django.middleware.security.SecurityMiddleware", "core.middleware.SecurityHeadersMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware", "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware", "django.contrib.auth.middleware.AuthenticationMiddleware", "core.middleware.FactorVersionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware", "django.middleware.clickjacking.XFrameOptionsMiddleware",

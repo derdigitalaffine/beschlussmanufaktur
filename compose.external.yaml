@@ -95,6 +95,18 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     restart: unless-stopped
+  tls-agent:
+    build: {context: ., dockerfile: deploy/Dockerfile.tls-agent}
+    environment:
+      TLS_AGENT_KEY: ${TLS_EXTERNAL_AGENT_KEY:-}
+      TLS_AGENT_ROLE: external
+      PROTECTED_HOST: ${PROTECTED_HOST:-gremien.localhost}
+      PUBLIC_HOST: ${PUBLIC_HOST:-info.localhost}
+    volumes: [tls_runtime:/runtime]
+    networks: [protected_edge, public_edge]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
   caddy:
     image: caddy:2-alpine
     environment:
@@ -106,6 +118,7 @@ services:
       - ./backend/static:/srv/static:ro
       - caddy_data:/data
       - caddy_config:/config
+      - tls_runtime:/runtime
     networks: [protected_edge, public_edge]
     depends_on: [protected, public]
     restart: unless-stopped
@@ -120,3 +133,4 @@ volumes:
   protected_files:
   caddy_data:
   caddy_config:
+  tls_runtime:

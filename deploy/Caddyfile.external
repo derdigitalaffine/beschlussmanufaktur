@@ -1,10 +1,15 @@
 {
-    admin off
+    admin unix//runtime/admin.sock {
+        origins localhost
+    }
 }
 
 {$PROTECTED_HOST:gremien.localhost} {
     tls internal
     encode zstd gzip
+    handle_path /betrieb/tls-agent/* {
+        reverse_proxy tls-agent:8070
+    }
     handle_path /static/* {
         root * /srv/static
         file_server
@@ -17,6 +22,9 @@
 {$PUBLIC_HOST:info.localhost} {
     tls internal
     encode zstd gzip
+    handle_path /betrieb/tls-agent/* {
+        reverse_proxy tls-agent:8070
+    }
     handle_path /static/* {
         root * /srv/static
         file_server

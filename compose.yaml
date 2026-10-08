@@ -17,6 +17,9 @@ services:
   backend:
     build: .
     environment: &internal_environment
+      TLS_INTERNAL_AGENT_KEY: ${TLS_INTERNAL_AGENT_KEY:-}
+      TLS_EXTERNAL_AGENT_KEY: ${TLS_EXTERNAL_AGENT_KEY:-}
+      TLS_INTERNAL_AGENT_URL: ${TLS_INTERNAL_AGENT_URL:-http://tls-agent:8070}
       DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-}
       SERVER_ROLE: internal
       EXCHANGE_SOURCE: ${EXCHANGE_SOURCE:-}
@@ -32,6 +35,12 @@ services:
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://localhost}
       POSTGRES_HOST: db
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Bitte POSTGRES_PASSWORD setzen}
+      IMAP_HOST: ${IMAP_HOST:-}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USER: ${IMAP_USER:-}
+      IMAP_PASSWORD: ${IMAP_PASSWORD:-}
+      IMAP_FOLDER: ${IMAP_FOLDER:-INBOX}
+      IMAP_ORGANIZATION: ${IMAP_ORGANIZATION:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
@@ -82,6 +91,27 @@ services:
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
     restart: unless-stopped
+  operations-worker:
+    build: .
+    command: [python, manage.py, operations_worker, --watch]
+    environment: *internal_environment
+    networks: [data, edge]
+    depends_on:
+      db: {condition: service_healthy}
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+  tls-agent:
+    build: {context: ., dockerfile: deploy/Dockerfile.tls-agent}
+    environment:
+      TLS_AGENT_KEY: ${TLS_INTERNAL_AGENT_KEY:-}
+      TLS_AGENT_ROLE: internal
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    volumes: [tls_runtime:/runtime]
+    networks: [edge]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
   caddy:
     image: caddy:2-alpine
     environment:
@@ -92,6 +122,7 @@ services:
       - ./backend/static:/srv/static:ro
       - caddy_data:/data
       - caddy_config:/config
+      - tls_runtime:/runtime
     networks: [edge]
     depends_on: [backend]
     restart: unless-stopped
@@ -103,3 +134,4 @@ volumes:
   files:
   caddy_data:
   caddy_config:
+  tls_runtime:

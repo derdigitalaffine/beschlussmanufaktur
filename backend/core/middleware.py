@@ -26,3 +26,17 @@ class FactorVersionMiddleware:
             profile=AuthenticationProfile.objects.filter(user=request.user).first()
             if profile and request.session.get('factor_version',0)!=profile.version:logout(request)
         return self.get_response(request)
+
+
+class PublicHostMiddleware:
+    def __init__(self,get_response):self.get_response=get_response
+    def __call__(self,request):
+        from django.conf import settings
+        if settings.SERVER_ROLE=='public':
+            from django.core.exceptions import DisallowedHost
+            from .models import PortalConfiguration
+            host=request.get_host().split(':')[0].lower()
+            allowed=set(getattr(settings,'PUBLIC_BASE_HOSTS',['localhost','127.0.0.1','testserver']))
+            if not (request.path.startswith('/health/') and host in allowed):allowed.update(h for p in PortalConfiguration.objects.all() for h in p.domains)
+            if host not in allowed:raise DisallowedHost('Nicht freigegebener öffentlicher Host.')
+        return self.get_response(request)

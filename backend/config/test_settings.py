@@ -9,3 +9,5 @@ DEFAULT_FROM_EMAIL = "test@example.invalid"
 SECURE_SSL_REDIRECT = False
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]  # Only in isolated tests.
 
+
+PUBLIC_BASE_HOSTS = ["localhost", "127.0.0.1", "testserver"]
