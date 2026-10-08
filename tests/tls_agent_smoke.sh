@@ -3,6 +3,7 @@ set -euo pipefail
 ci_prefix="bm-tls-ci-${GITHUB_RUN_ID:-local}"
 ci_work=$(mktemp -d)
 cleanup() {
+  if [[ $? != 0 ]]; then docker logs "$ci_prefix-caddy"; docker logs "$ci_prefix-agent"; fi
   docker rm -f "$ci_prefix-caddy" "$ci_prefix-agent" >/dev/null 2>&1 || true
   docker volume rm "$ci_prefix-runtime" "$ci_prefix-data" >/dev/null 2>&1 || true
   docker network rm "$ci_prefix-network" >/dev/null 2>&1 || true

@@ -58,7 +58,7 @@ def apply(data):
         for name,value in [('cert',data['certificate']),('key',data['private_key'])]:
             path=ROOT/(name+'-'+identifier+'.pem');path.write_text(value);path.chmod(0o600);plan[name+'_path']=str(path)
     elif data['certificate'] or data['private_key']:raise ValueError('Unerwartetes Schlüsselmaterial.')
-    sites={**state['sites'],host:plan};config=render(sites);adapted=caddy('/adapt',config.encode(),'text/caddyfile');caddy('/load',json.dumps(adapted['config']).encode(),'application/json')
+    sites={**state['sites'],host:plan};config=render(sites);caddy('/load',config.encode(),'text/caddyfile')
     state['sites']=sites;state['applied'][identifier]=digest
     # Retain a bounded idempotency ledger; timestamps prohibit old unsigned replay.
     state['applied']=dict(list(state['applied'].items())[-500:])
@@ -78,7 +78,10 @@ class Handler(BaseHTTPRequestHandler):
             raw=self.rfile.read(length)
             if not hmac.compare_digest(hmac.new(KEY,raw,hashlib.sha256).hexdigest(),self.headers.get('X-BM-TLS-Signature','')):raise ValueError
             self.reply(200,apply(json.loads(raw)))
-        except Exception:self.reply(400,{'error':'Auftrag abgewiesen; vorherige Caddy-Konfiguration bleibt erhalten.'})
+        except Exception as exc:
+            import traceback
+            print(type(exc).__name__,''.join(traceback.format_tb(exc.__traceback__)),flush=True)
+            self.reply(400,{'error':'Auftrag abgewiesen; vorherige Caddy-Konfiguration bleibt erhalten.'})
 
 if __name__=='__main__':
     ROOT.mkdir(parents=True,exist_ok=True)
@@ -86,6 +89,6 @@ if __name__=='__main__':
     if (ROOT/'state.json').exists():
         for attempt in range(30):
             try:
-                adapted=caddy('/adapt',render(load_state()['sites']).encode(),'text/caddyfile');caddy('/load',json.dumps(adapted['config']).encode(),'application/json');break
+                caddy('/load',render(load_state()['sites']).encode(),'text/caddyfile');break
             except (OSError,ValueError):time.sleep(2)
     HTTPServer(('0.0.0.0',8070),Handler).serve_forever()
