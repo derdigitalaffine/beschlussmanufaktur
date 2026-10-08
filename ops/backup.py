@@ -13,7 +13,7 @@ class Compose:
  def __init__(self,stack):self.config=STACKS[stack];self.base=['docker','compose','-f',str(ROOT/self.config['file'])]
  def run(self,*args,output=None,input=None):
     result=subprocess.run([*self.base,*args],cwd=ROOT,stdin=input,stdout=output or subprocess.PIPE,stderr=subprocess.PIPE,check=False)
-    if result.returncode:raise RuntimeError('Compose-Betriebsaktion fehlgeschlagen; Dienstkonfiguration lokal prüfen.')
+    if result.returncode:raise RuntimeError('Compose-Betriebsaktion fehlgeschlagen: '+' '.join(args[:6])+'; Dienstkonfiguration lokal prüfen.')
     return result.stdout.decode().strip() if output is None else ''
  def manage(self,app,*args):return self.run('exec','-T',app,'python','manage.py',*args)
 
@@ -112,6 +112,8 @@ def restore(args):
  for service,user,db in c.config['databases']:
     count=c.run('exec','-T',service,'psql','-U',user,'-d',db,'-Atc',"SELECT count(*) FROM pg_tables WHERE schemaname='public'")
     if count!='0':raise ValueError('Zieldatenbank nicht leer; kein Überschreiben bestehender Installation.')
+ for volume in c.config['volumes']:
+    c.run('run','-T','--rm','--no-deps','restore-tools','python','volume_stream.py','check-empty','/backup/'+volume)
  for service,user,db in c.config['databases']:
     with (destination/(service+'.dump')).open('rb') as inp:c.run('exec','-T',service,'pg_restore','-U',user,'-d',db,'--no-owner','--exit-on-error',input=inp)
  for volume in c.config['volumes']:

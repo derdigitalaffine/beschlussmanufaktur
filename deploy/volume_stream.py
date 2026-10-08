@@ -8,6 +8,8 @@ if sys.argv[1]=='pack':
         for path in sorted(root.rglob('*')):
             if path.is_symlink():raise SystemExit('Symlinks nicht zulässig.')
             if path.is_file():archive.add(path,arcname=str(path.relative_to(root)),recursive=False)
+elif sys.argv[1]=='check-empty':
+    if any(root.iterdir()):raise SystemExit('Zielvolume muss leer sein.')
 elif sys.argv[1]=='restore':
     if any(root.iterdir()):raise SystemExit('Zielvolume muss leer sein.')
     with tarfile.open(fileobj=sys.stdin.buffer,mode='r|') as archive:
