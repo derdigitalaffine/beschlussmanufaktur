@@ -813,3 +813,21 @@ class MailCursor(models.Model):
     mailbox = models.CharField(primary_key=True,max_length=64)
     uidvalidity = models.PositiveBigIntegerField()
     last_uid = models.PositiveBigIntegerField(default=0)
+
+class ImportBatch(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    organization = models.ForeignKey(Organization,on_delete=models.PROTECT)
+    owner = models.ForeignKey(User,on_delete=models.PROTECT)
+    context = models.ForeignKey(Membership,on_delete=models.PROTECT)
+    kind = models.CharField(max_length=20)
+    rows = models.JSONField(default=list)
+    digest = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    applied_at = models.DateTimeField(null=True)
+
+class InvitationDispatch(models.Model):
+    invitation = models.OneToOneField(Invitation,on_delete=models.CASCADE)
+    encrypted_token = models.TextField()
+    delivered_at = models.DateTimeField(null=True)
+    attempts = models.PositiveIntegerField(default=0)
+    last_error = models.CharField(max_length=100,blank=True)
