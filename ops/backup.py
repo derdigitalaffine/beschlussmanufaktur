@@ -44,7 +44,7 @@ def backup(args):
             with path.open('wb') as out:c.run('exec','-T',service,'pg_dump','-U',user,'-d',db,'--format=custom','--no-owner',output=out)
         for volume in c.config['volumes']:
             path=work/(volume+'.tar')
-            with path.open('wb') as out:c.run('run','--rm','--no-deps','backup-tools','python','volume_stream.py','pack','/backup/'+volume,output=out)
+            with path.open('wb') as out:c.run('run','-T','--rm','--no-deps','backup-tools','python','volume_stream.py','pack','/backup/'+volume,output=out)
         for path in sorted(work.iterdir()):manifest['files'][path.name]={'sha256':sha(path),'size':path.stat().st_size}
         (work/'manifest.json').write_text(json.dumps(manifest,sort_keys=True))
         archive=work/'archive.tar'
@@ -56,6 +56,8 @@ def backup(args):
         validate(final,key,work/'verified')
         status={'ok':True,'created_at':manifest['created_at'],'stack':args.stack,'archive':name,'sha256':sha(final)}
         write_status(target,status)
+        if args.status_file:
+            summary_path=Path(args.status_file);summary_path.parent.mkdir(parents=True,exist_ok=True);summary_path.parent.chmod(0o755);summary_path.write_text(json.dumps(status));summary_path.chmod(0o644)
         print(str(final))
     except Exception:
         write_status(target,{'ok':False,'created_at':datetime.now(UTC).isoformat(),'stack':args.stack,'error':'Sicherung fehlgeschlagen; lokalen Betriebszustand prüfen.'});raise
@@ -97,7 +99,7 @@ def restore(args):
  c=Compose(args.stack);running=set(c.run('ps','--status','running','--services').splitlines())
  if running-set(x[0] for x in c.config['databases']):raise ValueError('Restore nur auf neuem Ziel mit ausschließlich laufenden Datenbanken.')
  for app,code in manifest['apps'].items():
-    current=json.loads(c.run('run','--rm','--no-deps',app,'python','manage.py','backup_manifest'))
+    current=json.loads(c.run('run','-T','--rm','--no-deps',app,'python','manage.py','backup_manifest'))
     if current!=code:raise ValueError('Code-/Migrationsstand abweichend. Passenden Release bereitstellen.')
  for service,user,db in c.config['databases']:
     count=c.run('exec','-T',service,'psql','-U',user,'-d',db,'-Atc',"SELECT count(*) FROM pg_tables WHERE schemaname='public'")
@@ -105,13 +107,13 @@ def restore(args):
  for service,user,db in c.config['databases']:
     with (destination/(service+'.dump')).open('rb') as inp:c.run('exec','-T',service,'pg_restore','-U',user,'-d',db,'--no-owner','--exit-on-error',input=inp)
  for volume in c.config['volumes']:
-    with (destination/(volume+'.tar')).open('rb') as inp:c.run('run','--rm','--no-deps','restore-tools','python','volume_stream.py','restore','/backup/'+volume,input=inp)
+    with (destination/(volume+'.tar')).open('rb') as inp:c.run('run','-T','--rm','--no-deps','restore-tools','python','volume_stream.py','restore','/backup/'+volume,input=inp)
  # Backup maintenance flags deliberately remain active; never auto-publish after restore.
  print('Restore auf leerem Ziel abgeschlossen. Vor Start Rechte, Journale, Veröffentlichungen und Laufzeitschlüssel prüfen; Wartung bleibt aktiv.')
 
 def main():
  parser=argparse.ArgumentParser();sub=parser.add_subparsers(dest='operation',required=True)
- p=sub.add_parser('backup');p.add_argument('--target',required=True)
+ p=sub.add_parser('backup');p.add_argument('--target',required=True);p.add_argument('--status-file')
  r=sub.add_parser('restore');r.add_argument('--archive',required=True);r.add_argument('--destination',required=True);r.add_argument('--apply',action='store_true')
  for item in (p,r):item.add_argument('--stack',choices=STACKS,required=True);item.add_argument('--key-file',required=True)
  args=parser.parse_args()
