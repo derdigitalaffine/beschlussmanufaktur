@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import emergency, passkeys, factors, identities, sample_data, imports, mail_views, person_profiles, portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import recovery, emergency, passkeys, factors, identities, sample_data, imports, mail_views, person_profiles, portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -20,6 +20,7 @@ else:
     urlpatterns += [
         path("", views.dashboard, name="home"),
         path("anmelden/", views.sign_in, name="sign_in"),
+        path("wiederherstellung/",recovery.reset,name="recovery_reset"),path("wiederherstellung/anfordern/",recovery.request_reset,name="recovery_request"),
         path("sicherheit/passkeys/",passkeys.workspace,name="passkeys"),path("sicherheit/passkeys/optionen/<str:purpose>/",passkeys.options,name="passkey_options"),path("sicherheit/passkeys/pruefen/",passkeys.verify,name="passkey_verify"),path("sicherheit/passkeys/<uuid:key_id>/entfernen/",passkeys.remove,name="passkey_remove"),
         path("anmelden/faktor/",factors.verify,name="factor_verify"),path("sicherheit/",factors.security,name="security"),
         path("anmelden/code/", views.verify_code, name="verify_code"),
@@ -28,6 +29,7 @@ else:
     ]
     if settings.SERVER_ROLE == "internal":
         urlpatterns += [
+            path('verwaltung/wiederherstellung/',recovery.administrative,name='recovery_admin'),
             path('betrieb/notfall/',emergency.request_access,name='emergency_request'),path('verwaltung/notfall/',emergency.review,name='emergency_review'),
             path('verwaltung/identitaeten/',identities.workspace,name='person_identities'),
             path('verwaltung/beispieldaten/',sample_data.workspace,name='sample_data'),

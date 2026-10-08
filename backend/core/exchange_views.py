@@ -74,6 +74,26 @@ def review(request,change_id):
             obj=RemoteChange.objects.select_for_update().get(pk=obj.pk)
             if obj.state!='pending':raise PermissionDenied
             if request.POST.get('decision')=='accept':
+                if obj.resource_kind in ('recovery_request','credential'):
+                    from .recovery import issue,accept_ticket,proof_cipher
+                    from .models import RecoveryTicket
+                    import json
+                    from .models import User
+                    actor_context=available_contexts(get_object_or_404(User,pk=obj.actor_id)).filter(pk=obj.context_id,organization=context.organization).first()
+                    if not actor_context or not ExchangePolicy.objects.filter(organization=context.organization,protected_enabled=True).exists():raise PermissionDenied('Urheberkontext nicht mehr gültig.')
+                    if obj.resource_kind=='recovery_request':
+                        if obj.resource_id!=actor_context.pk or obj.content:raise PermissionDenied
+                        issue(actor_context.user,actor_context)
+                    else:
+                        ticket=get_object_or_404(RecoveryTicket.objects.select_for_update(),pk=obj.resource_id,user_id=obj.actor_id,organization_id=context.organization_id,context_id=obj.context_id)
+                        try:
+                            proof=json.loads(proof_cipher().decrypt(obj.content.encode()))
+                            if set(proof)!= {'token','password_hash'}:raise ValueError
+                            accept_ticket(ticket,proof['password_hash'],proof['token'])
+                        except Exception:
+                            messages.error(request,'Wiederherstellungsnachweis ungültig, abgelaufen oder widersprüchlich. Keine Zugangsdaten übernommen.');return redirect('review_remote',change_id=obj.pk)
+                    obj.state='accepted';obj.reviewed_by=request.user;obj.reviewed_at=timezone.now();obj.save();AuditEvent.objects.create(actor=request.user,action='recovery.remote_approved',object_id=str(obj.pk))
+                    return redirect('exchange')
                 if obj.resource_kind not in ('registry','template'):raise PermissionDenied
                 from .models import Template
                 from .templates_service import template_access,touch

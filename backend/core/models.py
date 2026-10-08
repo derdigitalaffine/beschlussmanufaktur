@@ -893,3 +893,18 @@ class EmergencyAccess(models.Model):
     reviewed_by = models.ForeignKey(User,null=True,on_delete=models.SET_NULL,related_name='emergency_reviews')
     membership = models.OneToOneField(Membership,null=True,on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class RecoveryTicket(models.Model):
+    id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    user = models.ForeignKey(User,on_delete=models.CASCADE)
+    organization_id = models.UUIDField()
+    context_id = models.UUIDField()
+    token_digest = models.CharField(max_length=64)
+    password_basis = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    state = models.CharField(max_length=20,default='pending')
+    reset_factor = models.BooleanField(default=False)
+    factor_reset_applied = models.BooleanField(default=False)
+    encrypted_token = models.TextField(blank=True)
+    delivered_at = models.DateTimeField(null=True)
+    attempts = models.PositiveIntegerField(default=0)
