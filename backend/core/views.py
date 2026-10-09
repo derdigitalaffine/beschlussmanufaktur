@@ -107,7 +107,10 @@ def dashboard(request):
 
 @login_required
 @require_POST
+@transaction.atomic
 def select_context(request):
+    from .react_workspace import lock_actor
+    lock_actor(request)
     try:
         context_id = UUID(request.POST.get("context", ""))
     except (ValueError, TypeError):
@@ -116,6 +119,8 @@ def select_context(request):
     if not context:
         return HttpResponseForbidden("Dieser Arbeitskontext ist nicht verfügbar.")
     request.session["context_id"] = str(context.pk)
+    request.session.save()
+    request.session.modified = False
     request.user.last_context = context
     request.user.save(update_fields=["last_context"])
     AuditEvent.objects.create(actor=request.user, action="context.selected", object_id=str(context.pk))

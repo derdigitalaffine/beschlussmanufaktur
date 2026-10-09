@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.urls import path
-from core import tls_management, recovery, emergency, passkeys, factors, identities, sample_data, imports, mail_views, person_profiles, portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
+from core import react_workspace, tls_management, recovery, emergency, passkeys, factors, identities, sample_data, imports, mail_views, person_profiles, portal_configuration, public_portal, offline_views, member_views, decision_views, minutes_views, session_views, session_transfer, vote_views, live_views, invitation_views, meeting_views, replica_views, collaboration_views, template_views, exchange, exchange_views, access_views, registry, user_views, views
 
 urlpatterns = [
     path("health/live/", views.live, name="live"),
@@ -12,6 +12,15 @@ if settings.SERVER_ROLE == 'protected':
     urlpatterns += [path('transfer/sessions/',session_transfer.returns_endpoint),path('transfer/events/',exchange.events),path('transfer/ack/',exchange.acknowledge),path('vorlagen/',replica_views.documents,name='replica_documents'),path('dokumente/<uuid:document_id>/',replica_views.document,name='replica_document'),path('dokumente/<uuid:document_id>/vorschlag/',replica_views.propose_document,name='replica_propose'),path('unterlagen/',exchange_views.external_records,name='external_records'),path('unterlagen/<uuid:record_id>/vorschlag/',exchange_views.propose,name='propose')]
 if settings.SERVER_ROLE=='protected':
     urlpatterns += [path('sitzungen/',meeting_views.index,name='meetings'),path('sitzungen/<uuid:meeting_id>/',meeting_views.detail,name='meeting_detail'),path('einladungen/<uuid:invitation_id>/<str:format>/',invitation_views.download,name='meeting_invitation_download'),path('einladungen/status/<int:delivery_id>/',invitation_views.seen,name='meeting_invitation_seen')]
+if settings.SERVER_ROLE in ('internal','protected'):
+    urlpatterns += [
+        path('arbeitsplatz/', react_workspace.shell, name='react_workspace'),
+        path('api/v1/arbeitsplatz/', react_workspace.bootstrap, name='workspace_bootstrap'),
+        path('api/v1/arbeitsplatz/ressourcen/', react_workspace.resource_list, name='workspace_resources'),
+        path('api/v1/arbeitsplatz/kontext/', react_workspace.select_context, name='workspace_context'),
+        path('api/v1/arbeitsplatz/favorit/', react_workspace.favorite, name='workspace_favorite'),
+        path('api/v1/arbeitsplatz/modus/', react_workspace.mode, name='workspace_mode'),
+    ]
 if settings.SERVER_ROLE in ('internal','protected'):
     urlpatterns += [path('offline/sitzungen/',offline_views.meetings,name='offline_meetings'),path('offline/identitaet/',offline_views.identity,name='offline_identity'),path('offline/abgleich/',offline_views.sync,name='offline_sync'),path('offline/sitzungen/<uuid:meeting_id>/',offline_views.prepare,name='offline_prepare'),path('offline/notizen/<uuid:meeting_id>/',offline_views.sync_note,name='offline_note_sync'),path('mein-bereich/',member_views.desk,name='member_desk'),path('sitzungen/<uuid:meeting_id>/notiz/',member_views.note,name='personal_note'),path('sitzungen/<uuid:meeting_id>/niederschrift/',minutes_views.workspace,name='minutes'),path('sitzungen/<uuid:meeting_id>/niederschrift/<int:version>/<str:format>/',minutes_views.download,name='minutes_export'),path('sitzungen/<uuid:meeting_id>/rueckgabe/',session_views.returns,name='session_returns'),path('sitzungen/<uuid:meeting_id>/abstimmungen/',vote_views.workspace,name='votes'),path('sitzungen/<uuid:meeting_id>/live/',live_views.workspace,name='live_workspace'),path('sitzungen/<uuid:meeting_id>/live/status/',live_views.status,name='live_status'),path('sitzungen/<uuid:meeting_id>/live/heartbeat/',live_views.heartbeat,name='live_heartbeat')]
 if settings.SERVER_ROLE == "public":

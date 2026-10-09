@@ -34,11 +34,11 @@ jobs:
         working-directory: backend
       - run: python manage.py test --settings=config.test_settings
         working-directory: backend
-      - run: python manage.py test core.role_tests --settings=config.test_settings
+      - run: python manage.py test core.role_tests core.test_frontend_api_security --settings=config.test_settings
         working-directory: backend
         env:
           SERVER_ROLE: public
-      - run: python manage.py test core.role_tests --settings=config.test_settings
+      - run: python manage.py test core.role_tests core.test_frontend_api_security --settings=config.test_settings
         working-directory: backend
         env:
           SERVER_ROLE: protected
