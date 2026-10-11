@@ -42,7 +42,7 @@ class LiveMeetingIsland extends HTMLElement {
   }
   wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
   setMessage(text,kind='info'){this.state.message=text;this.state.messageKind=kind;this.update();}
-  blocked(){const s=this.state;return s.pending||s.connection!=='online'||!s.authority||s.pageVersion!==s.serverVersion||['closed','unknown'].includes(s.vote);}
+  blocked(){const s=this.state;return s.pending||s.connection!=='online'||!s.authority||s.quorum<15||s.pageVersion!==s.serverVersion||['closed','unknown'].includes(s.vote);}
   focusRecoverWhenReady(){const recover=this.querySelector('[data-action=recover]');if(!this.state.pending&&!recover.hidden&&!recover.disabled)recover.focus();}
   async primary(){if(this.blocked())return;if(this.state.vote==='idle')await this.transitionVote('pending-open','open');else if(this.state.vote==='open')await this.transitionVote('pending-close','closed');}
   async transitionVote(pendingState,doneState){
@@ -65,7 +65,7 @@ class LiveMeetingIsland extends HTMLElement {
   simulateOffline(){const s=this.state;if(s.vote==='closed')return;s.connection='offline';this.setMessage('Verbindung unterbrochen. Eine laufende Aktion wird nicht lokal als erfolgreich behandelt.','error');this.focusRecoverWhenReady();}
   simulateAuthorityLoss(){const s=this.state;if(s.vote==='closed')return;s.authority=false;s.serverVersion+=1;this.setMessage('Sitzungshoheit wurde auf einem anderen Gerät übernommen. Eine laufende Aktion wird nicht wiederholt; autoritativen Stand prüfen.','error');this.focusRecoverWhenReady();}
   recover(){const s=this.state;s.pageVersion=s.serverVersion;s.connection='online';s.authority=true;if(s.vote==='unknown'){s.vote=s.serverVote;if(['open','closed'].includes(s.vote))s.ballots=18;}this.setMessage(`Autoritativer Serverstand ${s.serverVersion} wurde übernommen. ${s.vote==='open'?'Die Abstimmung ist serverseitig offen.':s.vote==='closed'?'Die Abstimmung ist serverseitig abgeschlossen.':'Kritische Aktionen sind wieder möglich.'}`);this.querySelector('[data-action=primary]').focus();}
-  toggleQuorum(){const s=this.state;if(s.pending)return;s.quorum=s.quorum===18?13:18;this.setMessage(s.quorum>=15?'Beschlussfähigkeit erneut mit 18 / 28 festgestellt.':'Testzustand: nur 13 / 28 anwesend. Abstimmung müsste fachlich neu bewertet werden.',s.quorum>=15?'info':'error');}
+  toggleQuorum(){const s=this.state;if(s.pending)return;s.quorum=s.quorum===18?13:18;this.setMessage(s.quorum>=15?'Beschlussfähigkeit erneut mit 18 / 28 festgestellt.':'Testzustand: nur 13 / 28 anwesend. Abstimmungsaktionen sind gesperrt, bis Beschlussfähigkeit erneut festgestellt ist.',s.quorum>=15?'info':'error');}
   async saveNote(){const s=this.state;if(this.querySelector('[data-action=save]').disabled)return;const requestBase=s.pageVersion;s.pending=true;this.setMessage('Protokollstand wird gespeichert …');await this.wait(120);const externalChanged=s.serverVersion!==requestBase;s.serverVersion+=1;s.pending=false;if(s.connection!=='online'||!s.authority||externalChanged){if(s.connection==='online')s.connection='stale';this.setMessage('Speicherergebnis ist unklar. Nicht erneut senden; autoritativen Serverstand prüfen.','error');this.focusRecoverWhenReady();return;}s.pageVersion=s.serverVersion;this.setMessage(`Protokollstand serverseitig bestätigt · Stand ${s.serverVersion}.`);}
   update(){
     const s=this.state;
