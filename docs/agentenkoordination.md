@@ -5,6 +5,7 @@ Diese Anleitung konkretisiert den Koordinationsvertrag aus `AGENTS.md`. Das Prin
 ## Grundmodell
 
 - **#38 ist das gemeinsame Lagebild.** Repo-weite Abhängigkeiten und Architekturkonflikte werden dort sichtbar.
+- **#41 ist das gemeinsame Produkt-/Roadmap-Lagebild.** Vor aktiver Arbeit wird geprüft, welchem Outcome der Slice dient und ob Priorität oder Abhängigkeiten kollidieren.
 - **Ein Arbeits-Issue ist die Einheit der Arbeit.** Dort stehen Ziel, Abnahmekriterien, Claim und Handoffs.
 - **Ein Branch ist die Einheit der Implementierung.** Ein Branch gehört zu genau einem kanonischen Liefer-Issue.
 - **Ein Pull Request ist die Einheit der Lieferung und des Reviews.** Er referenziert das Arbeits-Issue deklarativ.
@@ -18,7 +19,7 @@ Das Dashboard ist absichtlich nur beratend. Es ersetzt keine fachliche Entscheid
 
 Vor aktiver Arbeit:
 
-1. #38 und das Ziel-Issue lesen.
+1. #41, #38 und das Ziel-Issue lesen.
 2. Andere offene Claims und Pull Requests prüfen.
 3. Relevante fachliche Vorgaben und bestehende Modelle/APIs identifizieren.
 4. Kollisionsschlüssel und voraussichtliche Pfade bestimmen.
@@ -44,10 +45,10 @@ Diesen Block als Kommentar im Arbeits-Issue verwenden und aktuell halten:
 - Depends on: #... | none
 - Parallel-safe with: #... | <benachbarter Umfang> | none known
 - Avoids / out of scope: ...
-- Collision scan: #38 + offene Claims + offene PRs geprüft
+- Collision scan: #41 + #38 + offene Claims + offene PRs geprüft
 ```
 
-Der exakte HTML-Marker ist Teil des Maschinenvertrags. Freitext wie `coordination:claim:v2` ohne Marker wird nicht als gültiger Claim behandelt.
+Der exakte HTML-Marker ist Teil des Maschinenvertrags. Freitext wie `coordination:claim:v2` ohne Marker wird nicht als gültiger Claim behandelt. Pro Arbeits-Issue gibt es genau **einen** kanonischen Claim-Kommentar; bei Phasen-, Branch- oder Scope-Wechsel wird dieser Kommentar editiert statt ein zweiter Claim angelegt.
 
 ### 3. Coordination keys wählen
 
@@ -93,7 +94,7 @@ Refs #123
 
 für einen Teilumfang. Narrative Sätze wie „does not close #123“ sind kein verlässlicher Maschinenvertrag und sollen vermieden werden.
 
-Danach den bestehenden Claim aktualisieren:
+Danach den bestehenden Claim-Kommentar aktualisieren:
 
 ```md
 - Phase: review
@@ -121,7 +122,7 @@ Diesen Block verwenden, wenn ein anderer Worker ohne versteckten Kontext überne
 - Suggested next files/issues: ...
 ```
 
-`continue` hält den Umfang aktiv. `superseded`, `paused`, `abandoned` und `completed` beenden den bisherigen Claim, sofern danach kein neuerer Claim folgt. Ein späterer Worker eröffnet keinen parallelen Privatplan, sondern setzt mit einem neuen/aktualisierten sichtbaren Claim fort.
+`continue` hält den Umfang aktiv. `superseded`, `paused`, `abandoned` und `completed` beenden den bisherigen Claim, sofern danach kein neuerer oder später aktualisierter Claim folgt. Ein späterer Worker eröffnet keinen parallelen Privatplan, sondern setzt mit einem neuen/aktualisierten sichtbaren Claim fort.
 
 ## Dashboard in #38
 
@@ -131,9 +132,10 @@ Diesen Block verwenden, wenn ein anderer Worker ohne versteckten Kontext überne
 - doppelte Branch-Reservierungen;
 - gemeinsame Coordination keys;
 - Dateiüberschneidungen zwischen offenen PRs;
+- konkurrierende kanonische Claim-Kommentare;
 - veraltete Claims und Claims mit unvollständigen Metadaten.
 
-Öffentliche Issue-/PR-Texte werden vor dem Einbetten in den privilegierten Dashboard-Kommentar escaped. Nur Claims/Handoffs vertrauenswürdiger Repository-Mitglieder werden als Steuerdaten gewertet.
+Öffentliche Issue-/PR-Texte werden vor dem Einbetten in den privilegierten Dashboard-Kommentar escaped. Nur Claims/Handoffs vertrauenswürdiger Repository-Mitglieder werden als Steuerdaten gewertet. Für die Reihenfolge von Claim und Handoff zählt die letzte sichtbare Änderung des jeweiligen Kommentars (`updated_at`), damit das vorgeschriebene Editieren eines kanonischen Claims korrekt abgebildet wird.
 
 ## Was dieses System ausdrücklich nicht tut
 
