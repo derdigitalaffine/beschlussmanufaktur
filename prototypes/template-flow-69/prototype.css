@@ -13,10 +13,12 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; }
+template-flow-island { display: block; }
 a { color: inherit; }
 button, input, textarea, select { font: inherit; }
 button, select, input, textarea { min-height: 2.75rem; }
 button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .58; }
 button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .prototype-banner { padding: .65rem 1rem; background: #fff3cd; border-bottom: 1px solid #e1c96d; }
 .app-shell { min-height: 100vh; }
