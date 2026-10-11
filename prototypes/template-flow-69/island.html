@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prototyp B · Vorlage prüfen</title>
+  <link rel="stylesheet" href="prototype.css">
+  <script src="island.js" defer></script>
+</head>
+<body>
+  <p class="prototype-banner"><strong>Experiment #69 · Variante B:</strong> gekapselte Client-Island für Workflow-/Versionszustand, Shell bleibt statisch/servernah. Keine Produktivroute.</p>
+  <div class="app-shell">
+    <header class="topbar">
+      <span class="brand">Beschlussmanufaktur</span>
+      <label class="context">Arbeitskontext
+        <select aria-label="Arbeitskontext wechseln"><option>Stadt Beispiel · Prüfung</option><option>Verband Beispiel · Mitglied</option></select>
+      </label>
+      <a href="#template-island">Aufgaben</a><button type="button" class="secondary">Nutzer</button>
+    </header>
+    <nav class="main-nav" aria-label="Hauptnavigation">
+      <a href="#">Heute</a><a href="#" aria-current="page">Vorlagen &amp; Vorgänge</a><a href="#">Sitzungen</a><a href="#">Beschlüsse</a><a href="#">Organisation</a><a href="#">Veröffentlichung</a><a href="#">Administration</a>
+    </nav>
+    <main><template-flow-island id="template-island"></template-flow-island></main>
+  </div>
+</body>
+</html>
