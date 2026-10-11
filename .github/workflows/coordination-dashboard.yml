@@ -1,0 +1,327 @@
+name: coordination-dashboard
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened]
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened, closed, ready_for_review, converted_to_draft]
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_dispatch:
+  schedule:
+    - cron: "23 * * * *"
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: coordination-dashboard
+  cancel-in-progress: true
+
+jobs:
+  update-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update coordination dashboard in issue 38
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const controlIssue = 38;
+            const dashboardMarker = '<!-- coordination-dashboard:v1 -->';
+            const claimMarker = '<!-- coordination:claim:v2 -->';
+            const handoffMarker = '<!-- coordination:handoff:v2 -->';
+            const internalAssociations = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+            const activePhases = new Set(['discovery', 'implementation', 'review', 'blocked']);
+            const terminalDispositions = new Set(['superseded', 'paused', 'abandoned', 'completed']);
+
+            const trusted = (comment) => internalAssociations.has(comment.author_association || 'NONE');
+            const isDashboardComment = (comment) => comment?.user?.login === 'github-actions[bot]'
+              && String(comment.body || '').trimStart().startsWith(dashboardMarker);
+
+            // Updating our own sticky emits issue_comment events. Ignore those edits,
+            // but allow deletion to trigger recreation of the dashboard.
+            const ownDashboardEvent = context.eventName === 'issue_comment'
+              && context.payload.action !== 'deleted'
+              && Number(context.payload.issue?.number) === controlIssue
+              && isDashboardComment(context.payload.comment);
+            if (ownDashboardEvent) {
+              core.info('Ignoring self-generated dashboard event.');
+              return;
+            }
+
+            // Issue/PR metadata is untrusted input. Escape before copying it into
+            // the privileged control issue so mentions/Markdown cannot be injected.
+            const safeText = (value) => String(value ?? '')
+              .replace(/[\r\n]+/g, ' ')
+              .replace(/@/g, '@\u200b')
+              .replace(/([\\`*_{}\[\]()<>#+.!|])/g, '\\$1');
+            const safeCode = (value) => String(value ?? '')
+              .replace(/[\r\n]+/g, ' ')
+              .replace(/@/g, '@\u200b')
+              .replace(/`/g, 'ˋ');
+
+            const fieldValue = (body, fieldName) => {
+              const escaped = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const pattern = new RegExp(`^\\s*(?:-\\s*)?${escaped}\\s*:\\s*(.*)$`, 'i');
+              for (const line of String(body || '').split('\n')) {
+                const match = line.match(pattern);
+                if (match) return match[1].trim();
+              }
+              return null;
+            };
+
+            const normalizePhase = (body) => String(fieldValue(body, 'Phase') || '').toLowerCase();
+            const normalizeBranch = (body) => {
+              const raw = String(fieldValue(body, 'Branch') || '').trim().replace(/^`|`$/g, '');
+              return !raw || /^(none|pending|tbd|n\/a)$/i.test(raw) ? null : raw;
+            };
+            const coordinationKeys = (body) => {
+              const rawValue = fieldValue(body, 'Coordination keys');
+              if (rawValue === null) return { keys: [], explicit: false };
+              const raw = String(rawValue).trim();
+              if (/^(none|n\/a)$/i.test(raw)) return { keys: [], explicit: true };
+              return {
+                explicit: true,
+                keys: [...new Set(raw.split(',')
+                  .map((key) => key.trim().replace(/^`|`$/g, ''))
+                  .filter((key) => /^[a-z0-9_-]+:[a-z0-9_./:-]+$/i.test(key))
+                  .map((key) => key.toLowerCase()))],
+              };
+            };
+
+            // Only standalone relationship lines are machine contracts. Narrative
+            // text such as "does not close #12" must not create a false link.
+            const issueReferences = (body) => {
+              const linked = new Set();
+              const closing = new Set();
+              for (const line of String(body || '').split('\n')) {
+                const closingLine = line.match(/^\s*(?:[-*]\s*)?(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*(.*)$/i);
+                if (closingLine) {
+                  for (const match of closingLine[1].matchAll(/#(\d+)/g)) {
+                    closing.add(Number(match[1]));
+                    linked.add(Number(match[1]));
+                  }
+                  continue;
+                }
+                const linkedLine = line.match(/^\s*(?:[-*]\s*)?(?:ref(?:s|erences?)?|part\s+of)\b\s*(.*)$/i);
+                if (linkedLine) {
+                  for (const match of linkedLine[1].matchAll(/#(\d+)/g)) linked.add(Number(match[1]));
+                }
+              }
+              return { linked, closing };
+            };
+
+            // Keep parser behavior explicit so future edits fail loudly instead of
+            // silently turning coordination metadata into noisy false positives.
+            const parserChecks = [
+              ['exact claim marker', String(`${claimMarker}\n- Phase: discovery`).includes(claimMarker)],
+              ['negated narrative is not closing', issueReferences('This does not close #12.').closing.size === 0],
+              ['standalone close links', issueReferences('Closes #12').closing.has(12)],
+              ['refs links without closing', issueReferences('Refs #12').linked.has(12) && issueReferences('Refs #12').closing.size === 0],
+            ];
+            for (const [name, ok] of parserChecks) {
+              if (!ok) throw new Error(`Coordination parser contract failed: ${name}`);
+            }
+
+            const allIssueLike = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+            const issues = allIssueLike.filter((item) => !item.pull_request && item.number !== controlIssue);
+            const pulls = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+
+            const prData = [];
+            for (const pr of pulls) {
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                owner, repo, pull_number: pr.number, per_page: 100,
+              });
+              const refs = issueReferences(pr.body);
+              prData.push({
+                number: pr.number,
+                title: pr.title,
+                url: pr.html_url,
+                updatedAt: pr.updated_at,
+                linkedRefs: refs.linked,
+                closingRefs: refs.closing,
+                files: new Set(files.map((file) => file.filename)),
+              });
+            }
+
+            const commentCache = new Map();
+            const commentsFor = async (issueNumber) => {
+              if (!commentCache.has(issueNumber)) {
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  owner, repo, issue_number: issueNumber, per_page: 100,
+                });
+                commentCache.set(issueNumber, comments);
+              }
+              return commentCache.get(issueNumber);
+            };
+
+            const activeRows = [];
+            const malformedClaims = [];
+            const invalidClaims = [];
+            const staleClaims = [];
+            const now = Date.now();
+            const staleAfterMs = 72 * 60 * 60 * 1000;
+
+            for (const issue of issues) {
+              const comments = await commentsFor(issue.number);
+              const claimComments = comments.filter((comment) => trusted(comment)
+                && String(comment.body || '').includes(claimMarker));
+              const malformed = comments.some((comment) => trusted(comment)
+                && /(?:^|\n)\s*(?:<!--\s*)?coordination:claim:v2(?:\s*-->)?/i.test(String(comment.body || ''))
+                && !String(comment.body || '').includes(claimMarker));
+              if (malformed) malformedClaims.push(issue);
+
+              const latestClaim = claimComments.at(-1);
+              if (!latestClaim) continue;
+
+              const handoffs = comments.filter((comment) => trusted(comment)
+                && String(comment.body || '').includes(handoffMarker));
+              const latestHandoff = handoffs.at(-1);
+              const disposition = String(fieldValue(latestHandoff?.body, 'Disposition') || '').toLowerCase();
+              const claimTime = Date.parse(latestClaim.created_at || 0);
+              const handoffTime = latestHandoff ? Date.parse(latestHandoff.created_at || 0) : 0;
+              const endedByHandoff = handoffTime > claimTime && terminalDispositions.has(disposition);
+              if (endedByHandoff) continue;
+
+              const phase = normalizePhase(latestClaim.body);
+              if (!activePhases.has(phase)) {
+                invalidClaims.push(issue);
+                continue;
+              }
+
+              const branch = normalizeBranch(latestClaim.body);
+              const keyData = coordinationKeys(latestClaim.body);
+              const linkedPrs = prData.filter((pr) => pr.linkedRefs.has(issue.number));
+              if (!keyData.explicit
+                  || (['implementation', 'review'].includes(phase) && !branch)
+                  || (phase === 'review' && linkedPrs.length === 0)) {
+                invalidClaims.push(issue);
+              }
+
+              const latestVisibleActivity = Math.max(
+                Date.parse(issue.updated_at || 0),
+                ...linkedPrs.map((pr) => Date.parse(pr.updatedAt || 0)),
+              );
+              if (now - latestVisibleActivity > staleAfterMs) staleClaims.push(issue);
+
+              activeRows.push({ issue, latestClaim, phase, branch, keys: keyData.keys, linkedPrs });
+            }
+
+            const branchOwners = new Map();
+            for (const row of activeRows) {
+              if (!row.branch) continue;
+              const key = row.branch.toLowerCase();
+              if (!branchOwners.has(key)) branchOwners.set(key, { branch: row.branch, owners: [] });
+              branchOwners.get(key).owners.push(row.issue);
+            }
+            const branchCollisions = [...branchOwners.values()].filter(({ owners }) => owners.length > 1);
+
+            const keyOwners = new Map();
+            for (const row of activeRows) {
+              for (const key of row.keys) {
+                if (!keyOwners.has(key)) keyOwners.set(key, []);
+                keyOwners.get(key).push(row.issue);
+              }
+            }
+            const semanticCollisions = [...keyOwners.entries()]
+              .filter(([, owners]) => owners.length > 1)
+              .map(([key, owners]) => ({ key, owners }));
+
+            const fileOverlaps = [];
+            for (let i = 0; i < prData.length; i += 1) {
+              for (let j = i + 1; j < prData.length; j += 1) {
+                const left = prData[i];
+                const right = prData[j];
+                const shared = [...left.files].filter((file) => right.files.has(file));
+                if (shared.length) fileOverlaps.push({ left, right, shared });
+              }
+            }
+
+            const issueToClosingPrs = new Map();
+            for (const pr of prData) {
+              for (const issueNumber of pr.closingRefs) {
+                if (!issueToClosingPrs.has(issueNumber)) issueToClosingPrs.set(issueNumber, []);
+                issueToClosingPrs.get(issueNumber).push(pr);
+              }
+            }
+            const sameIssueCollisions = [...issueToClosingPrs.entries()]
+              .filter(([, prs]) => prs.length > 1)
+              .map(([issueNumber, prs]) => ({ issueNumber, prs }));
+
+            const issueLink = (issue) => `[#${issue.number}](${issue.html_url}) ${safeText(issue.title)}`;
+            const prLink = (pr) => `[#${pr.number}](${pr.url}) ${safeText(pr.title)}`;
+            const lines = [
+              dashboardMarker,
+              '## 🤝 Multi-Agent Coordination Dashboard',
+              '',
+              `Automatisch aktualisiert: ${new Date().toISOString()} · Steuerissue: #${controlIssue} · Protokoll: \`AGENTS.md\``,
+              '',
+              '> Gemeinsames Lagebild für Menschen und Agenten. Warnungen bedeuten: abstimmen oder Metadaten reparieren; sie sind kein automatischer Merge-Blocker.',
+              '',
+              '### Aktive Arbeit',
+            ];
+
+            if (!activeRows.length) {
+              lines.push('- Keine aktiven Claims.');
+            } else {
+              lines.push('| Issue | Phase | Branch | Coordination keys | PR |');
+              lines.push('| --- | --- | --- | --- | --- |');
+              for (const row of activeRows) {
+                const branch = row.branch ? `\`${safeCode(row.branch)}\`` : '—';
+                const keys = row.keys.length ? row.keys.map((key) => `\`${safeCode(key)}\``).join(', ') : '`none`';
+                const prs = row.linkedPrs.length ? row.linkedPrs.map((pr) => `#${pr.number}`).join(', ') : '—';
+                lines.push(`| ${issueLink(row.issue)} | ${safeText(row.phase)} | ${branch} | ${keys} | ${prs} |`);
+              }
+            }
+
+            lines.push('', '### Kollisionssignale');
+            let collisionCount = 0;
+            for (const collision of branchCollisions) {
+              collisionCount += 1;
+              lines.push(`- ⚠️ Branch \`${safeCode(collision.branch)}\`: ${collision.owners.map(issueLink).join(' ↔ ')}`);
+            }
+            for (const collision of semanticCollisions) {
+              collisionCount += 1;
+              lines.push(`- ⚠️ Key \`${safeCode(collision.key)}\`: ${collision.owners.map(issueLink).join(' ↔ ')}`);
+            }
+            for (const collision of sameIssueCollisions) {
+              collisionCount += 1;
+              lines.push(`- ⚠️ Mehrere schließende PRs für #${collision.issueNumber}: ${collision.prs.map(prLink).join(' ↔ ')}`);
+            }
+            for (const overlap of fileOverlaps.slice(0, 20)) {
+              collisionCount += 1;
+              const files = overlap.shared.slice(0, 5).map((file) => `\`${safeCode(file)}\``).join(', ');
+              const more = overlap.shared.length > 5 ? ` (+${overlap.shared.length - 5})` : '';
+              lines.push(`- ⚠️ Dateiüberschneidung ${prLink(overlap.left)} ↔ ${prLink(overlap.right)}: ${files}${more}`);
+            }
+            if (!collisionCount) lines.push('- Keine starken Kollisionssignale erkannt.');
+
+            lines.push('', '### Hygiene');
+            const hygiene = [];
+            if (invalidClaims.length) hygiene.push(`- ⚠️ Ungültige/unvollständige Claims: ${invalidClaims.map(issueLink).join(', ')}`);
+            if (malformedClaims.length) hygiene.push(`- ⚠️ Claim-Marker fehlerhaft: ${malformedClaims.map(issueLink).join(', ')}`);
+            if (staleClaims.length) hygiene.push(`- ⏳ Seit >72h ohne sichtbare Aktivität: ${staleClaims.map(issueLink).join(', ')}`);
+            lines.push(...(hygiene.length ? hygiene : ['- Keine Hygiene-Warnungen.']));
+
+            const body = `${lines.join('\n')}\n`;
+            const controlComments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: controlIssue, per_page: 100,
+            });
+            const existing = controlComments.find(isDashboardComment);
+            if (existing) {
+              if (String(existing.body || '') !== body) {
+                await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+              } else {
+                core.info('Dashboard already up to date.');
+              }
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: controlIssue, body });
+            }
