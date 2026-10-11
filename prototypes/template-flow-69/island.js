@@ -30,24 +30,23 @@ class TemplateFlowIsland extends HTMLElement {
   bind(){
     this.addEventListener('click',event=>{
       const action=event.target.closest('[data-action]')?.dataset.action;if(!action)return;
-      if(action==='stale'){this.state.serverVersion+=1;this.message(`Testzustand: Server ist jetzt auf Version ${this.state.serverVersion}, die Island noch auf Version ${this.state.pageVersion}.`);}
-      if(action==='refresh'){this.state.pageVersion=this.state.serverVersion;this.message('Aktueller Serverstand wurde übernommen. Entscheidung kann erneut geprüft werden.');this.update();this.querySelector('[data-action=approve]').focus();}
+      if(action==='stale'&&this.state.status==='review'&&!this.state.pending){this.state.serverVersion+=1;this.message(`Testzustand: Server ist jetzt auf Version ${this.state.serverVersion}, die Island noch auf Version ${this.state.pageVersion}.`);}
+      if(action==='refresh'&&this.state.status==='review'&&!this.state.pending){this.state.pageVersion=this.state.serverVersion;this.message('Aktueller Serverstand wurde übernommen. Entscheidung kann erneut geprüft werden.');this.update();this.querySelector('[data-action=approve]').focus();}
       if(action==='approve')this.submit('approve');
-      if(action==='return-open')this.querySelector('[data-role=return-dialog]').showModal();
+      if(action==='return-open'&&this.state.status==='review'&&!this.state.pending)this.querySelector('[data-role=return-dialog]').showModal();
       if(action==='return-cancel')this.querySelector('[data-role=return-dialog]').close();
     });
     this.querySelector('[data-role=return-form]').addEventListener('submit',event=>{event.preventDefault();this.submit('return');});
   }
   message(text,kind='info'){this.state.message=text;this.state.messageKind=kind;this.update();}
   async submit(action){
-    if(this.state.pending)return;
-    this.state.pending=true;this.message('Wird serverseitig geprüft …');this.update();
+    if(this.state.pending||this.state.status!=='review')return;
+    this.state.pending=true;this.message('Wird serverseitig geprüft …');
     await new Promise(resolve=>setTimeout(resolve,180));
-    if(this.state.pageVersion!==this.state.serverVersion){this.state.pending=false;this.message(`Zwischenzeitlich liegt Version ${this.state.serverVersion} vor. Vor einer Entscheidung muss der aktuelle Stand geprüft werden.`,'error');this.update();this.querySelector('[data-action=refresh]').focus();return;}
+    if(this.state.pageVersion!==this.state.serverVersion){this.state.pending=false;this.message(`Zwischenzeitlich liegt Version ${this.state.serverVersion} vor. Vor einer Entscheidung muss der aktuelle Stand geprüft werden.`,'error');this.querySelector('[data-action=refresh]').focus();return;}
     this.state.serverVersion+=1;this.state.pageVersion=this.state.serverVersion;this.state.pending=false;this.state.status=action==='approve'?'approved':'returned';
     this.message((action==='approve'?'Freigabe':'Rückgabe')+' serverseitig bestätigt. Version '+this.state.serverVersion+'.');
     if(action==='return')this.querySelector('[data-role=return-dialog]').close();
-    this.update();
   }
   update(){
     const badge=this.querySelector('[data-role=badge]');if(!badge)return;
@@ -55,8 +54,12 @@ class TemplateFlowIsland extends HTMLElement {
     this.querySelector('[data-role=version]').textContent=String(this.state.pageVersion);
     const step=this.querySelector('[data-role=approval-step]');step.dataset.state=this.state.status==='review'?'current':'done';step.textContent=this.state.status==='approved'?'3. Freigabe ✓':this.state.status==='returned'?'3. Freigabe – zurückgegeben':'3. Freigabe';
     const status=this.querySelector('[data-role=status]');status.textContent=this.state.message;status.dataset.kind=this.state.messageKind;
-    const stale=this.state.pageVersion!==this.state.serverVersion;const refresh=this.querySelector('[data-action=refresh]');refresh.hidden=!stale;
-    for(const button of this.querySelectorAll('[data-action=approve], [data-role=return-form] button[type=submit]'))button.disabled=this.state.pending;
+    const stale=this.state.pageVersion!==this.state.serverVersion;const refresh=this.querySelector('[data-action=refresh]');refresh.hidden=!stale||this.state.status!=='review';
+    const decisionLocked=this.state.pending||this.state.status!=='review';
+    this.querySelector('[data-action=approve]').disabled=decisionLocked;
+    this.querySelector('[data-action=return-open]').disabled=decisionLocked;
+    this.querySelector('[data-role=return-form] button[type=submit]').disabled=decisionLocked;
+    this.querySelector('[data-action=stale]').disabled=decisionLocked;
   }
 }
 customElements.define('template-flow-island',TemplateFlowIsland);
