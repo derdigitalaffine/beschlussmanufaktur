@@ -6,7 +6,7 @@ on:
   issue_comment:
     types: [created, edited, deleted]
   pull_request_target:
-    types: [opened, edited, closed, reopened, ready_for_review, converted_to_draft]
+    types: [opened, edited, synchronize, closed, reopened, ready_for_review, converted_to_draft]
   workflow_dispatch:
   schedule:
     - cron: "31 */6 * * *"
@@ -34,6 +34,13 @@ jobs:
             const marker = '<!-- roadmap:item:v1 -->';
             const dashboardMarker = '<!-- roadmap-dashboard:v1 -->';
             const trustedAssociations = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
+            const qualityGateSequences = new Set([
+              'G0',
+              'G0,G1',
+              'G0,G1,G2',
+              'G0,G1,G2,G3',
+              'G0,G1,G2,G3,G4',
+            ]);
 
             const trusted = (item) => trustedAssociations.has(item.author_association || 'NONE');
             const isDashboardComment = (comment) => comment?.user?.login === 'github-actions[bot]'
@@ -66,6 +73,26 @@ jobs:
               }
               return null;
             };
+
+            const normalizeGates = (value) => String(value || '').replace(/\s+/g, '').toUpperCase();
+            const parseIsoDate = (value) => {
+              const raw = String(value || '');
+              if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return NaN;
+              const timestamp = Date.parse(`${raw}T00:00:00Z`);
+              if (Number.isNaN(timestamp)) return NaN;
+              return new Date(timestamp).toISOString().slice(0, 10) === raw ? timestamp : NaN;
+            };
+
+            const contractChecks = [
+              ['valid quality gate chain', qualityGateSequences.has(normalizeGates('G0, G1, G2'))],
+              ['skipped quality gate rejected', !qualityGateSequences.has(normalizeGates('G0,G2'))],
+              ['reordered quality gate rejected', !qualityGateSequences.has(normalizeGates('G1,G0'))],
+              ['real ISO date accepted', !Number.isNaN(parseIsoDate('2026-10-11'))],
+              ['impossible ISO date rejected', Number.isNaN(parseIsoDate('2026-02-31'))],
+            ];
+            for (const [name, ok] of contractChecks) {
+              if (!ok) throw new Error(`Roadmap contract failed: ${name}`);
+            }
 
             const valid = {
               stream: new Set(['ux', 'architecture', 'security', 'identity', 'portal', 'operations', 'voting', 'release', 'other']),
@@ -116,6 +143,7 @@ jobs:
                 status: String(raw.status || '').toLowerCase(),
                 risk: String(raw.risk || '').toLowerCase(),
                 council: String(raw.council || '').toLowerCase(),
+                gates: normalizeGates(raw.gates),
               };
 
               const requiredPresent = raw.outcome && raw.gates && raw.depends && raw.blocks
@@ -126,11 +154,10 @@ jobs:
                 && valid.status.has(normalized.status)
                 && valid.risk.has(normalized.risk)
                 && valid.council.has(normalized.council);
+              const gatesValid = qualityGateSequences.has(normalized.gates);
+              const reviewedAt = parseIsoDate(raw.reviewed);
 
-              const reviewedAt = raw.reviewed && /^\d{4}-\d{2}-\d{2}$/.test(raw.reviewed)
-                ? Date.parse(`${raw.reviewed}T00:00:00Z`)
-                : NaN;
-              if (!requiredPresent || !enumsValid || Number.isNaN(reviewedAt)) invalid.push(issue);
+              if (!requiredPresent || !enumsValid || !gatesValid || Number.isNaN(reviewedAt)) invalid.push(issue);
               else if (now - reviewedAt > staleAfterMs) stale.push(issue);
 
               rows.push({ issue, raw, ...normalized, reviewedAt });
@@ -173,7 +200,7 @@ jobs:
               for (const row of list) {
                 const outcome = `${issueLink(row)}<br>${fmt(row.raw.outcome)}`;
                 const pr = `${code(row.priority)} / ${code(row.risk)}`;
-                const sg = `${code(row.status)} / ${code(row.raw.gates)}`;
+                const sg = `${code(row.status)} / ${code(row.gates)}`;
                 const deps = fmt(row.raw.depends);
                 const council = `${code(row.council)}<br>${fmt(row.raw.questions)}`;
                 const reviewed = code(row.raw.reviewed);
