@@ -64,6 +64,8 @@ dialog form { padding: 1rem; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: .5rem; }
 .small { color: var(--muted); font-size: .92rem; }
 @media (max-width: 760px) {
+  .context { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; margin-right: 0; }
+  .context select { width: 100%; max-width: 100%; min-width: 0; }
   .page-header, .layout { grid-template-columns: 1fr; }
   .workflow { grid-template-columns: 1fr; }
   .action-bar .primary { margin-left: 0; width: 100%; order: -1; }
