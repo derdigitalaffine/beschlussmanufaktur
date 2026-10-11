@@ -1,27 +1,41 @@
 # Entwicklungsvorgaben
 
-Dieses Repository wird von Menschen und Coding-Agenten parallel bearbeitet. **GitHub ist die gemeinsame Koordinationsebene.** Arbeitsstand, Reservierungen, Abhängigkeiten und Übergaben müssen in Issues und Pull Requests sichtbar sein; keine zweite private Aufgabenverwaltung darf für die Zusammenarbeit maßgeblich sein.
+Dieses Repository wird von Menschen und Coding-Agenten parallel bearbeitet. **GitHub ist die gemeinsame Koordinationsebene.** Arbeitsstand, Prioritäten, Reservierungen, Abhängigkeiten, Entscheidungen und Übergaben müssen in Issues und Pull Requests sichtbar sein; keine zweite private Aufgabenverwaltung darf für die Zusammenarbeit maßgeblich sein.
 
 ## Autorität und gemeinsames Lagebild
 
-1. **Issue #38** ist der zentrale Steuerpunkt für repo-weite Prioritäten, Architekturkonflikte und das automatische Koordinations-Dashboard.
-2. Das jeweilige **Arbeits-Issue** besitzt Umfang, Abnahmekriterien, aktiven Claim und Handoffs.
-3. Der **Pull Request** besitzt die konkrete Implementierung, Tests und Review-Diskussion.
-4. `AGENTS.md`, `docs/agentenkoordination.md`, README und die fachlichen Dokumente unter `docs/` definieren die gemeinsamen Regeln.
+1. **Issue #41** ist das Produkt-/Roadmap-Portfolio: Ziel-Outcomes, Prioritäten, Risiken, Horizonte und Freigabegates.
+2. **Issue #38** ist der operative Multi-Agent-Steuerpunkt: aktive Claims, Kollisionen, Handoffs und repo-weite Implementierungskonflikte.
+3. Das jeweilige **Arbeits-Issue** besitzt Umfang, Abnahmekriterien, aktiven Claim und Handoffs.
+4. Der **Pull Request** besitzt die konkrete Implementierung, Tests und Review-Diskussion.
+5. `docs/21-produkt-zielbild.md`, `docs/22-dynamische-roadmap.md` und `docs/23-agenten-council.md` definieren Zielqualität, Portfolio-Steuerung und Gegenprüfung strittiger Entscheidungen.
+6. `AGENTS.md`, `docs/agentenkoordination.md`, README und die fachlichen Dokumente unter `docs/` definieren die gemeinsamen Regeln.
 
-Bei widersprüchlichen Vorgaben Umfang nicht still erweitern oder reduzieren, sondern den Konflikt im Arbeits-Issue sichtbar machen. Repo-weite Konflikte zusätzlich in #38 festhalten.
+Bei widersprüchlichen Vorgaben Umfang nicht still erweitern oder reduzieren, sondern den Konflikt im Arbeits-Issue sichtbar machen. Prioritäts-/Outcome-Konflikte gehören zusätzlich in #41; aktive Architektur-/Merge-/Kollisionskonflikte zusätzlich in #38.
 
 ## Pflicht-Preflight vor nicht-trivialer Arbeit
 
 Vor dem Ändern von Code oder gemeinsam genutzten Verträgen:
 
-1. #38 einschließlich aktuellem Dashboard und relevanten neuen Kommentaren lesen.
-2. Ziel-Issue vollständig lesen.
-3. Offene Issues nach `<!-- coordination:claim:v2 -->` und offene Pull Requests auf überlappenden Umfang prüfen.
-4. Prüfen, ob bestehende Modelle, APIs, Berechtigungsregeln oder fachliche Dokumente den Bereich bereits verbindlich definieren.
-5. Bei Überschneidung **vor dem Codieren kommentieren** und Split, Abhängigkeit, gemeinsamen Vertrag, Merge-Reihenfolge oder Handoff vereinbaren. Stille Doppelimplementierung ist nicht zulässig.
+1. #41 einschließlich Roadmap-Dashboard lesen und prüfen, welchem Outcome die Arbeit dient.
+2. #38 einschließlich aktuellem Koordinations-Dashboard und relevanten neuen Kommentaren lesen.
+3. Ziel-Issue vollständig lesen.
+4. Offene Issues nach `<!-- coordination:claim:v2 -->` und offene Pull Requests auf überlappenden Umfang prüfen.
+5. Prüfen, ob bestehende Modelle, APIs, Berechtigungsregeln oder fachliche Dokumente den Bereich bereits verbindlich definieren.
+6. Bei Überschneidung **vor dem Codieren kommentieren** und Split, Abhängigkeit, gemeinsamen Vertrag, Merge-Reihenfolge oder Handoff vereinbaren. Stille Doppelimplementierung ist nicht zulässig.
+7. Bei einem Roadmap-Item mit `Council required: yes` die offene Entscheidungsfrage und vorhandenen `council:position:v1`-/`council:decision:v1`-Kommentare lesen; keine Implementierung gegen einen noch ungeklärten kritischen Vertrag starten.
 
 Der Preflight ist nur eine Momentaufnahme. Bei wesentlicher Umfangserweiterung, vor Öffnen eines PRs und nach einem größeren Rebase auf einen aktiven `main` erneut prüfen.
+
+## Hauptagent, Roadmap und Council
+
+Der Hauptagent optimiert **Outcome und Qualität, nicht Agentenauslastung**. Er hält #41 aktuell, schneidet Arbeit nach unabhängigen Verträgen/Risiken und begrenzt parallele Implementierung auf Bereiche, die tatsächlich parallel-sicher sind.
+
+Roadmap-Arbeit verwendet den Vertrag aus `docs/22-dynamische-roadmap.md` mit dem exakten Marker `<!-- roadmap:item:v1 -->`. Änderungen an Horizont, Priorität, Risiko, Abhängigkeiten, offenen Entscheidungsfragen oder erreichten Qualitätsgates werden im jeweiligen Roadmap-Issue nachgezogen. Roadmappflege ist Teil der Lieferung.
+
+Bei Entscheidungen mit hoher Tragweite gilt `docs/23-agenten-council.md`. Perspektiven wie Fachlichkeit, UX, Security/Privacy, Accessibility/Performance, Operations und adversariales Testen sollen Annahmen **getrennt** challengen. Keine Scheindebatte: Wer eine Position abgibt, nennt mindestens einen konkreten Fehlermodus, Evidenzbedarf oder Umstand, der die Position ändern würde.
+
+Wenn ausreichende Evidenz für eine Architekturentscheidung fehlt, wird ein begrenztes Experiment/Prototyp mit Erfolgskriterien beschlossen statt eine Vermutung zum Standard zu erklären. Produkt-/Rechtsfreigaben, die menschliche Verantwortung benötigen, werden durch das Agenten-Council nicht ersetzt.
 
 ## Claim-Protokoll
 
@@ -41,7 +55,7 @@ Nicht-triviale aktive Arbeit erhält genau einen kanonischen Claim als Kommentar
 - Depends on: #... | none
 - Parallel-safe with: #... | <benachbarter Umfang> | none known
 - Avoids / out of scope: ...
-- Collision scan: #38 + offene Claims + offene PRs geprüft
+- Collision scan: #41 + #38 + offene Claims + offene PRs geprüft
 ```
 
 Regeln:
@@ -86,14 +100,21 @@ Eine Übergabe muss ohne Rekonstruktion versteckten Kontexts fortsetzbar sein:
 
 `continue` lässt den Umfang aktiv. `superseded`, `paused`, `abandoned` und `completed` beenden den bisherigen aktiven Claim, bis ein neuer Claim folgt. Das Dashboard in #38 ist ein Lagebild und eine Warnhilfe; Konfliktwarnungen erfordern menschliches/agentisches Urteil und sind kein automatischer Merge-Blocker.
 
+Bei Roadmap-Arbeit muss ein Abschluss außerdem prüfen, ob Outcome, Status, Quality gates, Evidence, Abhängigkeiten und `Last reviewed` im Roadmap-Issue aktualisiert werden müssen.
+
 ## Pull Requests
 
 Jeder nicht-triviale PR referenziert sein Arbeits-Issue mit einer eigenständigen Beziehungslinie (`Closes #123`, `Refs #123` oder `Part of #123`) und nutzt `.github/PULL_REQUEST_TEMPLATE.md`. Vor Merge:
 
 - Claim auf `Phase: review` mit aktuellem Branch/PR bringen;
-- Claims und offene PRs erneut auf Kollisionen prüfen;
+- #41, #38, Claims und offene PRs erneut auf Prioritäts-/Vertrags-/Kollisionsänderungen prüfen;
 - Tests, bekannte Grenzen, Sicherheits-/Berechtigungsauswirkungen und ggf. Migration/Rollback dokumentieren;
+- bei `Council required: yes` auf den relevanten `<!-- council:decision:v1 -->`-Kommentar verweisen und dessen Invarianten prüfen;
 - bei verbleibender absichtlicher Überschneidung Merge-Reihenfolge und Handoff sichtbar festhalten.
+
+## Qualitätsprinzip
+
+„Implementiert“ ist nicht automatisch „freigabereif“. Das Produktzielbild definiert die Gates G0–G4 von Problemverständnis bis Freigabereife. Je nach Änderung sind Fachlichkeit, UX, Accessibility, Performance, Security/Privacy, Betrieb/Restore und Geräte-/End-to-End-Verhalten nachzuweisen. Offene P0-Sicherheits- oder Datenintegritätsrisiken blockieren die Produktivfreigabe.
 
 ## Bestehende fachliche und technische Vorgaben
 

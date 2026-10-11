@@ -8,11 +8,15 @@ Ein geplantes, vollständig webbasiertes Ratsinformationssystem für kommunale V
 
 Die [Installationsanleitung](docs/12-installation.md) beschreibt Einrichtung mit Docker Compose, SMTP und Caddys lokaler CA. Für Backendtests siehe [Entwicklung](docs/11-implementierungsstand.md#entwicklung). Änderungen erfolgen immer über einen Pull Request mit anschließendem Merge nach relevanten Prüfungen.
 
+Für parallele Entwicklung ist GitHub die gemeinsame Steuerungsebene: **#41** enthält das dynamische Produkt-/Roadmap-Portfolio, **#38** aktive Agentenclaims und Kollisionssignale. Zielqualität, Roadmapvertrag und Gegenprüfung strittiger Entscheidungen stehen in docs/21–23.
+
 ## Ziel
 
 Körperschaften verschiedener Ebenen – etwa Landkreis, Verbandsgemeinde, Ortsgemeinde und Zweckverband – arbeiten interoperabel mit gemeinsamen Stammdaten, eigenen Zuständigkeiten und sicher getrennten Zugriffsrechten. Eine Person verwendet ein Konto und wählt ihren Arbeitskontext ausdrücklich aus.
 
 Von der Vorlage über Freigabe, Einladung und Tagesordnung bis zur Live-Sitzung, Niederschrift und Beschlusskontrolle wird der gesamte Ablauf unterstützt. Digitale Arbeit und Papierausgaben sind gleichberechtigte Wege. Einfache und erweiterte Bedienung verwenden dieselben Daten und Sicherheitsregeln.
+
+Das langfristige Zielbild ist ein durchgängig verständliches, zugängliches, performantes, sicher entwickeltes und nachweisbar wiederherstellbares Produkt. „Implementiert“ ist dabei nicht gleich „freigabereif“: reale Fachanwender-, Geräte-, Sicherheits-, Accessibility-, Last- und Restore-Nachweise gehören zur Zielqualität.
 
 ## Dokumentation
 
@@ -38,7 +42,10 @@ Von der Vorlage über Freigabe, Einladung und Tagesordnung bis zur Live-Sitzung,
 | [Niederschriften](docs/17-niederschrift.md) | Fassungen, Prüfung, Berichtigungen und öffentliche Freigabe |
 | [Beschlusskontrolle](docs/18-beschlusskontrolle.md) | Zuständigkeit, Fristen und Sachstände |
 | [Persönlicher Bereich und Offline](docs/19-mandatstraeger-offline.md) | Notizen, verschlüsselte Mappen und Offline-Schriftführung |
-| [Etappenplan](docs/20-etappenplan.md) | Implementierungsfolge und verbleibende Arbeit |
+| [Etappenplan](docs/20-etappenplan.md) | Fachliche Grobfolge; aktuelle Priorisierung verweist auf die dynamische Roadmap |
+| [Produktzielbild](docs/21-produkt-zielbild.md) | UX-/Frontend-, Security-, Accessibility-, Performance-, Betriebs- und Freigabeziele |
+| [Dynamische Roadmap](docs/22-dynamische-roadmap.md) | Outcome-Portfolio, Horizonte, Prioritäten, Risiken, Qualitätsgates und WIP-Regeln |
+| [Agenten-Council](docs/23-agenten-council.md) | Sichtbare Gegenprüfung strittiger Architektur-, UX- und Security-Entscheidungen |
 
 ## Erster produktiver Umfang
 
@@ -54,13 +61,13 @@ Von der Vorlage über Freigabe, Einladung und Tagesordnung bis zur Live-Sitzung,
 
 ## Bewusst später
 
-Aufnahme, Audioablage, Whisper/WhisperX, SpeechMind, KI-Protokollvorschläge und Sitzungsgeld werden erst nach dem übrigen Kern entwickelt. OParl und DMS werden vorbereitet. Vollständige Barrierefreiheitsumsetzung ist nicht Bestandteil des ersten Umfangs; ihre mögliche Bedeutung für einen realen öffentlichen Einsatz bleibt eine ausdrücklich zu klärende Freigabevoraussetzung.
+Aufnahme, Audioablage, Whisper/WhisperX, SpeechMind, KI-Protokollvorschläge und Sitzungsgeld werden erst nach dem übrigen Kern entwickelt. OParl und DMS werden vorbereitet. Vollständige Barrierefreiheitsumsetzung ist nicht Bestandteil des ersten Umfangs; ihre mögliche Bedeutung für einen realen öffentlichen Einsatz bleibt eine ausdrücklich zu klärende Freigabevoraussetzung. Das Produktzielbild setzt dennoch eine hohe Accessibility-Zielqualität für die weitere Produktreife; daraus entsteht keine rückwirkende Behauptung bereits erreichter Konformität.
 
 Keine Migration aus Bestands-RIS, Bürgerkonten, Themenabonnements, Browser-Push oder verpflichtenden externen Analyse- und KI-Dienste. Keine kundenspezifischen Logos, Namen oder realen Personen im Auslieferungszustand. Wenige eindeutig gekennzeichnete, vollständig löschbare Testdaten werden vorgesehen.
 
 ## Technische Richtung
 
-Bestätigt sind Python im Backend, Linux, Docker Compose, Caddy und administrierbare TLS-Zertifikate. Umgesetzt sind Django, PostgreSQL, lokal gerenderte Weboberflächen mit JavaScript und getrennte Hintergrundprozesse. Fachaktionen und kleine JSON-Verträge werden serverseitig autorisiert. Die Offline-Oberfläche benötigt HTTPS und einen aktuellen Browser. Ein zusätzliches React-Frontend ist aktuell nicht erforderlich; es bleibt eine mögliche spätere Umstellung.
+Bestätigt sind Python im Backend, Linux, Docker Compose, Caddy und administrierbare TLS-Zertifikate. Umgesetzt sind Django, PostgreSQL, lokal gerenderte Weboberflächen mit JavaScript und getrennte Hintergrundprozesse. Fachaktionen und kleine JSON-Verträge werden serverseitig autorisiert. Die Offline-Oberfläche benötigt HTTPS und einen aktuellen Browser. Ein zusätzliches React-Frontend ist aktuell nicht erforderlich; es bleibt eine mögliche spätere Umstellung. Eine größere Frontendmigration benötigt nach dem Zielbild zuerst einen repräsentativen Prototyp und messbare Vorteile bei UX, Accessibility, Testbarkeit und komplexem Zustand, ohne Security/Performance/Betrieb unverhältnismäßig zu verschlechtern.
 
 ## Verbindlichkeit und Lizenz
 
