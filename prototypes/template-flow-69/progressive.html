@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prototyp A · Vorlage prüfen</title>
+  <link rel="stylesheet" href="prototype.css">
+  <script src="progressive.js" defer></script>
+</head>
+<body>
+  <p class="prototype-banner"><strong>Experiment #69 · Variante A:</strong> servergerenderte Seite + kleine progressive Interaktionen. Keine Produktivroute.</p>
+  <div class="app-shell">
+    <header class="topbar">
+      <span class="brand">Beschlussmanufaktur</span>
+      <label class="context">Arbeitskontext
+        <select id="context-switcher" aria-label="Arbeitskontext wechseln">
+          <option>Stadt Beispiel · Prüfung</option>
+          <option>Verband Beispiel · Mitglied</option>
+        </select>
+      </label>
+      <a href="#status">Aufgaben</a>
+      <button type="button" class="secondary">Nutzer</button>
+    </header>
+    <nav class="main-nav" aria-label="Hauptnavigation">
+      <a href="#">Heute</a><a href="#" aria-current="page">Vorlagen &amp; Vorgänge</a><a href="#">Sitzungen</a><a href="#">Beschlüsse</a><a href="#">Organisation</a><a href="#">Veröffentlichung</a><a href="#">Administration</a>
+    </nav>
+    <main>
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Vorlage BM-2026-0042 · Stadt Beispiel</p>
+          <h1>Neubau der Grundschule Nord</h1>
+          <div class="meta"><span class="badge" id="workflow-badge" data-state="review">In Prüfung</span><span>Version <strong id="page-version">7</strong></span><span>Verantwortlich: Fachprüfung</span></div>
+        </div>
+        <a href="#changes">Änderungen seit letzter Prüfung</a>
+      </header>
+
+      <ol class="workflow" aria-label="Bearbeitungsstand">
+        <li data-state="done">1. Entwurf ✓</li><li data-state="done">2. Fachprüfung ✓</li><li data-state="current" id="approval-step">3. Freigabe</li><li>4. Beratung</li><li>5. Beschluss</li>
+      </ol>
+
+      <section class="prototype-controls" aria-label="Prototyp-Testzustand">
+        <strong>Nur für den Test</strong>
+        <button id="simulate-stale" type="button" class="secondary">Neuere Serverversion simulieren</button>
+        <button id="refresh-version" type="button" class="secondary" hidden>Aktuellen Serverstand übernehmen</button>
+        <span class="small">Damit lässt sich ein Stale-State ohne Backend provozieren.</span>
+      </section>
+
+      <div class="layout">
+        <div>
+          <section class="card" id="changes">
+            <h2>Was hat sich geändert?</h2>
+            <ul class="change-list">
+              <li>Beschlussvorschlag präzisiert: Bauabschnitt 2 ausdrücklich aufgenommen.</li>
+              <li>Anlage „Kostenberechnung.pdf“ durch Version vom 11.10.2026 ersetzt.</li>
+            </ul>
+          </section>
+          <section class="card">
+            <h2>Beschlussvorschlag</h2>
+            <p>Der Stadtrat beschließt die Umsetzung des Neubaus einschließlich Bauabschnitt 2 auf Grundlage der aktualisierten Kostenberechnung.</p>
+          </section>
+          <section class="card">
+            <h2>Begründung</h2>
+            <p>Die bestehende Schule erreicht ihre Kapazitätsgrenze. Der überarbeitete Entwurf bündelt die Bauabschnitte und schafft einen nachvollziehbaren Kostenrahmen.</p>
+          </section>
+        </div>
+        <aside>
+          <section class="card">
+            <h2>Prüfauftrag</h2>
+            <p><strong>Bis:</strong> 14.10.2026</p>
+            <p><strong>Von:</strong> Schulverwaltung</p>
+            <p><strong>Nächster Schritt:</strong> Freigeben oder begründet zurückgeben.</p>
+          </section>
+          <section class="card">
+            <h2>Anlagen</h2>
+            <ul class="file-list"><li><a href="#">Kostenberechnung.pdf</a> <span class="badge">neu</span></li><li><a href="#">Lageplan.pdf</a></li></ul>
+          </section>
+        </aside>
+      </div>
+
+      <p id="status" class="status-line" role="status" aria-live="polite"></p>
+      <div class="action-bar" aria-label="Aktionen">
+        <button id="return-open" type="button" class="secondary danger">Zurückgeben</button>
+        <a href="#changes">Änderungen prüfen</a>
+        <form id="approve-form"><input type="hidden" name="expected_version" value="7"><button class="primary" type="submit">Freigeben</button></form>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="return-dialog" aria-labelledby="return-title">
+    <form id="return-form">
+      <h2 id="return-title">Vorlage zurückgeben</h2>
+      <p>Die Begründung wird der verantwortlichen Stelle zusammen mit der betroffenen Fassung angezeigt.</p>
+      <label class="field">Begründung<textarea name="reason" required>Bitte Kostenannahme für Bauabschnitt 2 erläutern.</textarea></label>
+      <input type="hidden" name="expected_version" value="7">
+      <div class="dialog-actions"><button type="button" id="return-cancel" class="secondary">Abbrechen</button><button type="submit" class="secondary danger">Begründet zurückgeben</button></div>
+    </form>
+  </dialog>
+</body>
+</html>
