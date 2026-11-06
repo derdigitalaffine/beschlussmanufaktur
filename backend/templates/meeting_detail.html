@@ -1,1 +1,194 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>{{ obj.title }}</h1><p>{{ obj.committee }} · {{ obj.starts_at }} · {{ obj.location }} · Version {{ obj.version }} · {{ obj.state }}</p><a href="{% url 'meetings' %}">Sitzungskalender</a>{% if can_plan %} · <a href="{% url 'meeting_edit' obj.pk %}">Planung bearbeiten</a> · <a href="{% url 'meeting_agenda_new' obj.pk %}">TOP hinzufügen</a> · <a href="{% url 'meeting_amendment' obj.pk %}">Nachtrag</a>{% endif %}{% if can_invite %} · <a href="{% url 'meeting_invite' obj.pk %}">Einladung / neuen Versandstand ausgeben</a>{% endif %}</section><section class="card"><h2>Zuständigkeiten und Fristen</h2><p><a href="{% url 'live_workspace' obj.pk %}">Sitzungsführung öffnen</a> · <a href="{% url 'session_returns' obj.pk %}">Kontrollierte Rückgabe</a> · <a href="{% url 'minutes' obj.pk %}">Niederschrift</a> · <a href="{% url 'personal_note' obj.pk %}">Meine Notiz</a>{% if can_invite %} · <a href="{% url 'meeting_activate' obj.pk %}">Führenden Sitzungsserver festlegen</a>{% endif %}</p><p>Vorsitz {{ obj.chair.get_full_name|default:obj.chair.email }} · Schriftführung {{ obj.scribe.get_full_name|default:obj.scribe.email }}</p><p>Vorlagenschluss {{ obj.proposal_deadline|default:'nicht gesetzt' }} · Freigabeschluss {{ obj.release_deadline|default:'nicht gesetzt' }} · Einladungsfrist {{ obj.invitation_days }} volle Kalendertage</p><p>Gesetzliche Mitgliederzahl {{ obj.statutory_count }} · Bekanntmachung {% if obj.public_enabled %}öffentlich vorgesehen{% else %}noch nicht freigegeben{% endif %}</p></section><section class="card"><h2>Tagesordnung</h2>{% for item in data.items %}<p>{{ item.position }} · {% if item.parent %}Unterpunkt · {% endif %}{% if item.public %}Öffentlich{% else %}Nichtöffentlich{% endif %} · {{ item.title }}{% if can_plan %} · <a href="{% url 'meeting_agenda_edit' obj.pk item.id %}">Bearbeiten</a>{% endif %}</p>{% if item.template %}<p>{{ item.template.number }} · {{ item.template.subject }} · Vorlageversion {{ item.template.version }}</p>{% endif %}{% empty %}<p>Noch keine Tagesordnung.</p>{% endfor %}</section><section class="card"><h2>Nachträge zur Prüfung</h2>{% for change in amendments %}<p>{{ change.get_kind_display }} · {{ change.reason }} · {{ change.state }} · Ausgangsversion {{ change.base_version }}</p><pre>{{ change.data }}</pre>{% if can_chair and change.state == 'pending' %}<form method="post" action="{% url 'meeting_amendment_approve' change.pk %}">{% csrf_token %}<label>Feststellung / Beschluss / rechtliche Grundlage <textarea name="decision_record" maxlength="1000" required></textarea></label><button>Nachtrag ausdrücklich genehmigen</button></form>{% endif %}{% empty %}<p>Keine Nachträge.</p>{% endfor %}</section>{% if can_plan %}<details><summary>Zusätzliche Teilnehmende freigeben</summary><section class="card"><form method="post" action="{% url 'meeting_guest' obj.pk %}">{% csrf_token %}<label>Arbeitskontext <select name="membership">{% for m in memberships %}<option value="{{ m.pk }}">{{ m.user.email }} · {{ m.get_role_display }}</option>{% endfor %}</select></label><label><input type="checkbox" name="private">Nichtöffentlichen Teil ausdrücklich freigeben</label><button>Befristet für diese Sitzung freigeben</button></form></section></details>{% endif %}<section class="card"><h2>Ihre Einladungen und Gesamtmappen</h2>{% for delivery in deliveries %}<p>Versandstand {{ delivery.invitation.revision }} · {{ delivery.invitation.created_at }} · {% if delivery.delivered_at %}Technisch versendet{% else %}Versand ausstehend · {{ delivery.error }}{% endif %}</p><p><a href="{% url 'meeting_invitation_download' delivery.invitation_id 'pdf' %}">PDF-Gesamtmappe</a> · <a href="{% url 'meeting_invitation_download' delivery.invitation_id 'ics' %}">Kalenderdatei</a></p><form method="post" action="{% url 'meeting_invitation_seen' delivery.pk %}">{% csrf_token %}<button>Kenntnisnahme vermerken</button></form>{% empty %}<p>Noch kein persönlicher Versandstand. Gegebenenfalls den in der Einladung verwendeten Kontext auswählen.</p>{% endfor %}<p>Technischer Versand und Kenntnisnahme ersetzen keinen rechtlichen Zugangsnachweis.</p></section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ obj.title }} · Sitzung · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-meeting-detail.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage meeting-detail">
+  <header class="ui-header">
+    <a class="ui-back" href="{% url 'meetings' %}">← Sitzungskalender</a>
+    <div class="ui-hero meeting-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · {{ obj.committee }}</span>
+        <h1>{{ obj.title }}</h1>
+        <div class="meeting-contextline">
+          <span class="ui-tag" data-tone="{{ obj.ui_tone }}">{{ obj.ui_status }}</span>
+          <span>Fassung {{ obj.version }}</span>
+          <span><time datetime="{{ obj.starts_at|date:'c' }}">{{ obj.starts_at|date:"d.m.Y, H:i" }} Uhr</time></span>
+          {% if obj.location %}<span>{{ obj.location }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="ui-hero-actions">
+        {% if can_plan and obj.state == 'preparation' %}
+        <a href="{% url 'meeting_agenda_new' obj.pk %}" class="ui-button ui-button--primary">Tagesordnung ergänzen</a>
+        {% elif obj.state == 'live' %}
+        <a href="{% url 'live_workspace' obj.pk %}" class="ui-button ui-button--primary">Live-Sitzung öffnen</a>
+        {% elif obj.state == 'finished' %}
+        <a href="{% url 'minutes' obj.pk %}" class="ui-button ui-button--primary">Niederschrift öffnen</a>
+        {% else %}
+        <a href="#tagesordnung" class="ui-button ui-button--primary">Tagesordnung ansehen</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <nav class="meeting-section-nav" aria-label="Bereiche dieser Sitzung">
+    <a href="#tagesordnung">Tagesordnung</a>
+    <a href="#zustand">Zuständigkeit &amp; Fristen</a>
+    <a href="#nachtraege">Nachträge</a>
+    <a href="#einladungen">Einladungen &amp; Mappen</a>
+  </nav>
+
+  <section class="ui-panel ui-panel--padded meeting-progress" aria-labelledby="process-title">
+    <div class="ui-section-heading"><h2 id="process-title">Ablauf dieser Sitzung</h2><span class="ui-small">Bearbeitungsstand: {{ obj.ui_status }}</span></div>
+    <ol class="meeting-stages">
+      <li {% if obj.state == 'preparation' %}aria-current="step"{% endif %}>
+        <span class="meeting-stage-count">1</span><div><strong>Vorbereitung</strong><span>Termin &amp; Tagesordnung</span></div>
+      </li>
+      <li {% if obj.state == 'invited' %}aria-current="step"{% endif %}>
+        <span class="meeting-stage-count">2</span><div><strong>Einladung</strong><span>Versandstand &amp; Unterlagen</span></div>
+      </li>
+      <li {% if obj.state == 'live' %}aria-current="step"{% endif %}>
+        <span class="meeting-stage-count">3</span><div><strong>Durchführung</strong><span>Schriftführung &amp; Abstimmung</span></div>
+      </li>
+      <li {% if obj.state == 'finished' %}aria-current="step"{% endif %}>
+        <span class="meeting-stage-count">4</span><div><strong>Nachbereitung</strong><span>Niederschrift &amp; Beschlüsse</span></div>
+      </li>
+    </ol>
+    <div class="meeting-quick-actions">
+      <a href="{% url 'live_workspace' obj.pk %}">Sitzungsführung</a>
+      <a href="{% url 'minutes' obj.pk %}">Niederschrift</a>
+      <a href="{% url 'personal_note' obj.pk %}">Meine persönliche Notiz</a>
+      <a href="{% url 'session_returns' obj.pk %}">Kontrollierte Rückgabe</a>
+      {% if can_invite %}<a href="{% url 'meeting_activate' obj.pk %}">Führenden Sitzungsserver festlegen</a>{% endif %}
+    </div>
+  </section>
+
+  <section class="meeting-agenda" id="tagesordnung" aria-labelledby="agenda-title">
+    <div class="ui-section-heading">
+      <div><span class="ui-kicker">Beratungsgegenstände</span><h2 id="agenda-title">Tagesordnung</h2></div>
+      {% if can_plan %}<a class="ui-button" href="{% url 'meeting_agenda_new' obj.pk %}">TOP hinzufügen</a>{% endif %}
+    </div>
+    {% if data.items %}
+    <ol class="ui-list meeting-agenda-list">
+      {% for item in data.items %}
+      <li class="ui-item">
+        <div class="agenda-position" aria-label="Tagesordnungspunkt {{ item.position }}">{{ item.position }}</div>
+        <div class="ui-item-main">
+          <div class="agenda-tags">
+            {% if item.parent %}<span class="ui-tag">Unterpunkt</span>{% endif %}
+            {% if item.public %}
+            <span class="ui-tag" data-tone="success">Öffentlich</span>
+            {% else %}
+            <span class="ui-tag" data-tone="attention">Nichtöffentlich</span>
+            {% endif %}
+          </div>
+          <h3 class="ui-item-title">{{ item.title }}</h3>
+          {% if item.template %}
+          <p class="ui-item-note"><strong>Verknüpfte Vorlage:</strong> {{ item.template.number }} · {{ item.template.subject }} · Fassung {{ item.template.version }}</p>
+          {% endif %}
+        </div>
+        {% if can_plan %}<div class="ui-item-aside"><a href="{% url 'meeting_agenda_edit' obj.pk item.id %}">TOP bearbeiten</a></div>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="ui-empty">
+      <h3>Noch keine Tagesordnung</h3>
+      <p>Die einzelnen Beratungsgegenstände werden im Zuge der Sitzungsvorbereitung zusammengestellt. Öffentliche und nichtöffentliche Inhalte bleiben getrennt.</p>
+      {% if can_plan %}<a class="ui-button" href="{% url 'meeting_agenda_new' obj.pk %}">Ersten TOP hinzufügen</a>{% endif %}
+    </div>
+    {% endif %}
+    {% if can_plan or can_invite %}
+    <details class="ui-panel ui-panel--padded meeting-secondary">
+      <summary>Planung, Nachträge und Einladungsversand verwalten</summary>
+      <div class="meeting-admin-links">
+        {% if can_plan %}
+        <a href="{% url 'meeting_edit' obj.pk %}">Planung bearbeiten</a>
+        <a href="{% url 'meeting_agenda_new' obj.pk %}">Tagesordnungspunkt hinzufügen</a>
+        <a href="{% url 'meeting_amendment' obj.pk %}">Dokumentierten Nachtrag erstellen</a>
+        {% endif %}
+        {% if can_invite %}<a href="{% url 'meeting_invite' obj.pk %}">Einladung / neuen Versandstand ausgeben</a>{% endif %}
+      </div>
+      <p class="ui-small">Nach einer Einladung sind Änderungen nur über die vorgesehenen Nachtragsverfahren möglich. Bestehende Versandstände bleiben erhalten.</p>
+    </details>
+    {% endif %}
+  </section>
+
+  <section id="zustand" class="ui-panel ui-panel--padded" aria-labelledby="responsibilities-title">
+    <div class="ui-section-heading"><h2 id="responsibilities-title">Zuständigkeiten und Fristen</h2></div>
+    <dl class="ui-info-grid">
+      <div><dt>Vorsitz</dt><dd>{{ obj.chair.get_full_name|default:obj.chair.email }}</dd></div>
+      <div><dt>Schriftführung</dt><dd>{{ obj.scribe.get_full_name|default:obj.scribe.email }}</dd></div>
+      <div><dt>Vorlagenschluss</dt><dd>{{ obj.proposal_deadline|date:"d.m.Y, H:i"|default:"Nicht festgelegt" }}</dd></div>
+      <div><dt>Freigabeschluss</dt><dd>{{ obj.release_deadline|date:"d.m.Y, H:i"|default:"Nicht festgelegt" }}</dd></div>
+      <div><dt>Einladungsfrist</dt><dd>{{ obj.invitation_days }} volle Kalendertage</dd></div>
+      <div><dt>Gesetzliche Mitgliederzahl</dt><dd>{{ obj.statutory_count }}</dd></div>
+      <div><dt>Öffentliche Bekanntmachung</dt><dd>{% if obj.public_enabled %}Öffentlich vorgesehen{% else %}Nicht öffentlich freigegeben{% endif %}</dd></div>
+    </dl>
+  </section>
+
+  <section id="nachtraege" aria-labelledby="amendments-title">
+    <div class="ui-section-heading">
+      <h2 id="amendments-title">Nachträge zur Prüfung</h2>
+      <p>Änderungen nach der Einladung bleiben dokumentiert.</p>
+    </div>
+    {% for change in amendments %}
+    <article class="ui-panel ui-panel--padded meeting-amendment">
+      <div class="meeting-amendment-header">
+        <div><span class="ui-kicker">Ausgangsfassung {{ change.base_version }}</span><h3>{{ change.get_kind_display }}</h3></div>
+        <span class="ui-tag">{{ change.state }}</span>
+      </div>
+      <p>{{ change.reason }}</p>
+      <details class="meeting-secondary"><summary>Technische Änderungsdetails</summary><pre>{{ change.data }}</pre></details>
+      {% if can_chair and change.state == 'pending' %}
+      <form method="post" action="{% url 'meeting_amendment_approve' change.pk %}" class="meeting-decision-form">
+        {% csrf_token %}
+        <label for="change-decision-{{ change.pk }}">Feststellung / Beschluss / rechtliche Grundlage</label>
+        <textarea id="change-decision-{{ change.pk }}" name="decision_record" maxlength="1000" required rows="4"></textarea>
+        <button class="ui-button" type="submit">Nachtrag ausdrücklich genehmigen</button>
+      </form>
+      {% endif %}
+    </article>
+    {% empty %}
+    <div class="ui-panel ui-panel--padded"><p class="ui-small">Aktuell keine Nachträge zur Prüfung.</p></div>
+    {% endfor %}
+    {% if can_plan %}
+    <details class="ui-panel ui-panel--padded meeting-secondary">
+      <summary>Zusätzliche Teilnehmende für diese Sitzung freigeben</summary>
+      <form class="meeting-guest-form" method="post" action="{% url 'meeting_guest' obj.pk %}">
+        {% csrf_token %}
+        <label for="meeting-guest">Arbeitskontext</label>
+        <select id="meeting-guest" name="membership">{% for m in memberships %}<option value="{{ m.pk }}">{{ m.user.email }} · {{ m.get_role_display }}</option>{% endfor %}</select>
+        <label class="meeting-checkbox"><input type="checkbox" name="private"> Nichtöffentlichen Teil ausdrücklich freigeben</label>
+        <button class="ui-button" type="submit">Befristet für diese Sitzung freigeben</button>
+      </form>
+    </details>
+    {% endif %}
+  </section>
+
+  <section id="einladungen" aria-labelledby="invitations-title">
+    <div class="ui-section-heading"><h2 id="invitations-title">Ihre Einladungen und Gesamtmappen</h2></div>
+    {% for delivery in deliveries %}
+    <article class="ui-panel ui-panel--padded meeting-invitation">
+      <div class="meeting-amendment-header">
+        <div><span class="ui-kicker">Versandstand {{ delivery.invitation.revision }}</span><h3>{{ delivery.invitation.created_at|date:"d.m.Y, H:i" }} Uhr</h3></div>
+        {% if delivery.delivered_at %}<span class="ui-tag" data-tone="success">Technisch versendet</span>
+        {% else %}<span class="ui-tag" data-tone="attention">Versand ausstehend</span>{% endif %}
+      </div>
+      {% if delivery.error %}<p class="ui-note">{{ delivery.error }}</p>{% endif %}
+      <div class="ui-inline-links">
+        <a href="{% url 'meeting_invitation_download' delivery.invitation_id 'pdf' %}">PDF-Gesamtmappe herunterladen</a>
+        <a href="{% url 'meeting_invitation_download' delivery.invitation_id 'ics' %}">Kalenderdatei herunterladen</a>
+      </div>
+      <form method="post" action="{% url 'meeting_invitation_seen' delivery.pk %}">
+        {% csrf_token %}
+        <button class="ui-button" type="submit">Kenntnisnahme vermerken</button>
+      </form>
+    </article>
+    {% empty %}
+    <div class="ui-empty"><h3>Kein persönlicher Versandstand</h3><p>Für diesen Arbeitskontext ist keine Einladung zugeordnet. Gegebenenfalls wurde die Einladung an eine andere Organisationsrolle zugestellt.</p></div>
+    {% endfor %}
+    <p class="ui-small">Technischer Versand und Kenntnisnahme ersetzen keinen rechtlichen Zugangsnachweis.</p>
+  </section>
+</div>
+{% endblock %}

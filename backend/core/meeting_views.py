@@ -110,7 +110,17 @@ def detail(request,meeting_id):
     deliveries=InvitationDelivery.objects.filter(invitation__meeting=obj,user=request.user).select_related('invitation').order_by('-invitation__revision')
     from .member_views import remember
     remember(context,'meeting',obj.pk)
-    return render(request,'meeting_detail.html',{'context':context,'obj':obj,'data':data,'can_plan':meeting_access(context,'plan',obj),'can_invite':meeting_access(context,'invite',obj),'can_chair':meeting_access(context,'chair',obj),'amendments':MeetingAmendment.objects.filter(meeting=obj) if meeting_access(context,'plan',obj) or meeting_access(context,'chair',obj) else [],'deliveries':deliveries,'memberships':Membership.objects.filter(organization=obj.organization).select_related('user')})
+    obj.ui_status,obj.ui_tone=MEETING_LIST_STATES.get(obj.state,('Weiterer Sitzungsstand','neutral'))
+    can_plan=settings.SERVER_ROLE=='internal' and meeting_access(context,'plan',obj)
+    can_invite=settings.SERVER_ROLE=='internal' and meeting_access(context,'invite',obj)
+    can_chair=settings.SERVER_ROLE=='internal' and meeting_access(context,'chair',obj)
+    amendments=MeetingAmendment.objects.filter(meeting=obj) if meeting_access(context,'plan',obj) or meeting_access(context,'chair',obj) else []
+    return render(request,'meeting_detail.html',{
+        'context':context,'obj':obj,'data':data,
+        'can_plan':can_plan,'can_invite':can_invite,'can_chair':can_chair,
+        'amendments':amendments,'deliveries':deliveries,
+        'memberships':Membership.objects.filter(organization=obj.organization).select_related('user'),
+    })
 
 @login_required
 @require_http_methods(['GET','POST'])

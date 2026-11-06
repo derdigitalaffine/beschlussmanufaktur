@@ -1,0 +1,42 @@
+@charset "UTF-8";
+.meeting-detail .meeting-hero { margin-top:.2rem; }
+.meeting-detail .meeting-contextline { display:flex; gap:.5rem 1.15rem; flex-wrap:wrap; align-items:center; color:var(--ui-muted); font-size:.88rem; margin-top:.7rem; }
+.meeting-detail .meeting-section-nav { display:flex; flex-wrap:wrap; gap:.4rem; border-bottom:1px solid var(--ui-border); padding-bottom:.85rem; margin:1.2rem 0 1.5rem; }
+.meeting-detail .meeting-section-nav a { padding:.4rem .65rem; border-radius:8px; font-size:.84rem; font-weight:700; text-decoration:none; }
+.meeting-detail .meeting-section-nav a:hover { background:var(--ui-surface-alt); }
+.meeting-detail [id] { scroll-margin-top:1.2rem; }
+.meeting-detail .meeting-progress { margin-bottom:2.2rem; }
+.meeting-detail .meeting-progress .ui-section-heading { margin:.1rem 0 1rem; }
+.meeting-detail .meeting-stages { margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.55rem; list-style:none; }
+.meeting-detail .meeting-stages li { display:flex; align-items:center; gap:.6rem; border:1px solid var(--ui-border); border-radius:10px; padding:.72rem; background:var(--ui-surface-alt); }
+.meeting-detail .meeting-stages li[aria-current="step"] { background:#e7f3e9; border:2px solid #548568; }
+.meeting-detail .meeting-stage-count { flex-shrink:0; display:grid; place-items:center; border-radius:50%; background:#fff; border:1px solid #abc4b2; font-size:.82rem; font-weight:730; width:27px; height:27px; }
+.meeting-detail .meeting-stages li div { display:grid; gap:2px; }
+.meeting-detail .meeting-stages li strong { font-size:.81rem; }
+.meeting-detail .meeting-stages li div span { font-size:.72rem; color:var(--ui-muted); }
+.meeting-detail .meeting-quick-actions { display:flex; gap:.5rem 1rem; flex-wrap:wrap; padding-top:1.2rem; margin-top:1.2rem; border-top:1px solid var(--ui-border); font-size:.86rem; font-weight:680; }
+.meeting-detail .meeting-agenda { margin:2rem 0; }
+.meeting-detail .meeting-agenda-list .ui-item { justify-content:flex-start; }
+.meeting-detail .agenda-position { display:grid; place-items:center; min-width:43px; height:43px; border-radius:10px; background:var(--ui-surface-alt); border:1px solid var(--ui-border); font-weight:780; color:var(--ui-brand); }
+.meeting-detail .agenda-tags { display:flex; flex-wrap:wrap; gap:.35rem; margin-bottom:.45rem; }
+.meeting-detail .ui-item-aside a { font-size:.85rem; font-weight:690; white-space:nowrap; }
+.meeting-detail .meeting-secondary { margin:1rem 0; }
+.meeting-detail .meeting-secondary summary { cursor:pointer; font-weight:730; padding:.2rem 0; }
+.meeting-detail .meeting-admin-links { display:flex; flex-wrap:wrap; gap:.6rem 1.2rem; margin:1rem 0; font-size:.88rem; }
+.meeting-detail .meeting-amendment-header { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; flex-wrap:wrap; }
+.meeting-detail .meeting-amendment-header h3 { margin:.2rem 0 .7rem; font-size:1.2rem; }
+.meeting-detail .meeting-decision-form,.meeting-detail .meeting-guest-form { display:grid; gap:.65rem; margin-top:1rem; max-width:710px; }
+.meeting-detail .meeting-decision-form label,.meeting-detail .meeting-guest-form label { font-weight:720; font-size:.86rem; }
+.meeting-detail .meeting-decision-form .ui-button,.meeting-detail .meeting-guest-form .ui-button { justify-self:start; }
+.meeting-detail .meeting-checkbox { display:flex; align-items:center; gap:.55rem; padding:.35rem 0; }
+.meeting-detail .meeting-checkbox input { width:auto; }
+.meeting-detail .meeting-invitation form { margin-top:1rem; }
+.meeting-detail .meeting-invitation .ui-inline-links { margin-top:1rem; }
+.meeting-detail #zustand,.meeting-detail #nachtraege,.meeting-detail #einladungen { margin:2rem 0; }
+@media(max-width:930px) { .meeting-detail .meeting-stages { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:580px) {
+ .meeting-detail .meeting-stages { grid-template-columns:1fr; }
+ .meeting-detail .meeting-agenda-list .ui-item { display:grid; grid-template-columns:43px minmax(0,1fr); align-items:start; }
+ .meeting-detail .meeting-agenda-list .ui-item-aside { grid-column:2; }
+ .meeting-detail .meeting-quick-actions { flex-direction:column; gap:.55rem; }
+}
