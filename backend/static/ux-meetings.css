@@ -1,0 +1,22 @@
+@charset "UTF-8";
+.meeting-worklist .upcoming-meeting { background:linear-gradient(110deg,#edf5ee 0%,#fff 82%); display:flex; align-items:center; gap:1.3rem; padding:1.5rem; }
+.meeting-worklist .upcoming-main { flex:1; }
+.meeting-worklist .upcoming-main h2 { font-size:clamp(1.25rem,2vw,1.65rem); margin:.25rem 0 .4rem; letter-spacing:-.025em; }
+.meeting-worklist .upcoming-main h2 a { color:var(--ui-text); text-underline-offset:4px; }
+.meeting-worklist .upcoming-main p { color:var(--ui-muted); margin:0; font-size:.9rem; }
+.meeting-worklist .upcoming-date,.meeting-worklist .meeting-date { min-width:72px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:.12rem; border:1px solid #c8dacc; background:#fff; border-radius:11px; padding:.55rem; font-variant-numeric:tabular-nums; }
+.meeting-worklist .upcoming-date strong,.meeting-worklist .meeting-date strong { font-size:1.8rem; font-weight:760; line-height:1.1; letter-spacing:-.04em; }
+.meeting-worklist .upcoming-date span,.meeting-worklist .meeting-date span { text-transform:uppercase; font-weight:760; letter-spacing:.05em; font-size:.7rem; color:var(--ui-muted); }
+.meeting-worklist .upcoming-actions { display:flex; flex-direction:column; align-items:flex-end; gap:.65rem; }
+.meeting-worklist .meeting-date { min-width:68px; background:#f7f9f7; flex-shrink:0; }
+.meeting-worklist .meeting-open { font-size:.83rem; font-weight:760; text-decoration:none; white-space:nowrap; }
+.meeting-worklist .meeting-open:hover { text-decoration:underline; text-underline-offset:.2em; }
+.meeting-worklist .ui-summary { grid-template-columns: repeat(4,minmax(0,1fr)); }
+@media(max-width:680px) {
+ .meeting-worklist .upcoming-meeting { align-items:flex-start; flex-wrap:wrap; gap:.85rem; padding:1.1rem; }
+ .meeting-worklist .upcoming-actions { align-items:flex-start; flex-direction:row; flex-wrap:wrap; width:100%; }
+ .meeting-worklist .ui-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .meeting-worklist .ui-item { display:grid; grid-template-columns:70px minmax(0,1fr); align-items:start; gap:.8rem; }
+ .meeting-worklist .ui-item-aside { grid-column:2; }
+ .meeting-worklist .meeting-date { min-width:0; }
+}
