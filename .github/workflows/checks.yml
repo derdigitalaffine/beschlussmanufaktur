@@ -29,13 +29,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Bootstrap frontend lockfile for audited Mantine pilot
-        working-directory: frontend
-        run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          echo "__BEGIN_MANTINE_LOCKFILE__"
-          cat package-lock.json
-          echo "__END_MANTINE_LOCKFILE__"
       - name: Build self-hosted Mantine and Font Awesome 7 assets
         working-directory: frontend
         run: |
@@ -95,13 +88,13 @@ jobs:
       - name: Build Mantine browser fixtures
         working-directory: frontend
         run: |
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci --ignore-scripts --no-audit --no-fund
           npm run build
       - run: node tests/workflow_contracts.cjs
       - run: node --test tests/offline_crypto.cjs
       - run: npm install --no-save --package-lock=false playwright@1.62.1
       - run: npx playwright install --with-deps chromium
+      - run: node tests/mantine_browser.cjs
       - run: node tests/offline_browser.cjs
       - uses: actions/setup-python@v5
         with:
