@@ -39,7 +39,10 @@ class IslandBoundary extends React.Component {
   }
   static getDerivedStateFromError() { return { failed: true }; }
   componentDidCatch() {
-    if (this.props.fallback) this.props.fallback.hidden = false;
+    // Keep all native content available if the client island ever fails.
+    for (const node of [this.props.fallback, ...(this.props.hiddenCompanions || [])]) {
+      if (node) node.hidden = false;
+    }
   }
   render() {
     return this.state.failed ? null : this.props.children;
@@ -49,7 +52,7 @@ class IslandBoundary extends React.Component {
 function mount(element, fallback, child, hiddenCompanions = []) {
   if (!element || !fallback) return;
   createRoot(element).render(
-    <IslandBoundary fallback={fallback}>
+    <IslandBoundary fallback={fallback} hiddenCompanions={hiddenCompanions}>
       <MantineProvider withCSSVariables={false} defaultColorScheme="light">
         <Ready fallback={fallback} hiddenCompanions={hiddenCompanions}>{child}</Ready>
       </MantineProvider>
