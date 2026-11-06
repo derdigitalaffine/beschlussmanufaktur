@@ -37,6 +37,16 @@ async function ensureServer() {
     assert.equal(await page.locator('#invitation-fallback').isHidden(), true);
     assert.equal(await page.locator('[data-fa-icon="home"] svg').count(), 1, 'Local Font Awesome SVG mounted');
     assert.equal(await page.getByText('Vorlage erarbeiten').first().isVisible(), true);
+    const dashboardSvg = await page.locator('.bm-section-label svg').evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      return { width: box.width, height: box.height };
+    });
+    assert.ok(dashboardSvg.width <= 22 && dashboardSvg.height <= 22,
+      'Bundled Font Awesome icons must remain inline-sized: ' + JSON.stringify(dashboardSvg));
+    const primaryColor = await page.locator('.bm-feature-actions a.mantine-Button-root').evaluate(
+      (node) => getComputedStyle(node).color
+    );
+    assert.equal(primaryColor, 'rgb(255, 255, 255)', 'Primary action must have readable foreground');
     await page.screenshot({ path: 'mantine-ui-desktop.png', fullPage: true });
 
     let rolePosted = null;
