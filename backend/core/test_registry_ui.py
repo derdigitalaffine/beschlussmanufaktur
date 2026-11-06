@@ -55,7 +55,7 @@ class RegistryUITests(SimpleTestCase):
             ends_on=None, substitutes_for=None, archived=False,
         )
         relation = SimpleNamespace(
-            pk=uuid4(), target=SimpleNamespace(name="Zweckverband Beispiel"),
+            pk=42, target=SimpleNamespace(name="Zweckverband Beispiel"),
             description="Interkommunale Aufgabe", responsibility="Verwaltung",
             starts_on=None, ends_on=None,
         )
