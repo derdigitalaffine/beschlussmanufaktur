@@ -1,1 +1,79 @@
-{% extends 'base.html' %}{% block content %}<a href="/betrieb/">← Betrieb</a><h1>Domains und TLS</h1><p>Lokale Caddy-CA, automatisches Let's Encrypt oder eigener Zertifikatimport. DNS-/Portfreigaben und passende Dienst-Hosts müssen vorbereitet sein. Der letzte akzeptierte Stand bleibt bei abgewiesener Konfiguration erhalten.</p>{% if error %}<p role="alert" class="errorlist">{{ error }}</p>{% endif %}<form class="card" method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button>Prüfbaren Umstellungsauftrag vorbereiten</button></form>{% for p in plans %}<section class="card"><h2>{{ p.hostname }} · {{ p.mode }} · {{ p.state }}</h2><p>{{ p.error }}</p>{% if p.mode == 'letsencrypt' %}<p>DNS-TXT: <code>_beschlussmanufaktur.{{ p.hostname }}</code> = <code>{{ p.proof }}</code></p><p>DNS-Prüfung: {{ p.dns_verified_at|default:'noch nicht erfolgreich' }}</p>{% endif %}{% if p.certificate_info %}<p>Gültig bis {{ p.certificate_info.not_after }} · Fingerabdruck {{ p.certificate_info.fingerprint }}</p>{% endif %}{% if p.state == 'prepared' or p.state == 'queued' or p.state == 'failed' or p.state == 'expired' %}<form method="post">{% csrf_token %}<input type="hidden" name="plan" value="{{ p.pk }}">{% if p.mode == 'letsencrypt' %}<button name="operation" value="dns">DNS automatisch prüfen</button>{% endif %}<button name="operation" value="apply">Geprüften Auftrag anwenden</button></form>{% endif %}</section>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Domains und TLS · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="/betrieb/">← Zum Betrieb</a>
+<section class="page-heading">
+  <span class="eyebrow">Betrieb / Zertifikate</span><h1>Domains und TLS</h1>
+  <p>Lokale Caddy-CA, Let's Encrypt und eigener Zertifikatimport. DNS, Ports und Hostzuordnungen müssen vorher geprüft sein. Abgewiesene Konfigurationen ersetzen den letzten akzeptierten Stand nicht.</p>
+</section>
+{% if error %}<div class="bm-task-error" role="alert">{{ error }}</div>{% endif %}
+<div class="bm-task-grid">
+  <section class="card bm-task-main" aria-labelledby="tls-new-title">
+    <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Vorbereitung</span></div>
+    <h2 id="tls-new-title">Umstellungsauftrag vorbereiten</h2>
+    <p class="muted">Ein Auftrag wird zunächst erfasst und geprüft; er ist noch keine erfolgreiche Zertifikatsumstellung.</p>
+    <form class="bm-task-form" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="bm-task-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+        {% if field.is_hidden %}{{ field }}{% else %}
+        <div class="bm-task-field{% if field.errors %} bm-task-field-error{% endif %}">
+          {{ field.label_tag }}{{ field }}
+          {% if field.help_text %}<p class="bm-task-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<div class="bm-task-error" role="alert">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div class="bm-task-actions"><button class="primary" type="submit">Auftrag zur Prüfung vorbereiten</button></div>
+    </form>
+  </section>
+  <aside class="card bm-task-aside" aria-labelledby="tls-guide-title">
+    <span class="eyebrow">Betriebssicherheit</span>
+    <h2 id="tls-guide-title">Drei getrennte Schritte</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>Vorbereiten</strong><span>Host, Betriebsmodus und gegebenenfalls Zertifikat einreichen.</span></li>
+      <li><strong>Prüfen</strong><span>DNS-/Zertifikatsnachweis und gültige Freigabe kontrollieren.</span></li>
+      <li><strong>Anwenden</strong><span>Die Anwendung wird erst nach der Serverbestätigung wirksam.</span></li>
+    </ol>
+    <p class="bm-task-hint">Ein gültiger Containerstatus ersetzt keine geprüfte externe HTTPS-Erreichbarkeit.</p>
+  </aside>
+</div>
+<section class="bm-task-section" aria-labelledby="tls-plans-title">
+  <div class="bm-task-section-title">
+    <div><span class="eyebrow">Verlauf und Aufträge</span><h2 id="tls-plans-title">Vorhandene TLS-Aufträge</h2></div>
+  </div>
+  {% for p in plans %}
+  <article class="card bm-ops-plan">
+    <div class="bm-ops-plan-head">
+      <div><span class="eyebrow">Host und Betriebsmodus</span><h3>{{ p.hostname }}</h3><p>{{ p.mode }}</p></div>
+      <span class="bm-task-status bm-status-muted">{{ p.state }}</span>
+    </div>
+    {% if p.error %}<div class="bm-task-error" role="alert">{{ p.error }}</div>{% endif %}
+    {% if p.mode == 'letsencrypt' %}
+    <div class="bm-ops-proof">
+      <span class="eyebrow">DNS-Verifizierung</span>
+      <p><strong>TXT-Eintrag:</strong> <code>_beschlussmanufaktur.{{ p.hostname }}</code> = <code>{{ p.proof }}</code></p>
+      <p>Letzter DNS-Prüfstand: {{ p.dns_verified_at|default:'noch nicht erfolgreich' }}</p>
+    </div>
+    {% endif %}
+    {% if p.certificate_info %}
+    <dl class="bm-access-meta">
+      <div><dt>Gültig bis</dt><dd>{{ p.certificate_info.not_after }}</dd></div>
+      <div><dt>Fingerabdruck</dt><dd><code>{{ p.certificate_info.fingerprint }}</code></dd></div>
+    </dl>
+    {% endif %}
+    {% if p.state == 'prepared' or p.state == 'queued' or p.state == 'failed' or p.state == 'expired' %}
+    <form method="post" class="bm-ops-plan-actions">
+      {% csrf_token %}<input type="hidden" name="plan" value="{{ p.pk }}">
+      {% if p.mode == 'letsencrypt' %}<button type="submit" name="operation" value="dns" class="bm-task-secondary">DNS automatisch prüfen</button>{% endif %}
+      <button type="submit" name="operation" value="apply" class="primary">Geprüften Auftrag anwenden</button>
+    </form>
+    {% endif %}
+  </article>
+  {% empty %}
+  <section class="card bm-task-empty"><h3>Noch keine TLS-Aufträge</h3><p>Prüfbare Aufträge erscheinen nach der Vorbereitung hier.</p></section>
+  {% endfor %}
+</section>
+{% endblock %}
