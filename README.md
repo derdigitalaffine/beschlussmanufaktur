@@ -6,7 +6,17 @@ Ein geplantes, vollständig webbasiertes Ratsinformationssystem für kommunale V
 
 ## Start und Entwicklung
 
-Die [Installationsanleitung](docs/12-installation.md) beschreibt Einrichtung mit Docker Compose, SMTP und Caddys lokaler CA. Für Backendtests siehe [Entwicklung](docs/11-implementierungsstand.md#entwicklung). Änderungen erfolgen immer über einen Pull Request mit anschließendem Merge nach relevanten Prüfungen.
+Für eine **geführte Erstinstallation** des vorhandenen Entwicklungsstands gibt es einen Bash-Assistenten:
+
+```bash
+bash setup.sh --stack internal          # interner Fachsystemhost
+bash setup.sh --stack external          # getrennter externer Host
+bash setup.sh --stack internal --check  # bestehende private .env prüfen, ohne Deployment
+```
+
+Der Assistent führt durch Domain-, SMTP-, Schlüssel- und optionale Backup-/Transferkonfiguration, initialisiert Datenbank und erstes Verwaltungskonto nur intern, startet die Compose-Dienste und prüft deren Bereitschaft. **Keine automatische Produktivfreigabe, kein unbeaufsichtigtes Upgrade und kein Restore.** Beide Stacks gehören auf getrennte Hosts. Details, Voraussetzungen und Sicherheitsgrenzen: [Geführte Erstinstallation](docs/12-installation.md#geführte-erstinstallation-bash-setup).
+
+Die [Installationsanleitung](docs/12-installation.md) beschreibt zusätzlich die manuellen Einrichtungsschritte mit Docker Compose, SMTP und Caddys lokaler CA. Für Backendtests siehe [Entwicklung](docs/11-implementierungsstand.md#entwicklung). Änderungen erfolgen immer über einen Pull Request mit anschließendem Merge nach relevanten Prüfungen.
 
 Für parallele Entwicklung ist GitHub die gemeinsame Steuerungsebene: **#41** enthält das dynamische Produkt-/Roadmap-Portfolio, **#38** aktive Agentenclaims und Kollisionssignale. Zielqualität, Roadmapvertrag und Gegenprüfung strittiger Entscheidungen stehen in docs/21–23.
 
