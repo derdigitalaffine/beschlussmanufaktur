@@ -25,6 +25,22 @@
   box-shadow:0 10px 30px rgba(15,45,52,.055);
   border-color:var(--bm-border);
 }
+/* Strict Django CSP forbids Mantine's per-component inline Grid variables. These
+   static responsive grids avoid any inline layout styles at 360px and desktop. */
+.bm-dashboard-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:1.1rem;align-items:stretch}
+.bm-dashboard-grid>div{min-width:0}
+.bm-membership-grid{display:grid;grid-template-columns:minmax(0,8fr) minmax(250px,4fr);gap:1.5rem;align-items:start}
+.bm-membership-grid>div{min-width:0}
+.bm-task-worklist{padding:1.55rem 1.8rem}
+@media(max-width:900px){
+  .bm-membership-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:850px){
+  .bm-dashboard-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:500px){
+  .bm-task-worklist{padding:1.15rem}
+}
 .bm-section-label{
   display:inline-flex;align-items:center;gap:.55rem;padding:.4rem .8rem;
   margin-bottom:.9rem;font-size:.74rem;font-weight:850;text-transform:uppercase;
