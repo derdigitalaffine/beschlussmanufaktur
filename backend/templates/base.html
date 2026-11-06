@@ -8,12 +8,16 @@
 {% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'ux-system.css' %}">{% endif %}
 {% block page_styles %}{% endblock %}
 {% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'ux-polish.css' %}">
-<script type="module" src="{% static 'mantine/shell.js' %}"></script>{% endif %}
+<link rel="stylesheet" href="{% static 'ux-workbench.css' %}">
+<link rel="stylesheet" href="{% static 'mantine/workspace.css' %}">
+<script type="module" src="{% static 'mantine/shell.js' %}"></script>
+<script type="module" src="{% static 'mantine/workbench.js' %}"></script>{% endif %}
 {% block page_mantine_assets %}{% endblock %}
 <script src="{% static 'auth-events.js' %}" defer></script>
 {% if portal %}<link rel="stylesheet" href="/portal.css">{% endif %}
+{% if not user.is_authenticated %}<link rel="stylesheet" href="{% static 'ux-guest.css' %}">{% endif %}
 </head>
-<body{% if user.is_authenticated %} class="bm-private-ui"{% endif %}>
+<body{% if user.is_authenticated %} class="bm-private-ui" data-bm-route="{{ request.resolver_match.url_name|default:'' }}"{% else %} class="{% if portal %}bm-public-ui{% else %}bm-guest-ui{% endif %}"{% endif %}>
 <a class="skip-link" href="#inhalt">Direkt zum Inhalt</a>
 <header class="topbar">
   <div class="topbar-main">
@@ -43,7 +47,7 @@
     <nav class="global-nav" aria-label="Hauptnavigation">
       <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}><span class="nav-glyph" data-fa-icon="home" aria-hidden="true"></span>Heute</a>
       {% if shell_internal %}
-      <a href="{% url 'templates' %}"><span class="nav-glyph" data-fa-icon="documents" aria-hidden="true"></span><span class="nav-glyph" data-fa-icon="documents" aria-hidden="true"></span>Vorlagen &amp; Vorgänge</a>
+      <a href="{% url 'templates' %}"><span class="nav-glyph" data-fa-icon="documents" aria-hidden="true"></span>Vorlagen &amp; Vorgänge</a>
       {% else %}
       <a href="{% url 'replica_documents' %}">Vorlagen &amp; Vorgänge</a>
       {% endif %}
@@ -65,6 +69,7 @@
 </header>
 <main id="inhalt">
   {% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}
+  {% if user.is_authenticated %}<div id="bm-workbench-root" aria-label="Arbeitsbereich und Seitennavigation"></div>{% endif %}
   {% block content %}{% endblock %}
 </main>
 <footer>Beschlussmanufaktur · Entwicklungsstand 0.7 · MIT-Lizenz</footer>
