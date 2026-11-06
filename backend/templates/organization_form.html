@@ -13,7 +13,7 @@
   <section class="card bm-task-main" aria-labelledby="org-form-heading">
     <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Organisationsdaten</span></div>
     <h2 id="org-form-heading">Körperschaft anlegen</h2>
-    <form method="post" class="bm-task-form" novalidate>
+    <form method="post" class="bm-task-form">
       {% csrf_token %}
       {% if form.non_field_errors %}<div class="bm-task-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
       {% for field in form %}
