@@ -1,0 +1,43 @@
+@charset "UTF-8";
+.template-detail .template-contextline { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem 1.1rem; margin-top:.7rem; color:var(--ui-muted); font-size:.87rem; }
+.template-detail .template-section-nav { display:flex; flex-wrap:wrap; gap:.35rem; border-bottom:1px solid var(--ui-border); margin:1.3rem 0; padding-bottom:.8rem; }
+.template-detail .template-section-nav a { font-size:.83rem; font-weight:710; text-decoration:none; border-radius:7px; padding:.45rem .6rem; }
+.template-detail .template-section-nav a:hover { background:var(--ui-surface-alt); }
+.template-detail [id] { scroll-margin-top:1.25rem; }
+.template-detail .template-process { margin:1.1rem 0 2rem; }
+.template-detail .template-process .ui-section-heading { margin:.25rem 0 1rem; }
+.template-detail .template-stages { list-style:none; padding:0; margin:0 0 .8rem; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.55rem; }
+.template-detail .template-stages li { display:grid; gap:.3rem; padding:.8rem; border:1px solid var(--ui-border); border-radius:10px; background:#f9fbf9; }
+.template-detail .template-stages li[aria-current="step"] { border:2px solid #548568; background:#e8f4e9; }
+.template-detail .template-stages strong { font-size:.83rem; }
+.template-detail .template-stages span { font-size:.75rem; color:var(--ui-muted); }
+.template-detail .template-process p:last-child { margin-bottom:0; }
+.template-detail .template-body { padding:clamp(1.2rem,3vw,2.5rem); line-height:1.8; }
+.template-detail .template-body > :first-child { margin-top:0; }
+.template-detail .template-body :where(h2,h3,h4) { margin:1.6em 0 .5em; }
+.template-detail .template-body p { max-width:90ch; }
+.template-detail .template-body table { display:block; max-width:100%; overflow-x:auto; border-collapse:collapse; }
+.template-detail .template-section { margin:1.1rem 0; }
+.template-detail .template-section h2 { font-size:1.35rem; letter-spacing:-.025em; margin:0 0 1rem; border-bottom:1px solid var(--ui-border); padding-bottom:.85rem; }
+.template-detail .template-section > p { color:var(--ui-text); overflow-wrap:anywhere; }
+.template-detail .template-section > p + p { border-top:1px solid #edf1ed; padding-top:.7rem; }
+.template-detail .template-section :where(form) { padding:1rem 0; display:grid; gap:.7rem; max-width:770px; }
+.template-detail .template-section form + form { border-top:1px solid var(--ui-border); }
+.template-detail .template-section form label { font-weight:670; font-size:.85rem; line-height:1.55; }
+.template-detail .template-section form :where(input:not([type=checkbox]):not([type=hidden]), select, textarea) { display:block; width:100%; max-width:100%; margin-top:.25rem; }
+.template-detail .template-section form button { width:fit-content; max-width:100%; min-height:44px; padding:.65rem 1rem; font-size:.85rem; font-weight:700; color:var(--ui-brand); background:#fff; border:1px solid #bdcfc2; border-radius:9px; }
+.template-detail .template-section form button:hover { background:#f1f7f2; }
+.template-detail .template-section form button.primary { background:var(--ui-brand); color:#fff; border-color:var(--ui-brand); }
+.template-detail .template-section form button.primary:hover { background:var(--ui-brand-hover); }
+.template-detail .template-section details { padding:.55rem 0; }
+.template-detail .template-section details summary { font-weight:720; cursor:pointer; font-size:.89rem; }
+.template-detail .template-section :where(pre) { white-space:pre-wrap; overflow-wrap:anywhere; }
+.template-detail > details { background:#fff; border:1px solid var(--ui-border); border-radius:13px; padding:1.3rem; margin:1.2rem 0; }
+.template-detail > details summary { font-weight:740; cursor:pointer; }
+.template-detail > details .card { border:0; box-shadow:none; padding:1.1rem 0; margin:0; }
+@media(max-width:920px) { .template-detail .template-stages { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:560px) {
+ .template-detail .template-stages { grid-template-columns:1fr; }
+ .template-detail .template-section { padding:1.2rem; }
+ .template-detail .template-section form button { width:100%; }
+}
