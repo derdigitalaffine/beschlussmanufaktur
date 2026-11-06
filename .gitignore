@@ -9,3 +9,6 @@ staticfiles/
 data/
 .coverage
 
+
+# Built Mantine/Font Awesome bundles are generated from frontend/package-lock.json
+backend/static/mantine/

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
+<title>Mantine: progressive test fixture</title>
+<link rel="stylesheet" href="/backend/static/app.css">
+<link rel="stylesheet" href="/backend/static/ux-system.css">
+<link rel="stylesheet" href="/backend/static/ux-polish.css">
+<link rel="stylesheet" href="/backend/static/mantine/workspace.css">
+<script type="module" src="/backend/static/mantine/shell.js"></script>
+<script type="module" src="/backend/static/mantine/workspace.js"></script>
+</head>
+<body class="bm-private-ui"><header class="topbar"><nav class="global-nav">
+<a href="/"><span data-fa-icon="home" aria-hidden="true" class="nav-glyph"></span>Heute</a></nav></header>
+<main>
+<section class="context-panel" id="arbeitskontext"><h2 id="context-title">Stadt Beispiel</h2><span class="pill">Sitzungsdienst</span></section>
+<div id="mantine-dashboard"></div>
+<section class="card next-step"><h2>Vorlage erarbeiten</h2><p>Entwürfe professionell vorbereiten und geprüft freigeben.</p>
+<div class="next-step-action"><a class="primary" href="/vorlagen/neu/">Vorlage erstellen</a><a href="/vorlagen/">Vorlagen ansehen</a></div></section>
+<section class="today-work"><div class="today-work-grid">
+<section class="card today-work-panel"><h3>Nächste Sitzung</h3><h4><a href="/sitzung/123/">Hauptausschuss am Dienstag</a></h4><a class="today-work-action" href="/sitzungen/">Sitzung öffnen</a></section>
+<section class="card today-work-panel"><h3>Meine offenen Beschlussaufgaben</h3><span class="today-task-count">3</span><ul class="today-task-list"><li><div><a href="/beschluss/eins/">Ausbau des Schulwegs</a><p class="muted"><strong class="today-overdue">Frist überschritten · </strong>Fällig 15.10.2026</p></div></li><li><div><a href="/beschluss/zwei/">Digitales Bürgerbüro</a><p class="muted">Fällig 02.12.2026</p></div></li></ul><a class="today-work-action" href="/beschluesse/">Beschlusskontrolle öffnen</a></section>
+</div></section>
+
+<div id="mantine-membership"></div>
+<div id="membership-fallback">
+<a class="text-link" href="/benutzer/">← Zurück zu Menschen und Rollen</a>
+<section class="page-heading"><h1>Rolle bearbeiten</h1><p>person@example.invalid · Sitzungsdienst</p></section>
+<section class="card form-card"><form method="post" action="/submit-role/">
+<input type="hidden" name="csrfmiddlewaretoken" value="fixture-csrf-token">
+<input type="hidden" name="version" value="5">
+<div class="field"><label for="role">Rolle</label><select id="role" name="role" required><option value="clerk" selected>Sitzungsdienst</option><option value="reviewer">Prüfung</option></select></div>
+<div class="field"><label for="starts_at">Gültig ab</label><input type="datetime-local" id="starts_at" name="starts_at"></div>
+<div class="field"><label for="ends_at">Gültig bis (optional)</label><input type="datetime-local" id="ends_at" name="ends_at"></div>
+<div class="field"><label for="reason">Begründung der Änderung</label><textarea id="reason" name="reason" rows="3" maxlength="500" required></textarea></div>
+<button type="submit">Änderung speichern</button></form>
+<p class="help">Die Änderung wird protokolliert. Der Server prüft den aktiven Kontext und die Version.</p>
+</section></div>
+
+<section class="ui-panel ui-panel--padded users-invite">
+<h2>Person einladen</h2><p>Einladung erfordert Annahme.</p>
+<div id="mantine-invitation"></div>
+<div id="invitation-fallback"><form class="users-invite-form" method="post" action="/submit-invite/">
+<input type="hidden" name="csrfmiddlewaretoken" value="invite-fixture-csrf">
+<div class="users-field"><label for="email">E-Mail-Adresse *</label><input type="email" name="email" id="email" required maxlength="254"></div>
+<div class="users-field"><label for="invite_role">Rolle *</label><select name="role" id="invite_role" required><option value="reviewer">Prüfung</option><option value="clerk">Sitzungsdienst</option></select></div>
+<div class="users-field"><label for="invite_starts_at">Beginn</label><input type="datetime-local" id="invite_starts_at" name="starts_at"></div>
+<button class="ui-button" type="submit">Einladung senden</button>
+</form></div>
+</section>
+</main></body></html>
