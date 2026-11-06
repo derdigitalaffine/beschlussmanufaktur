@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError,PermissionDenied
@@ -71,7 +72,7 @@ def index(request):
     rows=[m for m in accessible if (not state or m.state==state) and
           query.casefold() in (m.title+' '+m.committee.name+' '+m.location).casefold()]
     return render(request,'meetings.html',{
-        'context':context,'meetings':rows,'can_plan':context.role=='clerk',
+        'context':context,'meetings':rows,'can_plan':settings.SERVER_ROLE=='internal' and context.role=='clerk',
         'query':query,'state':state,'state_filters':[
             {'value':key,'label':label,'count':counts[key]} for key,(label,_) in MEETING_LIST_STATES.items()
         ],'next_meeting':next_meeting,'accessible_count':len(accessible),
