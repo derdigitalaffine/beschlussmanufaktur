@@ -1,1 +1,39 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>{{ obj.title }}</h1><p>{{ obj.number }} · Version {{ obj.version }} · Intern bereitgestellt</p><a href="{% url 'replica_documents' %}">Vorlagen</a></section><section class="card markdown-preview">{{ body }}</section><section class="card"><h2>Unterlagen</h2><a href="{% url 'replica_export' obj.pk 'pdf' %}">PDF</a> · <a href="{% url 'replica_export' obj.pk 'docx' %}">DOCX</a>{% for a in obj.attachments %}<p><a href="{% url 'replica_asset' obj.pk a.id %}">{{ a.name }}</a></p>{% endfor %}{% if can_edit %}<p><a href="{% url 'replica_propose' obj.pk %}">Änderung zur internen Prüfung vorschlagen</a></p>{% endif %}</section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ obj.title }} · Bereitgestellte Vorlage · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-sensitive-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'replica_documents' %}">← Zur Vorlagenübersicht</a>
+<section class="page-heading">
+  <span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span>
+  <h1>{{ obj.title }}</h1>
+  <p>{{ obj.number }} · Fassung {{ obj.version }} · Intern bereitgestellt</p>
+</section>
+<div class="bm-document-grid">
+  <article class="card bm-document-body" aria-labelledby="document-body-title">
+    <span class="bm-sensitive-tag">Bereitgestellte Fassung</span>
+    <h2 id="document-body-title">Vorlagentext</h2>
+    <div class="markdown-preview bm-document-content">{{ body }}</div>
+  </article>
+  <aside class="card bm-document-aside" aria-labelledby="document-files-title">
+    <span class="eyebrow">Dokumente und Export</span>
+    <h2 id="document-files-title">Unterlagen</h2>
+    <div class="bm-document-exports">
+      <a href="{% url 'replica_export' obj.pk 'pdf' %}">Als PDF ansehen</a>
+      <a href="{% url 'replica_export' obj.pk 'docx' %}">Als DOCX exportieren</a>
+    </div>
+    <ul class="bm-document-attachments">
+      {% for a in obj.attachments %}
+      <li><a href="{% url 'replica_asset' obj.pk a.id %}">{{ a.name }}</a></li>
+      {% empty %}<li class="bm-document-empty">Keine weiteren Anlagen bereitgestellt.</li>{% endfor %}
+    </ul>
+    {% if can_edit %}
+    <section class="bm-document-action" aria-labelledby="document-change-title">
+      <h3 id="document-change-title">Änderung vorschlagen</h3>
+      <p>Ihr Vorschlag wird intern getrennt geprüft und ändert die bereitgestellte Fassung nicht unmittelbar.</p>
+      <a class="bm-sensitive-link" href="{% url 'replica_propose' obj.pk %}">Änderung zur internen Prüfung vorschlagen →</a>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}
