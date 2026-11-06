@@ -23,10 +23,10 @@
       <label for="template-kind">Vorlagenart</label>
       <select name="kind" id="template-kind">
         {% for name in default_kinds %}
-        <option value="default:{{ name }}" >{{ name }}</option>
+        <option value="default:{{ name }}" {% if selection|slice:"8:" == name %}selected{% endif %}>{{ name }}</option>
         {% endfor %}
         {% for item in kinds %}
-        <option value="{{ item.pk }}">{{ item.name }}</option>
+        <option value="{{ item.pk }}" {% if selection == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.name }}</option>
         {% endfor %}
       </select>
       <button class="ui-button" type="submit">Vorlagenart übernehmen</button>
