@@ -3,6 +3,8 @@
 Die Widgets berechnen keine Fachrechte und geben keine Nutzeraufgaben über
 Organisationsgrenzen hinweg aus: bestehende Service-Prüfungen entscheiden.
 """
+from datetime import date
+
 from django.conf import settings
 from django.utils import timezone
 
@@ -48,7 +50,7 @@ def today_tasks(context, user):
         decision.overdue = bool(decision.due_on and decision.due_on < today)
         readable.append(decision)
     readable.sort(key=lambda obj: (
-        not obj.overdue, obj.due_on is None, obj.due_on or timezone.datetime.max.date(), str(obj.pk)
+        not obj.overdue, obj.due_on is None, obj.due_on or date.max, str(obj.pk)
     ))
     result["today_decisions"] = readable[:4]
     result["today_open_count"] = len(readable)
