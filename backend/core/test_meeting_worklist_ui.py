@@ -73,5 +73,14 @@ class MeetingWorklistUITests(SimpleTestCase):
     @override_settings(SERVER_ROLE="protected")
     def test_protected_server_does_not_offer_planning(self):
         meeting = row("Sitzung Rat", "invited", timezone.now() + timedelta(days=1))
-        response = self.render_page({}, [meeting])
-        self.assertNotContains(response, "Neue Sitzung planen")
+        request = self.factory.get("/sitzungen/")
+        request.user = SimpleNamespace(is_authenticated=True, username="clerk")
+        with (
+            patch("core.meeting_views.active_context", return_value=self.context),
+            patch("core.meeting_views.meeting_access", return_value=True),
+            patch("core.meeting_views.Meeting.objects.filter") as queryset,
+            patch("core.meeting_views.render") as rendered,
+        ):
+            queryset.return_value.select_related.return_value = [meeting]
+            index(request)
+            self.assertFalse(rendered.call_args.args[2]["can_plan"])
