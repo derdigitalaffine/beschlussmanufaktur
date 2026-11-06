@@ -1,1 +1,139 @@
-{% extends 'base.html' %}{% load static %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>{% if obj %}Vorlage bearbeiten{% else %}Neue Vorlage{% endif %}</h1><p>{{ kind.name }} · Text wird als Markdown gespeichert. Vorschau und Formatierung funktionieren ohne Wordvorlage.</p><a href="{% url 'templates' %}">Vorlagenübersicht</a></section>{% if not obj %}<details><summary>Vorlagenart wählen</summary><form method="get"><label>Art <select name="kind">{% for name in default_kinds %}<option value="default:{{ name }}">{{ name }}</option>{% endfor %}{% for item in kinds %}<option value="{{ item.pk }}">{{ item.name }}</option>{% endfor %}</select></label><button>Art auswählen</button></form></details>{% endif %}<section class="card"><form method="post">{% csrf_token %}<input type="hidden" name="kind" value="{{ selection }}">{% if obj %}<p data-presence="{% url 'template_heartbeat' obj.pk %}" role="status">Bearbeitungsanzeige wird verbunden …</p>{% endif %}{{ form.as_p }}<button class="primary">Neue Fassung speichern</button></form></section><script src="{% static 'editor.js' %}" defer></script>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if obj %}Vorlage bearbeiten{% else %}Neue Vorlage{% endif %} · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-template-editor.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage template-editor">
+  <header class="ui-header">
+    <a class="ui-back" href="{% if obj %}{% url 'template_detail' obj.pk %}{% else %}{% url 'templates' %}{% endif %}">← {% if obj %}Zur Vorlage{% else %}Vorlagenübersicht{% endif %}</a>
+    <div class="ui-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · {{ context.get_role_display }}</span>
+        <h1>{% if obj %}Vorlage bearbeiten{% else %}Neue Vorlage{% endif %}</h1>
+        <p class="ui-lead">{{ kind.name }} · Fachangaben, Beschlussvorlage und gegebenenfalls eine gesonderte öffentliche Fassung erfassen.</p>
+      </div>
+      {% if obj %}<span class="ui-tag">Fassung {{ obj.version }} · Änderung wird serverseitig geprüft</span>{% endif %}
+    </div>
+  </header>
+
+  {% if not obj %}
+  <details class="ui-panel ui-panel--padded template-kind-choice">
+    <summary>Andere Vorlagenart wählen</summary>
+    <form method="get" action="{% url 'template_new' %}" class="template-kind-form">
+      <label for="template-kind">Vorlagenart</label>
+      <select name="kind" id="template-kind">
+        {% for name in default_kinds %}
+        <option value="default:{{ name }}" {% if selection|slice:"8:" == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+        {% for item in kinds %}
+        <option value="{{ item.pk }}" {% if selection == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="ui-button" type="submit">Vorlagenart übernehmen</button>
+    </form>
+  </details>
+  {% endif %}
+
+  {% if form.errors %}
+  <div class="notice template-editor-errors" role="alert" aria-labelledby="template-form-error-title" tabindex="-1">
+    <h2 id="template-form-error-title">Eingaben prüfen</h2>
+    <p>Die Fassung wurde nicht gespeichert. Korrigieren Sie die gekennzeichneten Felder. Bereits eingegebener Text bleibt erhalten.</p>
+    {% if form.non_field_errors %}<div>{{ form.non_field_errors }}</div>{% endif %}
+    <ul>
+      {% for field in form.visible_fields %}
+      {% if field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}</a>: {{ field.errors|striptags }}</li>{% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post" class="template-editor-form">
+    {% csrf_token %}
+    <input type="hidden" name="kind" value="{{ selection }}">
+    {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+
+    {% if obj %}
+    <p class="template-presence" data-presence="{% url 'template_heartbeat' obj.pk %}" role="status">Bearbeitungsanzeige wird verbunden …</p>
+    {% endif %}
+
+    <section class="ui-panel ui-panel--padded template-edit-section" aria-labelledby="template-basics-title">
+      <div class="template-section-head"><span class="template-section-num">01</span><div><h2 id="template-basics-title">Fachliche Angaben</h2><p>Wie soll diese Vorlage im Geschäftsgang zugeordnet und wiedergefunden werden?</p></div></div>
+      <div class="template-fields-grid">
+        {% for field in form.visible_fields %}
+        {% if field.name == 'subject' or field.name == 'reference' or field.name == 'classification' or field.name == 'unit' %}
+        <div class="template-field {% if field.name == 'subject' %}template-field-wide{% endif %}{% if field.errors %} has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="required" aria-label="Pflichtfeld">*</span>{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="template-help">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="template-field-error" role="alert">{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="ui-panel ui-panel--padded template-edit-section" aria-labelledby="template-content-title">
+      <div class="template-section-head"><span class="template-section-num">02</span><div><h2 id="template-content-title">Vorlagentext</h2><p>Der Inhalt wird als Markdown gespeichert. Die Formatierwerkzeuge und die Vorschau stehen direkt am Textfeld bereit.</p></div></div>
+      {% for field in form.visible_fields %}
+      {% if field.name == 'markdown' %}
+      <div class="template-field template-field-wide{% if field.errors %} has-error{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }} <span class="required" aria-label="Pflichtfeld">*</span></label>
+        {{ field }}
+        {% for error in field.errors %}<p class="template-field-error" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+      {% endif %}
+      {% endfor %}
+    </section>
+
+    <details class="ui-panel ui-panel--padded template-optional-section" {% if form.public_markdown.errors %}open{% endif %}>
+      <summary>03 · Gesonderte öffentliche Fassung</summary>
+      <p class="ui-note">Nicht die interne Fassung automatisch öffentlich übernehmen. Personenbezogene, vertrauliche und nicht freigegebene Inhalte müssen vor einer Veröffentlichung separat geprüft werden.</p>
+      {% for field in form.visible_fields %}
+      {% if field.name == 'public_markdown' %}
+      <div class="template-field template-field-wide{% if field.errors %} has-error{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<p class="template-field-error" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+      {% endif %}
+      {% endfor %}
+    </details>
+
+    {% if kind.fields %}
+    <section class="ui-panel ui-panel--padded template-edit-section" aria-labelledby="template-extras-title">
+      <div class="template-section-head"><span class="template-section-num">04</span><div><h2 id="template-extras-title">Weitere Fachangaben</h2><p>Zusätzliche Angaben richten sich nach der ausgewählten Vorlagenart.</p></div></div>
+      <div class="template-fields-grid">
+        {% for field in form.visible_fields %}
+        {% if field.name|slice:":6" == 'extra_' %}
+        <div class="template-field{% if field.errors %} has-error{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="required" aria-label="Pflichtfeld">*</span>{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="template-help">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="template-field-error" role="alert">{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="ui-panel ui-panel--padded template-edit-section" aria-labelledby="template-save-title">
+      <div class="template-section-head"><span class="template-section-num">05</span><div><h2 id="template-save-title">Fassung dokumentieren und speichern</h2><p>Der Änderungsgrund gehört zur nachvollziehbaren Versionsgeschichte. Das Speichern erfolgt erst nach serverseitiger Prüfung.</p></div></div>
+      {% for field in form.visible_fields %}
+      {% if field.name == 'reason' %}
+      <div class="template-field template-field-wide{% if field.errors %} has-error{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="required" aria-label="Pflichtfeld">*</span>{% endif %}</label>
+        {{ field }}
+        {% for error in field.errors %}<p class="template-field-error" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+      {% endif %}
+      {% endfor %}
+      <div class="template-editor-actions">
+        <button class="ui-button ui-button--primary" type="submit">{% if obj %}Neue Fassung speichern{% else %}Vorlage speichern{% endif %}</button>
+        <a class="ui-button" href="{% if obj %}{% url 'template_detail' obj.pk %}{% else %}{% url 'templates' %}{% endif %}">Abbrechen</a>
+      </div>
+    </section>
+  </form>
+  <script src="{% static 'editor.js' %}" defer></script>
+</div>
+{% endblock %}
