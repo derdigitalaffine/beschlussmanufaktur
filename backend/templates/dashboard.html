@@ -1,8 +1,164 @@
 {% extends "base.html" %}
-{% block content %}<a href="/sicherheit/">Anmeldesicherheit →</a> · <a href="/betrieb/">Betrieb</a> · <a href="/betrieb/notfall/">Notfallantrag</a>{% if internal %}<a href="{% url 'decisions' %}">Beschlusskontrolle</a>{% endif %}<section class="page-heading"><span class="eyebrow">Ihr Arbeitsplatz</span><h1>Guten Tag, {% firstof user.first_name user.username %}.</h1><p>Wählen Sie die Organisation und Rolle, in der Sie arbeiten möchten.</p></section>
-<section class="context-panel"><div><span class="eyebrow">Aktiver Arbeitskontext</span>{% if context %}<h2>{{ context.organization.name }}</h2><span class="pill">{{ context.get_role_display }}</span>{% else %}<h2>Noch kein Arbeitskontext ausgewählt</h2>{% endif %}</div>
-{% if contexts %}<form method="post" action="{% url 'select_context' %}">{% csrf_token %}<label for="context">Organisation und Rolle</label><div class="context-picker"><select id="context" name="context">{% for item in contexts %}<option value="{{ item.pk }}" {% if context.pk == item.pk %}selected{% endif %}>{{ item.organization.name }} · {{ item.get_role_display }}</option>{% endfor %}</select><button type="submit" class="primary">Wechseln</button></div></form>{% endif %}</section>
-{% if can_manage %}<nav class="workspace-actions" aria-label="Organisationsverwaltung"><a href="/verwaltung/portal/">Bürgerportal und CI →</a><a href="/verwaltung/personen/">Personen und Freigaben →</a><a href="/verwaltung/identitaeten/">Personenidentitäten und Dubletten →</a><a href="/verwaltung/posteingang/">Posteingang und Rückläufer →</a><a href="/verwaltung/import/">Import mit Vorschau →</a><a href="/verwaltung/beispieldaten/">Markierte Beispieldaten →</a><a href="/verwaltung/notfall/">Notfallzugriffe prüfen →</a><a href="/verwaltung/wiederherstellung/">Zugang wiederherstellen →</a><a class="primary button-link" href="{% url 'users' %}">Menschen und Rollen</a><a class="quiet" href="{% url 'registry' %}">Gremien und Stammdaten →</a><a class="quiet" href="{% url 'grants' %}">Einzelrechte →</a><a href="{% url 'exchange' %}">Datenbereitstellung →</a><a href="{% url 'kind_list' %}">Vorlagenarten →</a><a class="quiet" href="{% url 'create_organization' %}">Organisation hinzufügen →</a></nav>{% endif %}
-{% if context and not can_manage %}<p><a href="/unterlagen/">Bereitgestellte Unterlagen</a></p>{% endif %}{% if context %}<p><a href="{% url 'member_desk' %}">Mein Arbeitsbereich →</a> · <a href="/vorlagen/">Vorlagen und Freigaben →</a> · <a href="/sitzungen/">Sitzungskalender →</a></p>{% endif %}<div class="section-heading"><h2>Ihre Organisationen</h2></div>
-<div class="organization-grid">{% for item in contexts %}<article class="card organization-card"><span class="eyebrow">{{ item.organization.get_kind_display }}</span><h3>{{ item.organization.name }}</h3><p class="muted">{{ item.get_role_display }}</p><form method="post" action="{% url 'select_context' %}">{% csrf_token %}<input type="hidden" name="context" value="{{ item.pk }}"><button class="quiet" type="submit">In diesem Kontext arbeiten →</button></form></article>{% empty %}<section class="card empty"><h3>Ihr Zugang ist eingerichtet.</h3><p>Es ist noch keine gültige Organisationsrolle zugewiesen. Wenden Sie sich an Ihre Administration.</p></section>{% endfor %}</div>
-<aside class="development-note"><strong>Das Fundament steht.</strong><p>Organisationen, Arbeitskontexte und E-Mail-Code-Anmeldung sind verfügbar. Vorlagen, Sitzungen und Portale werden in den nächsten Entwicklungsschritten ergänzt.</p></aside>{% endblock %}
+{% block title %}Heute · Beschlussmanufaktur{% endblock %}
+{% block content %}
+<section class="page-heading today-heading">
+  <span class="eyebrow">Heute / Meine Arbeit</span>
+  <h1>Guten Tag, {% firstof user.first_name user.username %}.</h1>
+  <p>Vom ersten Entwurf bis zur Beschlusskontrolle: Wählen Sie Ihren Arbeitskontext und gehen Sie zum nächsten Arbeitsschritt.</p>
+</section>
+
+<section class="context-panel" id="arbeitskontext" aria-labelledby="context-title">
+  <div>
+    <span class="eyebrow">Organisation und Rolle</span>
+    <h2 id="context-title">{% if context %}{{ context.organization.name }}{% else %}Arbeitskontext auswählen{% endif %}</h2>
+    {% if context %}
+    <span class="pill">{{ context.get_role_display }} · aktiv</span>
+    {% else %}
+    <p class="muted">Ohne gültigen Arbeitskontext sind keine Fachvorgänge geöffnet.</p>
+    {% endif %}
+  </div>
+  {% if contexts %}
+  <form method="post" action="{% url 'select_context' %}">
+    {% csrf_token %}
+    <label for="context">Organisation und Rolle wechseln</label>
+    <div class="context-picker">
+      <select id="context" name="context">
+        {% for item in contexts %}
+        <option value="{{ item.pk }}" {% if context.pk == item.pk %}selected{% endif %}>{{ item.organization.name }} · {{ item.get_role_display }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="primary">{% if context %}Kontext wechseln{% else %}Kontext wählen{% endif %}</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+{% if context %}
+<section class="card next-step" aria-labelledby="next-step-title">
+  <div>
+    <span class="eyebrow">Empfohlener Einstieg für Ihre Rolle</span>
+    {% if internal and context.role == 'clerk' %}
+      <h2 id="next-step-title">Sitzung vorbereiten</h2>
+      <p>Termine planen, die Tagesordnung aufbauen und Unterlagen für die Einladung zusammenstellen.</p>
+    {% elif internal and context.role == 'author' %}
+      <h2 id="next-step-title">Vorlage erarbeiten</h2>
+      <p>Erstellen Sie einen Entwurf. Prüfung und Freigabe folgen über den zugehörigen Vorlagenvorgang.</p>
+    {% elif internal and context.role == 'reviewer' %}
+      <h2 id="next-step-title">Vorlagen prüfen</h2>
+      <p>Öffnen Sie die Vorlagenübersicht und bearbeiten Sie die Ihnen zugewiesenen Prüfschritte.</p>
+    {% elif can_manage %}
+      <h2 id="next-step-title">Organisation verwalten</h2>
+      <p>Pflegen Sie Rollen und Zuständigkeiten. Die fachliche Arbeit bleibt nach Arbeitskontext getrennt.</p>
+    {% else %}
+      <h2 id="next-step-title">Sitzungsunterlagen vorbereiten</h2>
+      <p>Finden Sie Ihre Sitzungen und Vorlagen und halten Sie persönliche Notizen getrennt von amtlichen Dokumenten.</p>
+    {% endif %}
+  </div>
+  <div class="next-step-action">
+    {% if internal and context.role == 'clerk' %}
+      <a class="primary" href="{% url 'meeting_new' %}">Sitzung planen</a>
+      <a href="{% url 'meetings' %}">Bestehende Sitzungen ansehen</a>
+    {% elif internal and context.role == 'author' %}
+      <a class="primary" href="{% url 'template_new' %}">Vorlage erstellen</a>
+      <a href="{% url 'templates' %}">Vorhandene Vorlagen ansehen</a>
+    {% elif internal and context.role == 'reviewer' %}
+      <a class="primary" href="{% url 'templates' %}">Vorlagen öffnen</a>
+    {% elif can_manage %}
+      <a class="primary" href="{% url 'users' %}">Menschen und Rollen öffnen</a>
+      <a href="{% url 'registry' %}">Gremien und Stammdaten</a>
+    {% else %}
+      <a class="primary" href="{% url 'member_desk' %}">Mein Arbeitsbereich</a>
+      <a href="{% url 'meetings' %}">Sitzungen ansehen</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="workflow-section" aria-labelledby="workflow-title">
+  <div class="section-heading">
+    <div>
+      <span class="eyebrow">Orientierung im Vorgang</span>
+      <h2 id="workflow-title">Der Weg zum Beschluss</h2>
+    </div>
+    <p class="muted">Jede Station führt zu den bereits vorhandenen Funktionen. Berechtigungen und Freigaben bleiben wirksam.</p>
+  </div>
+  <ol class="workflow-steps">
+    <li class="workflow-step">
+      <span class="step-number" aria-hidden="true">1</span>
+      <div><h3>Vorlage &amp; Prüfung</h3><p>Entwerfen, mitzeichnen und zur Beratung bereitstellen.</p>
+      {% if internal %}<a href="{% url 'templates' %}">Vorlagen und Freigaben öffnen</a>
+      {% else %}<a href="{% url 'replica_documents' %}">Bereitgestellte Vorlagen ansehen</a>{% endif %}</div>
+    </li>
+    <li class="workflow-step">
+      <span class="step-number" aria-hidden="true">2</span>
+      <div><h3>Sitzung &amp; Tagesordnung</h3><p>Gremium, Termin, Tagesordnung und Unterlagen zusammenführen.</p>
+      <a href="{% url 'meetings' %}">Sitzungskalender öffnen</a></div>
+    </li>
+    <li class="workflow-step">
+      <span class="step-number" aria-hidden="true">3</span>
+      <div><h3>Durchführung &amp; Niederschrift</h3><p>Über die jeweilige Sitzung zu TOPs, Abstimmungen und Protokoll.</p>
+      <a href="{% url 'meetings' %}">Sitzung auswählen</a></div>
+    </li>
+    <li class="workflow-step">
+      <span class="step-number" aria-hidden="true">4</span>
+      <div><h3>Beschluss &amp; Umsetzung</h3><p>Entscheidung nachvollziehen, Zuständigkeiten und Fristen im Blick behalten.</p>
+      {% if internal %}<a href="{% url 'decisions' %}">Beschlusskontrolle öffnen</a>
+      {% else %}<a href="{% url 'member_desk' %}">Zugeordnete Unterlagen öffnen</a>{% endif %}</div>
+    </li>
+  </ol>
+</section>
+
+<section class="workspace-shortcuts" aria-labelledby="shortcuts-title">
+  <h2 id="shortcuts-title">Weitere Arbeitsbereiche</h2>
+  <nav class="workspace-actions" aria-label="Weitere Arbeitsbereiche">
+    <a href="{% url 'member_desk' %}">Mein Arbeitsbereich</a>
+    {% if not internal %}<a href="{% url 'external_records' %}">Bereitgestellte Unterlagen</a>{% endif %}
+    <a href="{% url 'security' %}">Anmeldesicherheit</a>
+    {% if internal %}<a href="{% url 'emergency_request' %}">Notfallzugriff beantragen</a>{% endif %}
+  </nav>
+</section>
+
+{% if can_manage %}
+<details class="card administration-panel">
+  <summary>Organisation und Administration <span class="muted">Weitere Verwaltungsfunktionen</span></summary>
+  <nav class="administration-links" aria-label="Organisationsverwaltung">
+    <a href="{% url 'users' %}">Menschen und Rollen</a>
+    <a href="{% url 'registry' %}">Gremien und Stammdaten</a>
+    <a href="{% url 'grants' %}">Einzelrechte</a>
+    <a href="{% url 'kind_list' %}">Vorlagenarten</a>
+    <a href="{% url 'create_organization' %}">Organisation hinzufügen</a>
+    <a href="{% url 'person_profiles' %}">Personen und Freigaben</a>
+    <a href="{% url 'person_identities' %}">Personenidentitäten und Dubletten</a>
+    <a href="{% url 'portal_configure' %}">Bürgerportal und CI</a>
+    <a href="{% url 'mail_inbox' %}">Posteingang und Rückläufer</a>
+    <a href="{% url 'imports' %}">Import mit Vorschau</a>
+    <a href="{% url 'sample_data' %}">Markierte Beispieldaten</a>
+    <a href="{% url 'exchange' %}">Datenbereitstellung</a>
+    <a href="{% url 'emergency_review' %}">Notfallzugriffe prüfen</a>
+    <a href="{% url 'recovery_admin' %}">Zugang wiederherstellen</a>
+  </nav>
+</details>
+{% endif %}
+{% endif %}
+
+{% if contexts %}
+<details class="context-list">
+  <summary>Meine Organisationen und Rollen ({{ contexts|length }})</summary>
+  <div class="organization-grid">
+    {% for item in contexts %}
+    <article class="card organization-card">
+      <span class="eyebrow">{{ item.organization.get_kind_display }}</span>
+      <h3>{{ item.organization.name }}</h3>
+      <p class="muted">{{ item.get_role_display }}{% if context.pk == item.pk %} · aktueller Kontext{% endif %}</p>
+      <form method="post" action="{% url 'select_context' %}">
+        {% csrf_token %}
+        <input type="hidden" name="context" value="{{ item.pk }}">
+        <button class="quiet" type="submit">In diesem Kontext arbeiten</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+</details>
+{% else %}
+<section class="card empty"><h2>Noch keine Organisationsrolle</h2><p>Ihr Konto ist eingerichtet. Es ist noch keine gültige Organisationsrolle zugewiesen. Wenden Sie sich an Ihre Administration.</p></section>
+{% endif %}
+{% endblock %}

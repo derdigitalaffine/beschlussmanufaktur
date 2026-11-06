@@ -1,9 +1,67 @@
 {% load static %}<!doctype html>
 <html lang="de">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Beschlussmanufaktur{% endblock %}</title><link rel="stylesheet" href="{% static 'app.css' %}"><script src="{% static 'auth-events.js' %}" defer></script>{% if portal %}<link rel="stylesheet" href="/portal.css">{% endif %}</head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Beschlussmanufaktur{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'app.css' %}">
+<script src="{% static 'auth-events.js' %}" defer></script>
+{% if portal %}<link rel="stylesheet" href="/portal.css">{% endif %}
+</head>
 <body>
-<header class="topbar"><a class="brand" href="/"><span class="brand-mark">B</span><span>{% firstof portal.title "Beschlussmanufaktur" %}<small>Gremienarbeit. Gemeinsam gestaltet.</small></span></a>
-{% if user.is_authenticated %}<form method="post" action="{% url 'sign_out' %}">{% csrf_token %}<button class="quiet" type="submit">Abmelden</button></form>{% endif %}</header>
-<main>{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>
+<a class="skip-link" href="#inhalt">Direkt zum Inhalt</a>
+<header class="topbar">
+  <div class="topbar-main">
+    <a class="brand" href="{% url 'home' %}">
+      <span class="brand-mark" aria-hidden="true">B</span>
+      <span>{% firstof portal.title "Beschlussmanufaktur" %}<small>Gremienarbeit. Gemeinsam gestaltet.</small></span>
+    </a>
+    {% if user.is_authenticated %}
+    <div class="header-context" aria-label="Arbeitskontext">
+      {% if shell_context %}
+      <span class="eyebrow">Aktiver Arbeitskontext</span>
+      <strong>{{ shell_context.organization.name }}</strong>
+      <span>{{ shell_context.get_role_display }} · <a href="{% url 'home' %}#arbeitskontext">Wechseln</a></span>
+      {% else %}
+      <strong>Kein Arbeitskontext ausgewählt</strong>
+      <a href="{% url 'home' %}#arbeitskontext">Kontext auswählen</a>
+      {% endif %}
+    </div>
+    <div class="account-actions">
+      <a href="{% url 'security' %}">Anmeldesicherheit</a>
+      <form method="post" action="{% url 'sign_out' %}">{% csrf_token %}<button class="quiet" type="submit">Abmelden</button></form>
+    </div>
+    {% endif %}
+  </div>
+  {% if user.is_authenticated and shell_context %}
+  <div class="workspace-toolbar">
+    <nav class="global-nav" aria-label="Hauptnavigation">
+      <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}>Heute</a>
+      {% if shell_internal %}
+      <a href="{% url 'templates' %}">Vorlagen &amp; Vorgänge</a>
+      {% else %}
+      <a href="{% url 'replica_documents' %}">Vorlagen &amp; Vorgänge</a>
+      {% endif %}
+      <a href="{% url 'meetings' %}">Sitzungen</a>
+      {% if shell_internal %}<a href="{% url 'decisions' %}">Beschlüsse</a>{% endif %}
+      <a href="{% url 'member_desk' %}">Mein Arbeitsbereich</a>
+      {% if shell_can_manage %}
+      <a href="{% url 'registry' %}">Organisation</a>
+      <a href="{% url 'users' %}">Administration</a>
+      {% endif %}
+    </nav>
+    <form class="global-search" role="search" method="get" action="{% url 'member_desk' %}">
+      <label class="visually-hidden" for="global-search">Sitzungen und Vorlagen im Arbeitskontext suchen</label>
+      <input id="global-search" type="search" name="q" placeholder="Sitzungen und Vorlagen suchen" maxlength="100">
+      <button type="submit">Suchen</button>
+    </form>
+  </div>
+  {% endif %}
+</header>
+<main id="inhalt">
+  {% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
 <footer>Beschlussmanufaktur · Entwicklungsstand 0.7 · MIT-Lizenz</footer>
-</body></html>
+</body>
+</html>
