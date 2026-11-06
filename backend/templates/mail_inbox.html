@@ -1,1 +1,50 @@
-{% extends 'base.html' %}{% block content %}<a href="/">← Arbeitsplatz</a><h1>Posteingang und Rückläufer</h1><p>{{ context.organization.name }} · Eingänge werden geprüft; sie verändern keine Vorlagen oder Versandnachweise.</p>{% for r in receipts %}<article class="card"><h2>{{ r.subject }}</h2><p>{{ r.sender }} · {{ r.category }} · {{ r.received_at }}</p><pre>{{ r.preview }}</pre>{% if r.reviewed_at %}<p>Geprüft {{ r.reviewed_at }}</p>{% else %}<form method="post">{% csrf_token %}<input type="hidden" name="receipt" value="{{ r.pk }}"><button>Als geprüft markieren</button></form>{% endif %}</article>{% empty %}<p>Keine Eingänge.</p>{% endfor %}<nav>{% if receipts.has_previous %}<a href="?page={{ receipts.previous_page_number }}">Zurück</a>{% endif %} · {{ receipts.number }} / {{ receipts.paginator.num_pages }} · {% if receipts.has_next %}<a href="?page={{ receipts.next_page_number }}">Weiter</a>{% endif %}</nav>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Posteingang und Rückläufer · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+<section class="page-heading">
+  <span class="eyebrow">Betrieb / Zustellung</span><h1>Posteingang und Rückläufer</h1>
+  <p>{{ context.organization.name }} · Eingänge werden gesichtet und geprüft. Ihr Inhalt verändert keine Vorlagen und keine bestehenden Versandnachweise.</p>
+</section>
+<section class="bm-task-section" aria-labelledby="inbox-title">
+  <div class="bm-task-section-title">
+    <div><span class="eyebrow">Eingangsprüfung</span><h2 id="inbox-title">Eingegangene Nachrichten</h2></div>
+  </div>
+  <div class="bm-record-list">
+  {% for r in receipts %}
+  <article class="card bm-mail-item">
+    <div class="bm-mail-head">
+      <div><span class="eyebrow">Eingang</span><h3>{{ r.subject }}</h3><p>{{ r.sender }}</p></div>
+      <span class="bm-task-status {% if r.reviewed_at %}bm-status-active{% else %}bm-status-attention{% endif %}">
+        {% if r.reviewed_at %}Geprüft{% else %}Offen{% endif %}
+      </span>
+    </div>
+    <dl class="bm-access-meta">
+      <div><dt>Kategorie</dt><dd>{{ r.category }}</dd></div>
+      <div><dt>Eingang</dt><dd>{{ r.received_at }}</dd></div>
+      {% if r.reviewed_at %}<div><dt>Geprüft</dt><dd>{{ r.reviewed_at }}</dd></div>{% endif %}
+    </dl>
+    <details class="bm-mail-preview">
+      <summary>Nachrichtenvorschau anzeigen</summary>
+      <pre>{{ r.preview }}</pre>
+    </details>
+    {% if not r.reviewed_at %}
+    <form method="post" class="bm-mail-action">
+      {% csrf_token %}<input type="hidden" name="receipt" value="{{ r.pk }}">
+      <button class="primary" type="submit">Als geprüft markieren</button>
+    </form>
+    {% endif %}
+  </article>
+  {% empty %}
+  <section class="card bm-task-empty"><h3>Keine Eingänge</h3><p>Wenn neue Rückläufer eintreffen, erscheinen sie zur Prüfung in dieser Übersicht.</p></section>
+  {% endfor %}
+  </div>
+  <nav class="bm-task-pagination" aria-label="Eingangsseiten">
+    {% if receipts.has_previous %}<a href="?page={{ receipts.previous_page_number }}">← Zurück</a>{% endif %}
+    <span>Seite {{ receipts.number }} von {{ receipts.paginator.num_pages }}</span>
+    {% if receipts.has_next %}<a href="?page={{ receipts.next_page_number }}">Weiter →</a>{% endif %}
+  </nav>
+</section>
+{% endblock %}
