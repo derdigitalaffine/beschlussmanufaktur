@@ -1,7 +1,180 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization.name }} · {{ context.get_role_display }}</span><h1>Gremien und Stammdaten</h1><p>Besetzungen und historische Amtszeiten gehören zur gewählten Körperschaft. Beziehungen erteilen keine Zugriffsrechte.</p><a href="/">Arbeitsplatz</a></section>
-<form method="post" action="{% url 'mode' %}">{% csrf_token %}<label>Ansicht <select name="mode"><option value="simple" {% if not user.advanced_mode %}selected{% endif %}>Einfach</option><option value="advanced" {% if user.advanced_mode %}selected{% endif %}>Erweitert</option></select></label><button>Ansicht merken</button></form>
-<section class="card"><h2>Organisationsstruktur</h2><a href="{% url 'structure' %}">Körperschaft bearbeiten</a><ul>{% for node in tree %}<li>{% if node.primary_parent %}{{ node.primary_parent.name }} → {% endif %}{{ node.name }} · {{ node.get_kind_display }}</li>{% endfor %}</ul></section>
-<div class="workspace-actions"><a class="primary button-link" href="{% url 'registry_new' 'record' %}">Stammdatensatz hinzufügen</a><a href="{% url 'registry_new' 'mandate' %}">Mandat / Zugehörigkeit hinzufügen</a></div>
-<section class="card"><h2>Stammdaten</h2>{% for record in records %}<p><a href="{% url 'registry_edit' 'record' record.pk %}">{{ record.name }}</a> · {{ record.get_kind_display }} {% if record.starts_on %}· {{ record.starts_on }} – {{ record.ends_on|default:'offen' }}{% endif %}{% if record.archived %} · Historisch{% endif %}</p>{% empty %}<p>Beginnen Sie mit Legislaturperiode, Gremium und Funktionen.</p>{% endfor %}</section>
-<section class="card"><h2>Besetzungen und Fraktionshistorie</h2>{% for mandate in mandates %}<p><a href="{% url 'registry_edit' 'mandate' mandate.pk %}">{{ mandate.committee }} · {% firstof mandate.user.get_full_name mandate.user.email mandate.person %}</a> · {{ mandate.function }} · {{ mandate.starts_on }} – {{ mandate.ends_on }} {% if mandate.faction %}· {{ mandate.faction }}{% endif %}{% if mandate.substitutes_for %} · Vertretung{% endif %}{% if mandate.archived %} · Historisch{% endif %}</p>{% empty %}<p>Noch keine Besetzung.</p>{% endfor %}</section>
-<details {% if user.advanced_mode %}open{% endif %}><summary>Weitere Organisationsbeziehungen</summary><section class="card">{% for relation in relations %}<p>{{ relation.target.name }} · <a href="{% url 'relation_edit' relation.pk %}">{{ relation.description }}</a> · {{ relation.starts_on|default:'offen' }} – {{ relation.ends_on|default:'offen' }} · {{ relation.responsibility }}</p>{% endfor %}<form method="post">{% csrf_token %}{{ form.as_p }}<button class="primary">Beziehung hinzufügen</button></form></section></details>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Gremien & Stammdaten · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-registry.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage registry-workspace">
+  <header class="ui-header">
+    <a href="{% url 'home' %}" class="ui-back">← Heute / Meine Arbeit</a>
+    <div class="ui-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · {{ context.get_role_display }}</span>
+        <h1>Gremien &amp; Stammdaten</h1>
+        <p class="ui-lead">Körperschaften, Gremien, Besetzungen und Amtszeiten im aktuellen Arbeitskontext. Historische Stände bleiben nachvollziehbar.</p>
+      </div>
+      <div class="ui-hero-actions">
+        <a href="{% url 'registry_new' 'record' %}" class="ui-button ui-button--primary">Neuen Stammdatensatz anlegen</a>
+        <a href="{% url 'registry_new' 'mandate' %}" class="ui-button">Mandat / Zugehörigkeit erfassen</a>
+      </div>
+    </div>
+  </header>
+
+  <nav class="registry-section-nav" aria-label="Bereiche der Stammdaten">
+    <a href="#organisationsstruktur">Organisationsstruktur</a>
+    <a href="#stammdaten">Stammdaten</a>
+    <a href="#besetzungen">Besetzungen</a>
+    <a href="#beziehungen">Weitere Beziehungen</a>
+  </nav>
+
+  <section class="ui-summary" aria-label="Umfang der Daten im aktuellen Verwaltungsbereich">
+    <div class="ui-metric"><strong>{{ records|length }}</strong><span>Stammdatensätze</span></div>
+    <div class="ui-metric"><strong>{{ mandates|length }}</strong><span>Besetzungen und Mandate</span></div>
+    <div class="ui-metric"><strong>{{ relations|length }}</strong><span>Weitere Organisationsbeziehungen</span></div>
+  </section>
+
+  <section id="organisationsstruktur" class="ui-panel ui-panel--padded" aria-labelledby="structure-title">
+    <div class="ui-section-heading">
+      <div><span class="ui-kicker">Organisationskontext</span><h2 id="structure-title">Organisationsstruktur</h2></div>
+      <a class="ui-button" href="{% url 'structure' %}">Körperschaft und Hauptzuordnung bearbeiten</a>
+    </div>
+    <p class="ui-small">Hauptzuordnungen zeigen Verwaltungszusammenhänge. Eine Organisationsbeziehung überträgt allein keine Fach- oder Benutzerrechte.</p>
+    {% if tree %}
+    <ul class="registry-tree">
+      {% for node in tree %}
+      <li>
+        <span class="registry-tree-mark" aria-hidden="true">{{ forloop.counter }}</span>
+        <div>
+          <strong>{{ node.name }}</strong>
+          <span class="ui-small">{{ node.get_kind_display }}</span>
+          {% if node.primary_parent %}<p class="ui-small">Hauptzuordnung: {{ node.primary_parent.name }}</p>{% else %}<p class="ui-small">Keine Hauptzuordnung</p>{% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty"><h3>Keine Organisationsstruktur verfügbar</h3><p>Es wurden keine für diesen Arbeitskontext zugänglichen Körperschaften gefunden.</p></div>
+    {% endif %}
+  </section>
+
+  <section id="stammdaten" aria-labelledby="records-title">
+    <div class="ui-section-heading">
+      <div><span class="ui-kicker">Fachliches Register</span><h2 id="records-title">Stammdaten</h2></div>
+      <a class="ui-button" href="{% url 'registry_new' 'record' %}">Stammdatensatz hinzufügen</a>
+    </div>
+    {% if records %}
+    <ul class="ui-list registry-list">
+      {% for record in records %}
+      <li class="ui-item">
+        <div class="ui-item-main">
+          <span class="ui-kicker">{{ record.get_kind_display }}</span>
+          <h3 class="ui-item-title"><a href="{% url 'registry_edit' 'record' record.pk %}">{{ record.name }}</a></h3>
+          <div class="ui-item-meta">
+            {% if record.starts_on %}<span>Gültig ab {{ record.starts_on|date:"d.m.Y" }}</span>{% endif %}
+            {% if record.ends_on %}<span>Ende: {{ record.ends_on|date:"d.m.Y" }}</span>{% else %}<span>Kein Ende eingetragen</span>{% endif %}
+          </div>
+        </div>
+        <div class="ui-item-aside">
+          {% if record.archived %}<span class="ui-tag">Historisch archiviert</span>{% else %}<span class="ui-tag" data-tone="info">Im Register</span>{% endif %}
+          <a class="registry-open" href="{% url 'registry_edit' 'record' record.pk %}">Datensatz öffnen <span aria-hidden="true">↗</span></a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty">
+      <h3>Das Register ist noch leer</h3>
+      <p>Beginnen Sie beispielsweise mit Legislaturperiode, Gremium und Funktionen. Die Besetzungen werden anschließend zugeordnet.</p>
+      <a class="ui-button ui-button--primary" href="{% url 'registry_new' 'record' %}">Ersten Datensatz anlegen</a>
+    </div>
+    {% endif %}
+  </section>
+
+  <section id="besetzungen" aria-labelledby="mandates-title">
+    <div class="ui-section-heading">
+      <div><span class="ui-kicker">Besetzung und Zeiträume</span><h2 id="mandates-title">Mandate &amp; Zugehörigkeiten</h2></div>
+      <a class="ui-button" href="{% url 'registry_new' 'mandate' %}">Mandat / Zugehörigkeit hinzufügen</a>
+    </div>
+    {% if mandates %}
+    <ul class="ui-list registry-list">
+      {% for mandate in mandates %}
+      <li class="ui-item">
+        <div class="ui-item-main">
+          <span class="ui-kicker">{{ mandate.committee }}</span>
+          <h3 class="ui-item-title">
+            <a href="{% url 'registry_edit' 'mandate' mandate.pk %}">
+              {% firstof mandate.user.get_full_name mandate.user.email mandate.person "Unbenannte Besetzung" %}
+            </a>
+          </h3>
+          <p class="ui-item-note">{{ mandate.function }}{% if mandate.faction %} · {{ mandate.faction }}{% endif %}</p>
+          <div class="ui-item-meta">
+            <span>Beginn: {{ mandate.starts_on|date:"d.m.Y" }}</span>
+            {% if mandate.ends_on %}<span>Ende: {{ mandate.ends_on|date:"d.m.Y" }}</span>{% else %}<span>Ende offen</span>{% endif %}
+            {% if mandate.substitutes_for %}<span>Vertretung</span>{% endif %}
+          </div>
+        </div>
+        <div class="ui-item-aside">
+          {% if mandate.archived %}<span class="ui-tag">Historisch archiviert</span>{% else %}<span class="ui-tag" data-tone="info">Besetzung erfasst</span>{% endif %}
+          <a class="registry-open" href="{% url 'registry_edit' 'mandate' mandate.pk %}">Besetzung öffnen <span aria-hidden="true">↗</span></a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty">
+      <h3>Noch keine Besetzungen erfasst</h3>
+      <p>Erfassen Sie Mandate mit Funktion und Beginn der Amtszeit. Bei Wechseln bleibt die vorherige Gültigkeit dokumentiert.</p>
+      <a class="ui-button" href="{% url 'registry_new' 'mandate' %}">Erste Besetzung hinzufügen</a>
+    </div>
+    {% endif %}
+  </section>
+
+  <section id="beziehungen" aria-labelledby="relations-title">
+    <div class="ui-section-heading">
+      <div><span class="ui-kicker">Mehrfachzuordnungen</span><h2 id="relations-title">Weitere Organisationsbeziehungen</h2></div>
+      <p>Nur erweiterte Organisationsstruktur</p>
+    </div>
+    <p class="ui-note">Diese Verknüpfungen dokumentieren organisatorische Beziehungen und Zuständigkeiten. Sie erzeugen <strong>keine</strong> neuen Benutzer- oder Datenzugriffsrechte.</p>
+    <details class="ui-panel ui-panel--padded registry-relations" {% if user.advanced_mode %}open{% endif %}>
+      <summary>Beziehungen anzeigen und verwalten ({{ relations|length }})</summary>
+      {% if relations %}
+      <ul class="registry-relations-list">
+        {% for relation in relations %}
+        <li>
+          <div><strong>{{ relation.target.name }}</strong><p class="ui-small">{{ relation.description }}</p><p class="ui-small">{{ relation.responsibility }}</p></div>
+          <div class="registry-relation-meta">
+            <span class="ui-small">Beginn: {{ relation.starts_on|date:"d.m.Y"|default:"Nicht hinterlegt" }}</span>
+            <span class="ui-small">Ende: {{ relation.ends_on|date:"d.m.Y"|default:"Offen" }}</span>
+            <a href="{% url 'relation_edit' relation.pk %}">Beziehung bearbeiten</a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="ui-small">Bisher sind keine zusätzlichen Organisationsbeziehungen hinterlegt.</p>
+      {% endif %}
+      <div class="registry-relation-form">
+        <h3>Neue Beziehung hinzufügen</h3>
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button class="ui-button" type="submit">Beziehung hinzufügen</button>
+        </form>
+      </div>
+    </details>
+  </section>
+
+  <details class="ui-panel ui-panel--padded registry-display-settings">
+    <summary>Ansichtsoptionen</summary>
+    <form method="post" action="{% url 'mode' %}" class="registry-mode-form">
+      {% csrf_token %}
+      <label for="registry-mode">Ansicht</label>
+      <select name="mode" id="registry-mode">
+        <option value="simple" {% if not user.advanced_mode %}selected{% endif %}>Einfach</option>
+        <option value="advanced" {% if user.advanced_mode %}selected{% endif %}{% if not context.organization.advanced_enabled %}disabled{% endif %}>Erweitert</option>
+      </select>
+      <button class="ui-button" type="submit">Ansicht merken</button>
+    </form>
+    {% if not context.organization.advanced_enabled %}<p class="ui-small">Die erweiterte Ansicht ist für diese Körperschaft nicht aktiviert.</p>{% endif %}
+  </details>
+</div>
+{% endblock %}
