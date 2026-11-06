@@ -1,1 +1,183 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><h1>Beschluss und Umsetzung</h1><a href="{% url 'decisions' %}">Beschlusskontrolle</a><p>{{ obj.vote.meeting.title }} · {{ obj.vote.item.title }} · Stand {{ obj.version }} · {{ obj.status }}</p>{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}</section><section class="card"><h2>Beschlusswortlaut</h2><p>{{ obj.wording|linebreaksbr }}</p><p>{{ obj.result }}</p><p>{{ obj.chair_confirmation }}</p></section><section class="card"><form method="post">{% csrf_token %}<input name="version" type="hidden" value="{{ obj.version }}">{% if manager %}<label>Zuständigkeit <select name="responsible"><option value="">Keine Aufgabe zugewiesen</option>{% for m in memberships %}<option value="{{ m.pk }}" {% if m.user_id == obj.responsible_id %}selected{% endif %}>{{ m.user.email }} · {{ m.get_role_display }}</option>{% endfor %}</select></label><label>Frist <input name="due_on" type="date" value="{{ obj.due_on|date:'Y-m-d' }}"></label><button name="action" value="assign">Zuständigkeit und Frist festlegen</button>{% endif %}<label>Sachstand / Begründung <textarea name="progress" rows="12" maxlength="100000">{{ progress }}</textarea></label><button name="action" value="progress">Teilfortschritt speichern</button><button name="action" value="complete">Erledigung melden</button>{% if manager %}<button name="action" value="close">Erledigung geprüft bestätigen</button><button name="action" value="not_required">Keine Umsetzung erforderlich</button><button name="action" value="reopen">Erneut eröffnen</button>{% endif %}</form></section><details><summary>Verlauf der Sachstände</summary>{% for item in obj.updates.all %}<section class="card"><p>{{ item.version }} · {{ item.created_at }} · {{ item.actor.email }}</p><pre>{{ item.snapshot }}</pre></section>{% endfor %}</details>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Beschluss und Umsetzung · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-decision-detail.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage decision-detail">
+  <header class="ui-header">
+    <a class="ui-back" href="{% url 'decisions' %}">← Beschlusskontrolle</a>
+    <div class="ui-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · {{ obj.vote.meeting.title }}</span>
+        <h1>{{ obj.vote.item.title }}</h1>
+        <div class="decision-contextline">
+          <span class="ui-tag" data-tone="{{ obj.ui_tone }}">{{ obj.ui_status }}</span>
+          {% if obj.overdue %}<span class="ui-tag" data-tone="danger">Frist überschritten</span>{% endif %}
+          <span>Fassung {{ obj.version }}</span>
+        </div>
+      </div>
+    </div>
+    {% if error %}<div class="notice decision-error" role="alert" tabindex="-1"><strong>Änderung nicht übernommen.</strong> {{ error }} Prüfen Sie die aktuelle Fassung und Ihre Eingaben.</div>{% endif %}
+  </header>
+
+  <section class="ui-panel ui-panel--padded" aria-labelledby="decision-info">
+    <div class="ui-section-heading"><h2 id="decision-info">Umsetzung auf einen Blick</h2></div>
+    <dl class="ui-info-grid">
+      <div><dt>Bearbeitungsstand</dt><dd>{{ obj.ui_status }}</dd></div>
+      <div><dt>Zuständigkeit</dt><dd>{% if obj.responsible %}{{ obj.responsible.get_full_name|default:obj.responsible.email }}{% else %}Noch nicht zugewiesen{% endif %}</dd></div>
+      <div><dt>Umsetzungsfrist</dt><dd>{% if obj.due_on %}<time datetime="{{ obj.due_on|date:'Y-m-d' }}">{{ obj.due_on|date:"d.m.Y" }}</time>{% else %}Nicht festgelegt{% endif %}</dd></div>
+      <div><dt>Aktenstand</dt><dd>Fassung {{ obj.version }} · serverseitig geführt</dd></div>
+    </dl>
+    {% if obj.progress %}
+    <hr class="ui-divider">
+    <h3 class="decision-subtitle">Letzter dokumentierter Sachstand</h3>
+    <div class="decision-progress-text">{{ obj.progress|linebreaksbr }}</div>
+    {% endif %}
+  </section>
+
+  <section class="ui-panel ui-panel--padded" aria-labelledby="wording-title">
+    <div class="ui-section-heading"><h2 id="wording-title">Beschlossener Wortlaut</h2><span class="ui-small">In der Sitzung festgestellte Fassung</span></div>
+    <div class="decision-wording">{{ obj.wording|linebreaksbr }}</div>
+    <div class="decision-vote">
+      <h3 class="decision-subtitle">Abstimmungsergebnis</h3>
+      {% if obj.result.counts %}
+      <dl class="decision-vote-counts">
+        {% for choice,count in obj.result.counts.items %}
+        <div><dt>{{ choice }}</dt><dd>{{ count }}</dd></div>
+        {% endfor %}
+      </dl>
+      {% endif %}
+      <dl class="ui-info-grid decision-vote-summary">
+        <div><dt>Stimmberechtigte</dt><dd>{{ obj.result.eligible|default_if_none:"Nicht ausgewiesen" }}</dd></div>
+        <div><dt>Ungültige Stimmen</dt><dd>{{ obj.result.invalid|default_if_none:"Nicht ausgewiesen" }}</dd></div>
+        <div><dt>Keine Stimmabgabe</dt><dd>{{ obj.result.missing|default_if_none:"Nicht ausgewiesen" }}</dd></div>
+        <div><dt>Auszählung</dt><dd>
+          {% if obj.result.outcome == 'accepted' %}Angenommen
+          {% elif obj.result.outcome == 'rejected' %}Abgelehnt
+          {% elif obj.result.outcome == 'chair_determination_required' %}Feststellung durch den Vorsitz erforderlich
+          {% else %}Ergebnis nach hinterlegtem Verfahren{% endif %}
+        </dd></div>
+      </dl>
+      {% if obj.chair_confirmation %}
+      <p class="ui-note"><strong>Feststellung des Vorsitzes:</strong> {{ obj.chair_confirmation }}</p>
+      {% endif %}
+      <details class="decision-secondary">
+        <summary>Technische Auszählungsdaten anzeigen</summary>
+        <pre>{{ obj.result }}</pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="decision-actions" aria-labelledby="decision-next-action">
+    <div class="ui-section-heading"><h2 id="decision-next-action">Nächster Arbeitsschritt</h2><span class="ui-small">Wirksam erst nach serverseitiger Bestätigung</span></div>
+    {% if can_progress %}
+    <form class="ui-panel ui-panel--padded decision-form" method="post">
+      {% csrf_token %}
+      <input name="version" type="hidden" value="{{ obj.version }}">
+      <h3>Sachstand fortschreiben</h3>
+      <p class="ui-small">Dokumentieren Sie den aktuellen Fortschritt. Eine Erledigungsmeldung bleibt bis zur Prüfung durch den Sitzungsdienst offen.</p>
+      <label for="decision-progress">Sachstand / Erläuterung</label>
+      <textarea id="decision-progress" name="progress" rows="6" maxlength="100000">{{ progress }}</textarea>
+      <div class="decision-form-actions">
+        <button class="ui-button ui-button--primary" type="submit" name="action" value="progress">Sachstand speichern</button>
+        <button class="ui-button" type="submit" name="action" value="complete">Erledigung melden</button>
+      </div>
+    </form>
+    {% else %}
+    <div class="ui-panel ui-panel--padded decision-readonly">
+      <h3>Derzeit keine Sachstandänderung möglich</h3>
+      <p class="ui-small">
+        {% if obj.status == 'closed' %}Dieser Beschluss ist abgeschlossen. Die zuständige Sitzungsverwaltung kann ihn bei begründetem Bedarf wieder eröffnen.
+        {% elif obj.status == 'not_required' %}Für diesen Beschluss ist aktuell keine Umsetzung erforderlich.
+        {% else %}Sachstandsänderungen sind nur für die verantwortliche Bearbeitung oder den berechtigten Sitzungsdienst möglich.{% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </section>
+
+  {% if manager %}
+  <section class="ui-panel ui-panel--padded decision-management" aria-labelledby="decision-management-title">
+    <div class="ui-section-heading"><h2 id="decision-management-title">Verantwortung und Prüfung</h2><span class="ui-small">Nur mit fachlicher Sitzungsdienstberechtigung</span></div>
+    <details class="decision-secondary">
+      <summary>Zuständigkeit und Frist bearbeiten</summary>
+      <p class="ui-note">Eine neue Zuweisung setzt den Bearbeitungsstand wieder auf „Offen“. Prüfen Sie deshalb auch, ob eine bereits bestätigte Erledigung erneut bearbeitet werden soll.</p>
+      <form class="decision-form" method="post">
+        {% csrf_token %}
+        <input name="version" type="hidden" value="{{ obj.version }}">
+        <label for="decision-responsible">Verantwortliche Person</label>
+        <select name="responsible" id="decision-responsible">
+          <option value="">Keine Aufgabe zugewiesen</option>
+          {% for m in memberships %}
+          <option value="{{ m.pk }}" {% if m.user_id == obj.responsible_id %}selected{% endif %}>{{ m.user.email }} · {{ m.get_role_display }}</option>
+          {% endfor %}
+        </select>
+        <label for="decision-due">Frist</label>
+        <input id="decision-due" type="date" name="due_on" value="{{ obj.due_on|date:'Y-m-d' }}">
+        <button class="ui-button" type="submit" name="action" value="assign">Zuständigkeit und Frist speichern</button>
+      </form>
+    </details>
+
+    {% if can_close %}
+    <details class="decision-secondary decision-risk-action">
+      <summary>Gemeldete Erledigung prüfen und abschließen</summary>
+      <p class="ui-small">Erst nach inhaltlicher Prüfung bestätigen. Die Begründung wird mit der neuen Fassung dokumentiert.</p>
+      <form class="decision-form" method="post">
+        {% csrf_token %}
+        <input name="version" type="hidden" value="{{ obj.version }}">
+        <label for="decision-close">Prüfvermerk / Begründung</label>
+        <textarea id="decision-close" name="progress" rows="4" maxlength="100000" required>{{ reason_value }}</textarea>
+        <button class="ui-button" name="action" value="close" type="submit">Erledigung geprüft bestätigen</button>
+      </form>
+    </details>
+    {% endif %}
+
+    {% if can_not_required %}
+    <details class="decision-secondary decision-risk-action">
+      <summary>Feststellen, dass keine Umsetzung erforderlich ist</summary>
+      <p class="ui-small">Diese fachliche Entscheidung schließt die Aufgabe. Halten Sie den Grund nachvollziehbar fest.</p>
+      <form class="decision-form" method="post">
+        {% csrf_token %}
+        <input name="version" type="hidden" value="{{ obj.version }}">
+        <label for="decision-not-required">Begründung</label>
+        <textarea id="decision-not-required" name="progress" rows="4" maxlength="100000" required>{{ reason_value }}</textarea>
+        <button class="ui-button" name="action" value="not_required" type="submit">Keine Umsetzung erforderlich</button>
+      </form>
+    </details>
+    {% endif %}
+
+    {% if can_reopen %}
+    <details class="decision-secondary decision-risk-action">
+      <summary>Beschluss erneut eröffnen</summary>
+      <p class="ui-small">Die erneute Bearbeitung wird als neuer Sachstand dokumentiert und setzt den Status auf „Offen“.</p>
+      <form class="decision-form" method="post">
+        {% csrf_token %}
+        <input name="version" type="hidden" value="{{ obj.version }}">
+        <label for="decision-reopen">Grund der Wiedereröffnung</label>
+        <textarea id="decision-reopen" name="progress" rows="4" maxlength="100000" required>{{ reason_value }}</textarea>
+        <button class="ui-button" name="action" value="reopen" type="submit">Erneut eröffnen</button>
+      </form>
+    </details>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <section class="decision-history" aria-labelledby="history-title">
+    <div class="ui-section-heading"><h2 id="history-title">Verlauf der Sachstände</h2><span class="ui-small">Nachvollziehbare frühere Fassungen</span></div>
+    {% if updates %}
+    <ol class="decision-timeline">
+      {% for item in updates %}
+      <li class="ui-panel ui-panel--padded">
+        <span class="ui-kicker">Fassung {{ item.version }} · <time datetime="{{ item.created_at|date:'c' }}">{{ item.created_at|date:"d.m.Y, H:i" }} Uhr</time></span>
+        <h3>{{ item.actor.get_full_name|default:item.actor.email }}</h3>
+        {% if item.snapshot.progress %}<p>{{ item.snapshot.progress|linebreaksbr }}</p>{% endif %}
+        {% if item.snapshot.status %}<p class="ui-small">Dokumentierter Status: {{ item.snapshot.status }}</p>{% endif %}
+        <details class="decision-secondary"><summary>Weitere Fassungsdetails</summary><pre>{{ item.snapshot }}</pre></details>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="ui-empty"><p>Noch keine zusätzlichen Sachstandsänderungen dokumentiert.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
