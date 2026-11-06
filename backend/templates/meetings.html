@@ -1,1 +1,112 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>Sitzungskalender</h1><a href="/">Arbeitsplatz</a>{% if can_plan %} · <a href="{% url 'meeting_new' %}">Sitzung planen</a>{% endif %}</section>{% for meeting in meetings %}<section class="card"><span class="eyebrow">{{ meeting.committee }}</span><h2><a href="{% url 'meeting_detail' meeting.pk %}">{{ meeting.title }}</a></h2><p>{{ meeting.starts_at }} · {{ meeting.location }} · {{ meeting.state }}</p></section>{% empty %}<section class="card"><p>Keine zugänglichen Sitzungen. Sitzungsdienst plant Sitzungen für das jeweilige Gremium.</p></section>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Sitzungen · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-meetings.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage meeting-worklist">
+  <header class="ui-header">
+    <a class="ui-back" href="{% url 'home' %}">← Heute / Meine Arbeit</a>
+    <div class="ui-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · {{ context.get_role_display }}</span>
+        <h1>Sitzungskalender</h1>
+        <p class="ui-lead">Termine, Gremien und Bearbeitungsstände im gewählten Arbeitskontext. Wählen Sie eine Sitzung, um Tagesordnung, Unterlagen und Niederschrift im Zusammenhang zu sehen.</p>
+      </div>
+      {% if can_plan %}<div class="ui-hero-actions"><a class="ui-button ui-button--primary" href="{% url 'meeting_new' %}">Neue Sitzung planen</a></div>{% endif %}
+    </div>
+  </header>
+
+  {% if next_meeting %}
+  <section class="ui-panel upcoming-meeting" aria-labelledby="upcoming-heading">
+    <div class="upcoming-date" aria-hidden="true">
+      <strong>{{ next_meeting.starts_at|date:"d" }}</strong>
+      <span>{{ next_meeting.starts_at|date:"M Y" }}</span>
+    </div>
+    <div class="upcoming-main">
+      <span class="ui-kicker">Ihr nächster zugänglicher Termin</span>
+      <h2 id="upcoming-heading"><a href="{% url 'meeting_detail' next_meeting.pk %}">{{ next_meeting.title }}</a></h2>
+      <p>{{ next_meeting.committee.name }} · <time datetime="{{ next_meeting.starts_at|date:'c' }}">{{ next_meeting.starts_at|date:"H:i" }} Uhr</time>{% if next_meeting.location %} · {{ next_meeting.location }}{% endif %}</p>
+    </div>
+    <div class="upcoming-actions">
+      <span class="ui-tag" data-tone="{{ next_meeting.ui_tone }}">{{ next_meeting.ui_status }}</span>
+      <a class="ui-button" href="{% url 'meeting_detail' next_meeting.pk %}">Sitzung öffnen</a>
+    </div>
+  </section>
+  {% else %}
+  <div class="ui-note">Für diesen Arbeitskontext ist aktuell keine zukünftige, für Sie zugängliche Sitzung vorhanden. Vergangene Sitzungen bleiben über die Suche erreichbar.</div>
+  {% endif %}
+
+  <section class="ui-summary" aria-label="Überblick über zugängliche Sitzungen">
+    <div class="ui-metric"><strong>{{ accessible_count }}</strong><span>Zugängliche Sitzungen</span></div>
+    <div class="ui-metric"><strong>{{ upcoming_count }}</strong><span>Kommende Termine</span></div>
+    {% for filter in state_filters %}
+    {% if filter.value == 'preparation' or filter.value == 'live' %}
+    <div class="ui-metric"><strong>{{ filter.count }}</strong><span>{{ filter.label }}</span></div>
+    {% endif %}
+    {% endfor %}
+  </section>
+
+  <form class="ui-filter" role="search" aria-label="Sitzungen suchen und filtern" method="get" action="{% url 'meetings' %}">
+    <div class="ui-filter-field">
+      <label for="meeting-search">Sitzung, Gremium oder Ort</label>
+      <input type="search" id="meeting-search" name="q" maxlength="100" value="{{ query }}" placeholder="Zum Beispiel Bauausschuss">
+    </div>
+    <div class="ui-filter-field">
+      <label for="meeting-state">Bearbeitungsstand</label>
+      <select id="meeting-state" name="state">
+        <option value="">Alle Bearbeitungsstände</option>
+        {% for filter in state_filters %}
+        <option value="{{ filter.value }}" {% if filter.value == state %}selected{% endif %}>{{ filter.label }} ({{ filter.count }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="ui-filter-actions">
+      <button class="ui-button" type="submit">Ergebnisse anzeigen</button>
+      {% if query or state %}<a class="ui-button ui-button--subtle" href="{% url 'meetings' %}">Filter zurücksetzen</a>{% endif %}
+    </div>
+  </form>
+
+  <section aria-labelledby="meetings-title">
+    <div class="ui-section-heading">
+      <h2 id="meetings-title">Sitzungen im Überblick</h2>
+      <p aria-live="polite">{{ meetings|length }} Termine angezeigt{% if state or query %} · Filter aktiv{% endif %}</p>
+    </div>
+    {% if meetings %}
+    <ul class="ui-list">
+      {% for meeting in meetings %}
+      <li class="ui-item">
+        <div class="meeting-date" aria-label="{{ meeting.starts_at|date:'d.m.Y' }}">
+          <strong>{{ meeting.starts_at|date:"d" }}</strong>
+          <span>{{ meeting.starts_at|date:"M Y" }}</span>
+        </div>
+        <div class="ui-item-main">
+          <span class="ui-kicker">{{ meeting.committee.name }}</span>
+          <h3 class="ui-item-title"><a href="{% url 'meeting_detail' meeting.pk %}">{{ meeting.title }}</a></h3>
+          <div class="ui-item-meta">
+            <span><time datetime="{{ meeting.starts_at|date:'c' }}">{{ meeting.starts_at|date:"H:i" }} Uhr</time></span>
+            {% if meeting.location %}<span>{{ meeting.location }}</span>{% endif %}
+            <span>Fassung {{ meeting.version }}</span>
+          </div>
+        </div>
+        <div class="ui-item-aside">
+          <span class="ui-tag" data-tone="{{ meeting.ui_tone }}">{{ meeting.ui_status }}</span>
+          <a class="meeting-open" href="{% url 'meeting_detail' meeting.pk %}">Sitzung öffnen <span aria-hidden="true">↗</span></a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty">
+      <h3>Keine passenden Sitzungen</h3>
+      {% if query or state %}
+      <p>Ihre Suche bzw. der Bearbeitungsstand hat keine für diesen Kontext freigegebenen Treffer ergeben.</p>
+      <a class="ui-button" href="{% url 'meetings' %}">Alle zugänglichen Sitzungen anzeigen</a>
+      {% else %}
+      <p>Noch keine zugängliche Sitzung für diesen Arbeitskontext. Der Sitzungsdienst plant Sitzungen für das zuständige Gremium.</p>
+      {% if can_plan %}<a class="ui-button ui-button--primary" href="{% url 'meeting_new' %}">Sitzung planen</a>{% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

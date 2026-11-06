@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError,PermissionDenied
@@ -42,13 +43,41 @@ class AgendaForm(forms.ModelForm):
         ids=[t.pk for t in Template.objects.filter(state='ready').select_related('kind','organization','unit') if template_access(context,'read',t)]
         self.fields['template'].queryset=Template.objects.filter(pk__in=ids)
 
+MEETING_LIST_STATES = {
+    'preparation': ('In Vorbereitung', 'attention'),
+    'invited': ('Eingeladen', 'info'),
+    'live': ('Sitzung läuft', 'success'),
+    'finished': ('Beendet', 'neutral'),
+    'return_pending': ('Rückgabe ausstehend', 'attention'),
+}
+
+
 @login_required
 @require_http_methods(['GET'])
 def index(request):
     context=active_context(request)
     if not context:raise PermissionDenied
-    meetings=[m for m in Meeting.objects.filter(organization=context.organization).select_related('committee','chair','scribe') if meeting_access(context,'read',m)]
-    return render(request,'meetings.html',{'context':context,'meetings':meetings,'can_plan':context.role=='clerk'})
+    query=request.GET.get('q','')[:100].strip()
+    requested_state=request.GET.get('state','')[:30]
+    state=requested_state if requested_state in MEETING_LIST_STATES else ''
+    accessible=[m for m in Meeting.objects.filter(organization=context.organization).select_related('committee','chair','scribe') if meeting_access(context,'read',m)]
+    now=timezone.now()
+    counts={key:0 for key in MEETING_LIST_STATES}
+    for obj in accessible:
+        if obj.state in counts:counts[obj.state]+=1
+        obj.ui_status,obj.ui_tone=MEETING_LIST_STATES.get(obj.state,('Weiterer Stand','neutral'))
+    # Vergangene Termine bleiben auffindbar, künftige Sitzungen stehen zuerst.
+    accessible.sort(key=lambda obj: (0, obj.starts_at) if obj.starts_at >= now else (1, -obj.starts_at.timestamp()))
+    next_meeting=next((obj for obj in accessible if obj.starts_at>=now),None)
+    rows=[m for m in accessible if (not state or m.state==state) and
+          query.casefold() in (m.title+' '+m.committee.name+' '+m.location).casefold()]
+    return render(request,'meetings.html',{
+        'context':context,'meetings':rows,'can_plan':settings.SERVER_ROLE=='internal' and context.role=='clerk',
+        'query':query,'state':state,'state_filters':[
+            {'value':key,'label':label,'count':counts[key]} for key,(label,_) in MEETING_LIST_STATES.items()
+        ],'next_meeting':next_meeting,'accessible_count':len(accessible),
+        'upcoming_count':sum(obj.starts_at>=now for obj in accessible),
+    })
 
 @login_required
 @require_http_methods(['GET','POST'])
