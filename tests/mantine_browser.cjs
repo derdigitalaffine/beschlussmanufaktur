@@ -33,6 +33,10 @@ async function ensureServer() {
     await page.getByTestId('bm-mantine-membership').waitFor();
     await page.getByTestId('bm-mantine-invitation').waitFor();
     assert.equal(await page.locator('.next-step').isHidden(), true, 'Fallback replaced after React mount');
+    assert.equal(await page.locator('.today-work').isHidden(), true, 'Duplicate today panels are removed only after Mantine mount');
+    assert.equal(await page.locator('.bm-task-worklist a[href="/beschluss/eins/"]').count(), 1);
+    assert.equal(await page.getByText('Ausbau des Schulwegs').first().isVisible(), true);
+    assert.equal(await page.locator('.bm-task-worklist').getByText('Überfällig').count(), 1);
     assert.equal(await page.locator('#membership-fallback').isHidden(), true);
     assert.equal(await page.locator('#invitation-fallback').isHidden(), true);
     assert.equal(await page.locator('[data-fa-icon="home"] svg').count(), 1, 'Local Font Awesome SVG mounted');
@@ -96,6 +100,7 @@ async function ensureServer() {
     const plain = await noJs.newPage();
     await plain.goto(base);
     assert.equal(await plain.locator('.next-step').isVisible(), true, 'Dashboard remains usable without JS');
+    assert.equal(await plain.locator('.today-work').isVisible(), true, 'Original task links remain accessible without JavaScript');
     assert.equal(await plain.locator('#membership-fallback form [name="version"]').count(), 1);
     assert.equal(await plain.locator('#invitation-fallback form [name="email"]').count(), 1);
     assert.equal(await plain.locator('#membership-fallback').isVisible(), true);
