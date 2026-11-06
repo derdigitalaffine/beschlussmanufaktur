@@ -69,7 +69,8 @@ async function ensureServer() {
     assert.equal(invitePosted.get('email'), 'person@example.invalid');
     assert.equal(invitePosted.get('role'), 'reviewer');
 
-    const narrow = await context.newPage({ viewport: { width: 360, height: 780 } });
+    const narrow = await context.newPage();
+    await narrow.setViewportSize({ width: 360, height: 780 });
     narrow.on('pageerror', (err) => errors.push(err.message));
     await narrow.goto(base, { waitUntil: 'networkidle' });
     await narrow.getByTestId('bm-mantine-membership').waitFor();
