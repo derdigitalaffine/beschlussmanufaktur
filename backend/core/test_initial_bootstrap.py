@@ -55,7 +55,7 @@ class InitialAdministratorBootstrapTests(TestCase):
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(Membership.objects.count(), 1)
 
-    @override_settings(SERVER_ROLE="external")
+    @override_settings(SERVER_ROLE="public")
     def test_external_role_invalid(self):
         with self.assertRaisesMessage(CommandError, "nur im internen Fachsystem"):
             call_command("bootstrap", stdout=StringIO())
