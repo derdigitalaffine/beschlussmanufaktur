@@ -1,3 +1,4 @@
+from datetime import date
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied,ValidationError
@@ -41,16 +42,55 @@ def update(context,decision_id,version,action,progress='',responsible=None,due_o
     DecisionUpdate.objects.create(decision=obj,version=obj.version,snapshot={'status':obj.status,'progress':obj.progress,'responsible_id':str(obj.responsible_id) if obj.responsible_id else None,'due_on':obj.due_on.isoformat() if obj.due_on else None,'action':action},actor=context.user)
     return obj
 
+DECISION_LIST_STATES = {
+    'open': ('Offen', 'attention'),
+    'in_progress': ('In Bearbeitung', 'info'),
+    'reported': ('Erledigung gemeldet', 'info'),
+    'closed': ('Abgeschlossen', 'success'),
+    'not_required': ('Keine Umsetzung erforderlich', 'neutral'),
+}
+
+
 @login_required
 @require_http_methods(['GET'])
 def index(request):
     context=active_context(request)
     if not context:raise PermissionDenied
-    rows=[d for d in Decision.objects.select_related('vote__meeting','responsible').filter(vote__meeting__organization=context.organization) if access(context,d)]
-    state=request.GET.get('state','');query=request.GET.get('q','')[:100]
-    rows=[d for d in rows if (not state or d.status==state) and query.casefold() in d.wording.casefold()]
-    for d in rows:d.overdue=bool(d.due_on and d.due_on<timezone.localdate() and d.status not in ('closed','not_required'))
-    return render(request,'decisions.html',{'context':context,'objects':rows,'query':query,'state':state})
+    query=request.GET.get('q','')[:100].strip()
+    requested_state=request.GET.get('state','')[:30]
+    state=requested_state if requested_state in DECISION_LIST_STATES else ''
+    requested_focus=request.GET.get('focus','')[:30]
+    focus=requested_focus if requested_focus in ('overdue','mine') else ''
+    # Erst Rechte und Arbeitskontext, danach Filter, Kennzahlen und Sortierung.
+    accessible=[d for d in Decision.objects.select_related('vote__meeting','vote__item','responsible').filter(
+        vote__meeting__organization=context.organization
+    ) if access(context,d)]
+    today=timezone.localdate()
+    counts={key:0 for key in DECISION_LIST_STATES}
+    for obj in accessible:
+        obj.overdue=bool(obj.due_on and obj.due_on<today and obj.status not in ('closed','not_required'))
+        if obj.status in counts:counts[obj.status]+=1
+        obj.ui_status,obj.ui_tone=DECISION_LIST_STATES.get(obj.status,('Weiterer Bearbeitungsstand','neutral'))
+    overdue_count=sum(obj.overdue for obj in accessible)
+    mine_count=sum(obj.responsible_id==request.user.pk for obj in accessible)
+    rows=[obj for obj in accessible if
+        (not state or obj.status==state) and
+        (not focus or (focus=='overdue' and obj.overdue) or (focus=='mine' and obj.responsible_id==request.user.pk)) and
+        query.casefold() in (obj.wording+' '+obj.vote.item.title+' '+obj.vote.meeting.title).casefold()
+    ]
+    rows.sort(key=lambda obj: (
+        not obj.overdue,
+        obj.status in ('closed','not_required'),
+        obj.due_on or date.max,
+        str(obj.pk),
+    ))
+    state_filters=[{'value':key,'label':label,'count':counts[key]} for key,(label,_) in DECISION_LIST_STATES.items()]
+    return render(request,'decisions.html',{
+        'context':context,'objects':rows,'query':query,'state':state,'focus':focus,
+        'state_filters':state_filters,'accessible_count':len(accessible),
+        'overdue_count':overdue_count,'mine_count':mine_count,
+        'active_count':len(accessible)-counts['closed']-counts['not_required'],
+    })
 
 @login_required
 @require_http_methods(['GET','POST'])
