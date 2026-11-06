@@ -1,1 +1,68 @@
-{% extends 'base.html' %}{% block content %}<a href="/">← Arbeitsplatz</a><h1>Dokumentierter Notfallzugriff</h1><p>Nur lesend, für ein benanntes Objekt, maximal zwei Stunden, nach Freigabe durch eine andere fachlich verantwortliche Person. Kein allgemeiner Inhaltszugriff für technische Administration.</p>{% if error %}<p class="errorlist">{{ error }}</p>{% endif %}{% if form %}<form method="post" class="card">{% csrf_token %}{{ form.as_p }}<button>Notfallzugriff beantragen</button></form>{% endif %}{% for r in requests %}<section class="card"><h2>{{ r.organization }} · {{ r.state }}</h2><p>{{ r.resource_kind }} · {{ r.resource_id }} · Ablauf {{ r.expires_at }}</p><p>{{ r.reason }}</p>{% if r.state == 'pending' and not technical %}<form method="post">{% csrf_token %}<input type="hidden" name="request" value="{{ r.pk }}"><button name="decision" value="approve">Befristet freigeben</button><button name="decision" value="reject">Ablehnen</button></form>{% endif %}{% if r.membership %}<p>Freigegebener Kontext: {{ r.membership.pk }}. Im Kontextwechsler ausdrücklich auswählen.</p>{% endif %}</section>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Dokumentierter Notfallzugriff · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-sensitive-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+<section class="page-heading">
+  <span class="eyebrow">Sicherheit / Befristete Ausnahme</span>
+  <h1>Dokumentierter Notfallzugriff</h1>
+  <p>Ausschließlich lesend, für ein ausdrücklich benanntes Objekt und höchstens zwei Stunden. Die Freigabe erfolgt durch eine andere fachlich verantwortliche Person – kein allgemeiner Inhaltszugriff für die technische Administration.</p>
+</section>
+{% if error %}<div class="bm-sensitive-error" role="alert">{{ error }}</div>{% endif %}
+{% if form %}
+<div class="bm-sensitive-grid">
+  <section class="card bm-sensitive-main" aria-labelledby="emergency-request-heading">
+    <span class="bm-sensitive-tag bm-sensitive-alert-tag">Ausnahmeverfahren</span>
+    <h2 id="emergency-request-heading">Notfallzugriff beantragen</h2>
+    <p class="muted">Geben Sie ein konkretes Objekt, den Grund und den erforderlichen Zeitraum an.</p>
+    <form method="post" class="bm-sensitive-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="bm-sensitive-actions"><button class="primary" type="submit">Notfallzugriff beantragen</button></div>
+    </form>
+  </section>
+  <aside class="card bm-sensitive-aside" aria-labelledby="emergency-guide-heading">
+    <span class="eyebrow">Sicherheitsprüfung</span><h2 id="emergency-guide-heading">Vieraugenkontrolle</h2>
+    <ol class="bm-sensitive-steps">
+      <li><strong>Benanntes Objekt</strong><span>Nur der konkrete Fachgegenstand ist Gegenstand des Antrags.</span></li>
+      <li><strong>Andere verantwortliche Person</strong><span>Die Genehmigung ist eine separate Entscheidung.</span></li>
+      <li><strong>Befristet</strong><span>Maximal zwei Stunden, ausschließlich lesend.</span></li>
+    </ol>
+  </aside>
+</div>
+{% endif %}
+<section class="bm-sensitive-section" aria-labelledby="emergency-requests-heading">
+  <div class="bm-sensitive-section-title">
+    <div><span class="eyebrow">Nachvollziehbare Vorgänge</span><h2 id="emergency-requests-heading">Notfallanträge</h2></div>
+  </div>
+  <div class="bm-sensitive-list">
+    {% for r in requests %}
+    <article class="card bm-sensitive-row bm-emergency-row">
+      <div class="bm-sensitive-row-body">
+        <span class="bm-sensitive-tag bm-sensitive-alert-tag">{{ r.state }}</span>
+        <h3>{{ r.organization }}</h3>
+        <dl class="bm-sensitive-meta">
+          <div><dt>Objekt</dt><dd>{{ r.resource_kind }} / {{ r.resource_id }}</dd></div>
+          <div><dt>Ablauf</dt><dd>{{ r.expires_at }}</dd></div>
+          <div><dt>Begründung</dt><dd>{{ r.reason }}</dd></div>
+        </dl>
+        {% if r.membership %}
+          <p class="bm-sensitive-hint">Freigegebener Kontext: {{ r.membership.pk }}. Wählen Sie ihn ausdrücklich im Kontextwechsler aus.</p>
+        {% endif %}
+      </div>
+      {% if r.state == 'pending' and not technical %}
+      <form method="post" class="bm-sensitive-approval">
+        {% csrf_token %}
+        <input type="hidden" name="request" value="{{ r.pk }}">
+        <button class="primary" type="submit" name="decision" value="approve">Befristet freigeben</button>
+        <button class="bm-sensitive-danger" type="submit" name="decision" value="reject">Ablehnen</button>
+      </form>
+      {% endif %}
+    </article>
+    {% empty %}
+    <section class="card bm-sensitive-empty"><h3>Keine Notfallanträge</h3><p>Neue Anträge und ihre Entscheidungen erscheinen nach der serverseitigen Prüfung hier.</p></section>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
