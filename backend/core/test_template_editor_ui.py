@@ -54,6 +54,7 @@ class TemplateEditorUITests(SimpleTestCase):
         self.assertIn('name="expected_version"', html)
         self.assertIn('name="csrfmiddlewaretoken"', html)
         self.assertIn('name="kind"', html)
+        self.assertIn('value="default:Beschlussvorlage" selected', html)
         self.assertIn('data-editor="true"', html)
         self.assertIn('name="public_markdown"', html)
         self.assertNotIn("novalidate", html)
