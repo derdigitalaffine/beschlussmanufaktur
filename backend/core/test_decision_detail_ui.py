@@ -57,7 +57,7 @@ class DecisionDetailUITests(SimpleTestCase):
 
     def test_reported_action_is_separate_from_progress_save(self):
         html=self.render_detail(decision())
-        for text in ("Brückensanierung", "Erledigung gemeldet", "Beschlossener Wortlaut",
+        for text in ("Brückensanierung", "Erledigung gemeldet", "Beschlusswortlaut",
                      "Sachstand speichern", "Erledigung melden", "Erledigung geprüft bestätigen",
                      "Feststellung des Vorsitzes", "15", "Nein"):
             self.assertIn(text,html)
@@ -72,7 +72,7 @@ class DecisionDetailUITests(SimpleTestCase):
                                 can_close=False, can_not_required=False, can_reopen=False)
         self.assertIn("Derzeit keine Sachstandänderung möglich",html)
         self.assertNotIn('name="action"',html)
-        self.assertIn("Beschlossener Wortlaut",html)
+        self.assertIn("Beschlusswortlaut",html)
 
     def test_closed_assignee_gets_no_progress_action_on_server(self):
         obj=decision("closed")
