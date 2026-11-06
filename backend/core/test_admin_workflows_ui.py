@@ -142,4 +142,4 @@ class AdminWorkflowMarkupTests(SimpleTestCase):
         self.assertIn('role="search"', template)
         self.assertIn("{% url 'replica_documents' %}", template)
         self.assertIn("{% url 'replica_document' obj.pk %}", template)
-        self.assertIn('class="bm-record"', template)
+        self.assertIn('class="card bm-record"', template)
