@@ -316,3 +316,64 @@
 @media(forced-colors:active){
   .bm-private-ui #inhalt :where(.bm-task-status,.bm-task-main,.bm-task-aside,.bm-task-error){border:1px solid CanvasText}
 }
+
+/* Advanced configurations and privacy/publication review. */
+.bm-private-ui #inhalt .bm-kind-new{
+  display:inline-flex;align-items:center;margin:1.15rem .6rem 0 0;
+  padding:.7rem 1rem;text-decoration:none;
+}
+.bm-private-ui #inhalt .bm-task-subsection{
+  border-top:1px solid #dce8e2;padding-top:1.5rem;margin-top:1.2rem;
+}
+.bm-private-ui #inhalt .bm-task-subsection h3{
+  font-size:1.15rem;letter-spacing:-.035em;margin:0 0 .5rem;
+}
+.bm-private-ui #inhalt .bm-task-subsection>.muted{
+  margin:0 0 1.25rem;font-size:.88rem;line-height:1.6;
+}
+.bm-private-ui #inhalt .bm-kind-fieldset{
+  display:grid;gap:.8rem;padding:1.2rem;margin:1rem 0;background:#f8fbfa;
+}
+.bm-private-ui #inhalt .bm-kind-fieldset p{
+  display:grid;gap:.3rem;margin:.3rem 0;color:#315a55;font-size:.86rem;
+}
+.bm-private-ui #inhalt .bm-kind-fieldset :where(input,select,textarea){max-width:100%}
+.bm-private-ui #inhalt .bm-kind-counts{
+  background:#fff;margin-top:1.5rem;
+}
+.bm-private-ui #inhalt .bm-kind-counts p{
+  color:#617574;font-size:.8rem;line-height:1.6;
+}
+.bm-private-ui #inhalt .bm-kind-counts .bm-task-form{margin:.9rem 0 1.3rem;gap:.9rem}
+.bm-private-ui #inhalt .bm-review-reason{
+  margin:1.45rem 0;padding:1.1rem 1.2rem;
+  border-radius:12px;background:#f0f7f2;border-left:4px solid #83b3a0;
+}
+.bm-private-ui #inhalt .bm-review-reason p{
+  margin:.4rem 0 0;color:#2e5050;line-height:1.65;
+  overflow-wrap:anywhere;
+}
+.bm-private-ui #inhalt .bm-review-content{
+  background:#f9fcfa;border:1px solid #d7e6dc;
+  border-radius:13px;padding:1.3rem;
+}
+.bm-private-ui #inhalt .bm-review-content h3{
+  font-size:1rem;margin:.1rem 0 1rem;color:#31514e;
+}
+.bm-private-ui #inhalt .bm-review-content pre{
+  max-height:28rem;overflow:auto;white-space:pre-wrap;
+  word-break:break-word;background:#f0f6f2;border:1px solid #dbe8de;
+  border-radius:9px;padding:1rem;color:#294948;
+  font-size:.82rem;line-height:1.7;
+}
+.bm-private-ui #inhalt .bm-review-decisions{
+  display:flex;flex-wrap:wrap;gap:.8rem;
+}
+.bm-private-ui #inhalt .bm-review-decisions button{
+  min-height:46px;padding:.75rem 1.1rem;border-radius:10px;
+  font-weight:810;white-space:normal;
+}
+@media(max-width:520px){
+  .bm-private-ui #inhalt .bm-review-decisions>*{width:100%}
+  .bm-private-ui #inhalt .bm-kind-fieldset{padding:.85rem}
+}
