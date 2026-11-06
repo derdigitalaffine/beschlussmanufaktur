@@ -1,0 +1,41 @@
+@charset "UTF-8";
+.people-workspace .people-section-nav{display:flex;flex-wrap:wrap;gap:.45rem;border-bottom:1px solid var(--ui-border);margin:1rem 0 1.4rem;padding-bottom:.9rem}
+.people-workspace .people-section-nav a{font-size:.84rem;font-weight:720;text-decoration:none;padding:.45rem .65rem;border-radius:8px}
+.people-workspace .people-section-nav a:hover{background:var(--ui-surface-alt)}
+.people-workspace [id]{scroll-margin-top:1.4rem}
+.people-workspace .ui-note{margin-bottom:1.5rem}
+.people-workspace .people-search{grid-template-columns:minmax(0,1fr) auto}
+.people-workspace .people-count{font-size:.83rem;color:var(--ui-muted);margin:.9rem 0 .6rem}
+.people-workspace .ui-item-meta strong{color:var(--ui-text);font-weight:720}
+.people-workspace .people-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.5rem .9rem;font-size:.82rem;font-weight:730}
+.people-workspace .people-actions a,.people-workspace .people-revoke{font-weight:725;font-size:.83rem;text-underline-offset:3px}
+.people-workspace .people-pages{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem 0}
+.people-workspace #letzte-einladungen{margin:2.5rem 0}
+.people-workspace .people-invite{max-width:900px;padding:clamp(1.3rem,3vw,2rem);margin:2.3rem 0}
+.people-workspace .people-invite .ui-section-heading{margin:0 0 .6rem}
+.people-workspace .people-invite .ui-lead{max-width:65ch;font-size:.91rem}
+.people-workspace .people-invite-form{margin:1.6rem 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem}
+.people-workspace .people-field{display:grid;gap:.35rem;align-content:start}
+.people-workspace .people-field label{font-weight:730;font-size:.86rem;color:var(--ui-text)}
+.people-workspace .people-field :where(input,select,textarea){width:100%;min-height:44px;margin:0;max-width:100%}
+.people-workspace .people-field:first-of-type{grid-column:1/-1}
+.people-workspace .people-required{color:#853a2e;font-weight:760}
+.people-workspace .people-errors{border:1px solid #e6afa6;border-radius:10px;padding:1rem;background:#fff4f0;margin:1.2rem 0}
+.people-workspace .people-errors strong{color:#773c32}
+.people-workspace .people-errors ul{margin:.6rem 0 0;padding-left:1.2rem}
+.people-workspace .people-field-error{font-size:.82rem;font-weight:720;color:#86382d;margin:.1rem 0 0}
+.people-workspace .has-error :where(input,select,textarea){border:2px solid #ad4b3b}
+.people-workspace .people-invite-actions{grid-column:1/-1;display:flex;align-items:center;flex-wrap:wrap;gap:.7rem 1.2rem;border-top:1px solid var(--ui-border);padding-top:1.15rem}
+.people-workspace .people-invite-actions p{margin:0;max-width:42ch}
+@media(max-width:750px){
+.people-workspace .people-invite-form{grid-template-columns:1fr}
+.people-workspace .people-field:first-of-type{grid-column:auto}
+.people-workspace .people-search{grid-template-columns:1fr}
+.people-workspace .people-search .ui-filter-field,.people-workspace .people-search .ui-filter-actions{grid-column:auto}
+}
+@media(max-width:570px){
+.people-workspace .people-list .ui-item,.people-workspace .people-invitations .ui-item{align-items:stretch}
+.people-workspace .ui-item-aside,.people-workspace .people-actions{justify-content:flex-start;align-items:flex-start}
+.people-workspace .people-invite-actions{flex-direction:column;align-items:stretch}
+.people-workspace .people-invite-actions button{width:100%}
+}
