@@ -1,3 +1,4 @@
+from datetime import date
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied,ValidationError
@@ -80,7 +81,7 @@ def index(request):
     rows.sort(key=lambda obj: (
         not obj.overdue,
         obj.status in ('closed','not_required'),
-        obj.due_on or timezone.datetime.max.date(),
+        obj.due_on or date.max,
         str(obj.pk),
     ))
     state_filters=[{'value':key,'label':label,'count':counts[key]} for key,(label,_) in DECISION_LIST_STATES.items()]
