@@ -109,4 +109,17 @@ def detail(request,decision_id):
             pending=request.POST.get('progress','');update(context,obj.pk,int(request.POST.get('version',0)),request.POST.get('action'),pending,responsible,due_on)
         except (ValidationError,ValueError) as e:error=' '.join(e.messages) if isinstance(e,ValidationError) else 'Frist und Fassung prüfen.'
         else:return redirect('decision',decision_id=obj.pk)
-    return render(request,'decision.html',{'context':context,'obj':obj,'manager':meeting_access(context,'protocol',obj.vote.meeting),'memberships':Membership.objects.filter(organization=obj.vote.meeting.organization,role__in=['author','reviewer','clerk']),'error':error,'progress':pending if error else obj.progress})
+    manager=meeting_access(context,'protocol',obj.vote.meeting)
+    assigned=context.user_id==obj.responsible_id
+    can_progress=bool((manager or assigned) and obj.status not in ('closed','not_required'))
+    obj.overdue=bool(obj.due_on and obj.due_on<timezone.localdate() and obj.status not in ('closed','not_required'))
+    obj.ui_status,obj.ui_tone=DECISION_LIST_STATES.get(obj.status,('Weiterer Bearbeitungsstand','neutral'))
+    return render(request,'decision.html',{
+        'context':context,'obj':obj,'manager':manager,
+        'can_progress':can_progress,'can_close':manager and obj.status=='reported',
+        'can_not_required':manager and obj.status not in ('closed','not_required'),
+        'can_reopen':manager and obj.status in ('closed','not_required'),
+        'memberships':Membership.objects.filter(organization=obj.vote.meeting.organization,role__in=['author','reviewer','clerk']),
+        'updates':obj.updates.select_related('actor').order_by('-created_at'),
+        'error':error,'progress':pending if error else obj.progress,
+    })
