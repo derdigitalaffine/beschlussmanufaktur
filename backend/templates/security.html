@@ -1,2 +1,69 @@
-{% extends 'base.html' %}{% block content %}<a href="/">← Arbeitsplatz</a><h1>Anmeldesicherheit</h1><p>Aktueller zweiter Faktor: {{ profile.method }}. E-Mail-Code bleibt der Auslieferungsstandard, auch für Administratoren. Änderungen benötigen frische vollständige Anmeldung und das aktuelle Passwort.</p><form method="post" class="card">{% csrf_token %}{{ form.as_p }}<button name="action" value="start_totp">Authenticator einrichten/ersetzen</button><button name="action" value="email">Zurück zu E-Mail-Code</button>{% if profile.method != 'email' %}<button name="action" value="recovery">Neue Wiederherstellungscodes</button>{% endif %}{% if secret %}<h2>Authenticator hinzufügen</h2><p>Schlüssel manuell in Ihre Authenticator-App übernehmen: <code>{{ secret }}</code></p><p>Alternativ Einrichtungs-URI kopieren: <code>{{ uri }}</code></p>{% endif %}{% if profile.pending_secret %}<label>Code aus dem neuen Authenticator<input name="new_code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label><button name="action" value="confirm_totp">Neuen Faktor bestätigen</button>{% endif %}</form>{% if codes %}<section class="card"><h2>Einmalige Wiederherstellungscodes</h2><p>Jetzt getrennt und sicher speichern. Diese Codes werden nur hier einmal angezeigt und ersetzen zusammen mit dem Passwort den zweiten Faktor.</p><pre>{% for c in codes %}{{ c }}
-{% endfor %}</pre></section>{% endif %}<section class="card"><h2>Passkeys</h2><p>Passkeys gelten nur auf dem jeweiligen Arbeitsplatz-Origin. Einrichtung folgt über die browserseitige Sicherheitsbestätigung.</p><a href="/sicherheit/passkeys/">Passkeys verwalten</a></section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Anmeldesicherheit · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-sensitive-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+<section class="page-heading">
+  <span class="eyebrow">Persönliches Konto / Zweiter Faktor</span>
+  <h1>Anmeldesicherheit</h1>
+  <p>Aktueller zweiter Faktor: <strong>{{ profile.method }}</strong>. E-Mail-Code bleibt der Auslieferungsstandard – auch für Administratoren. Änderungen benötigen eine frische vollständige Anmeldung und das aktuelle Passwort.</p>
+</section>
+<div class="bm-sensitive-grid">
+  <section class="card bm-sensitive-main" aria-labelledby="factor-heading">
+    <span class="bm-sensitive-tag">Authentifizierung</span>
+    <h2 id="factor-heading">Zweiten Faktor verwalten</h2>
+    <p class="muted">Wählen Sie eine Aktion und bestätigen Sie sie mit den erforderlichen Zugangsdaten.</p>
+    <form method="post" class="bm-sensitive-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="bm-sensitive-actions">
+        <button class="primary" type="submit" name="action" value="start_totp">Authenticator einrichten oder ersetzen</button>
+        <button class="bm-sensitive-secondary" type="submit" name="action" value="email">Zurück zu E-Mail-Code</button>
+        {% if profile.method != 'email' %}
+          <button class="bm-sensitive-secondary" type="submit" name="action" value="recovery">Neue Wiederherstellungscodes</button>
+        {% endif %}
+      </div>
+      {% if secret %}
+      <section class="bm-secret-panel" aria-labelledby="totp-setup-heading">
+        <h3 id="totp-setup-heading">Authenticator hinzufügen</h3>
+        <p>Schlüssel manuell in Ihre Authenticator-App übernehmen:</p>
+        <code class="bm-sensitive-code">{{ secret }}</code>
+        <p>Alternativ die Einrichtungs-URI kopieren:</p>
+        <code class="bm-sensitive-code">{{ uri }}</code>
+      </section>
+      {% endif %}
+      {% if profile.pending_secret %}
+      <section class="bm-sensitive-verify" aria-labelledby="verify-heading">
+        <h3 id="verify-heading">Neuen Faktor bestätigen</h3>
+        <label for="security-new-code">Code aus dem neuen Authenticator</label>
+        <input id="security-new-code" name="new_code" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+        <button class="primary" type="submit" name="action" value="confirm_totp">Neuen Faktor bestätigen</button>
+      </section>
+      {% endif %}
+    </form>
+  </section>
+  <aside class="card bm-sensitive-aside" aria-labelledby="factor-guide-title">
+    <span class="eyebrow">Sicherer Ablauf</span><h2 id="factor-guide-title">Was geschützt bleibt</h2>
+    <ol class="bm-sensitive-steps">
+      <li><strong>Vollständige Anmeldung</strong><span>Sicherheitsänderungen benötigen aktuelle Faktoren.</span></li>
+      <li><strong>Bestätigung</strong><span>Erst nach Prüfung wird eine Faktoränderung wirksam.</span></li>
+      <li><strong>Wiederherstellung</strong><span>Neue Codes werden genau einmal angezeigt und müssen gesichert werden.</span></li>
+    </ol>
+  </aside>
+</div>
+{% if codes %}
+<section class="card bm-secret-panel bm-recovery-codes" aria-labelledby="recovery-codes-heading">
+  <span class="bm-sensitive-tag">Einmalige Ausgabe</span>
+  <h2 id="recovery-codes-heading">Wiederherstellungscodes sichern</h2>
+  <p>Diese Codes werden nur hier einmal angezeigt. Bewahren Sie sie separat und geschützt auf; zusammen mit dem Passwort können sie den zweiten Faktor ersetzen.</p>
+  <pre>{% for c in codes %}{{ c }}
+{% endfor %}</pre>
+</section>
+{% endif %}
+<section class="card bm-sensitive-followup" aria-labelledby="passkeys-heading">
+  <div><span class="eyebrow">Gerätegebundener Zugang</span><h2 id="passkeys-heading">Passkeys</h2>
+    <p>Passkeys sind an den jeweiligen Arbeitsplatz-Origin gebunden. Die Einrichtung erfolgt durch eine browserseitige Sicherheitsbestätigung.</p></div>
+  <a class="bm-sensitive-link" href="/sicherheit/passkeys/">Passkeys verwalten →</a>
+</section>
+{% endblock %}
