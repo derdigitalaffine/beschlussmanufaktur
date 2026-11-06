@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Heute · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-today.css' %}">{% endblock %}
 {% block content %}
 <section class="page-heading today-heading">
   <span class="eyebrow">Heute / Meine Arbeit</span>
@@ -69,6 +71,55 @@
     {% else %}
       <a class="primary" href="{% url 'member_desk' %}">Mein Arbeitsbereich</a>
       <a href="{% url 'meetings' %}">Sitzungen ansehen</a>
+    {% endif %}
+  </div>
+</section>
+
+<section class="today-work" aria-labelledby="today-work-title">
+  <div class="section-heading">
+    <div><span class="eyebrow">Aus Ihrem aktiven Arbeitskontext</span><h2 id="today-work-title">Aktuell für Sie relevant</h2></div>
+    <p class="muted">Nur für Sie zugängliche Fachvorgänge. Zuständigkeit, Stand und Frist werden serverseitig geprüft.</p>
+  </div>
+  <div class="today-work-grid">
+    <section class="card today-work-panel" aria-labelledby="today-meeting-title">
+      <span class="eyebrow">Sitzungsvorbereitung</span>
+      <h3 id="today-meeting-title">Nächste Sitzung</h3>
+      {% if today_next_meeting %}
+        <p class="today-work-date"><time datetime="{{ today_next_meeting.starts_at|date:'c' }}">{{ today_next_meeting.starts_at|date:"d.m.Y, H:i" }} Uhr</time></p>
+        <h4><a href="{% url 'meeting_detail' today_next_meeting.pk %}">{{ today_next_meeting.title }}</a></h4>
+        <p class="muted">{{ today_next_meeting.committee.name }}{% if today_next_meeting.location %} · {{ today_next_meeting.location }}{% endif %}</p>
+        <a class="today-work-action" href="{% url 'meeting_detail' today_next_meeting.pk %}">Sitzung und Unterlagen öffnen</a>
+      {% else %}
+        <p class="muted">Aktuell kein zukünftiger, für Sie zugänglicher Termin.</p>
+        <a class="today-work-action" href="{% url 'meetings' %}">Alle Sitzungen ansehen</a>
+      {% endif %}
+    </section>
+    {% if internal %}
+    <section class="card today-work-panel" aria-labelledby="today-decisions-title">
+      <div class="today-work-panel-heading">
+        <div><span class="eyebrow">Persönliche Verantwortung</span><h3 id="today-decisions-title">Meine offenen Beschlussaufgaben</h3></div>
+        <span class="today-task-count">{{ today_open_count }}</span>
+      </div>
+      {% if today_decisions %}
+      <ul class="today-task-list">
+        {% for decision in today_decisions %}
+        <li>
+          <div>
+            <a href="{% url 'decision' decision.pk %}">{{ decision.vote.item.title }}</a>
+            <p class="muted">
+              {% if decision.overdue %}<strong class="today-overdue">Frist überschritten · </strong>{% endif %}
+              {% if decision.due_on %}Fällig {{ decision.due_on|date:"d.m.Y" }}{% else %}Ohne Frist{% endif %}
+            </p>
+          </div>
+          <a href="{% url 'decision' decision.pk %}" class="today-work-action">Sachstand</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">In diesem Arbeitskontext sind Ihnen derzeit keine offenen Beschlussaufgaben zugewiesen.</p>
+      {% endif %}
+      <a class="today-work-action" href="{% url 'decisions' %}">Beschlusskontrolle öffnen</a>
+    </section>
     {% endif %}
   </div>
 </section>
