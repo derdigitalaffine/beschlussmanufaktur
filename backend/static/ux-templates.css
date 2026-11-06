@@ -1,0 +1,18 @@
+@charset "UTF-8";
+.template-worklist .ui-summary { grid-template-columns: repeat(5,minmax(125px,1fr)); }
+.template-worklist .ui-metric:first-child { background:#eaf3ed; border-color:#c9ded0; }
+.template-worklist .ui-metric:first-child strong { color:#164d39; }
+.template-worklist .ui-filter { margin-top:1.5rem; }
+.template-worklist .ui-item-meta span:not(:last-child)::after { content:""; }
+.template-worklist .template-open { color:var(--ui-brand); text-decoration:none; font-size:.83rem; font-weight:750; white-space:nowrap; }
+.template-worklist .template-open:hover { text-decoration:underline; text-underline-offset:3px; }
+.template-worklist .template-notification { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; padding:.75rem 0; margin:0; }
+.template-worklist .template-notification + .template-notification { border-top:1px solid var(--ui-border); }
+.template-worklist .template-notification a { font-weight:650; }
+@media(max-width:980px) {
+  .template-worklist .ui-summary { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media(max-width:600px) {
+  .template-worklist .ui-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .template-worklist .template-notification { flex-direction:column; gap:.2rem; }
+}
