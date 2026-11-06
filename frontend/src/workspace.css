@@ -66,6 +66,19 @@
 .bm-overview-title{font-size:1rem;letter-spacing:-.02em;margin:.25rem 0 .6rem;overflow-wrap:anywhere}
 .bm-overview-count{font-size:2.2rem;line-height:1.05;letter-spacing:-.045em;margin:.1rem 0 .35rem}
 .bm-overview-action{display:inline-flex;align-items:center;gap:.4rem;font-weight:750;color:#09665e;font-size:.85rem;text-underline-offset:3px}
+.bm-task-worklist{background:#fff!important}
+.bm-task-worklist h3{font-size:1.1rem;letter-spacing:-.035em;margin:0}
+.bm-task-worklist>.mantine-Group-root>a{font-size:.86rem;font-weight:750;color:#096e64}
+.bm-task-row{padding:.9rem .15rem}
+.bm-task-row+.bm-task-row{border-top:1px solid var(--bm-border)}
+.bm-task-row>div{min-width:0}
+.bm-task-title{font-weight:790;font-size:.94rem;overflow-wrap:anywhere}
+.bm-task-detail{color:#5e7174;margin-top:.23rem;line-height:1.55}
+.bm-task-row .mantine-Badge-root{flex:none}
+@media(max-width:450px){
+  .bm-task-row{align-items:flex-start;gap:.5rem}
+  .bm-task-row .mantine-Badge-root{margin-top:.2rem}
+}
 .bm-mantine-membership{max-width:1240px;margin:0 auto;padding-top:.35rem}
 .bm-mantine-back{display:inline-flex;align-items:center;gap:.65rem;font-weight:750;font-size:.85rem;color:#17645f;margin-bottom:1.7rem}
 .bm-mantine-heading{max-width:900px;margin-bottom:2rem}
