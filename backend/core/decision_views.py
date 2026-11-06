@@ -122,4 +122,5 @@ def detail(request,decision_id):
         'memberships':Membership.objects.filter(organization=obj.vote.meeting.organization,role__in=['author','reviewer','clerk']),
         'updates':obj.updates.select_related('actor').order_by('-created_at'),
         'error':error,'progress':pending if error else obj.progress,
+        'reason_value':pending if error else '',
     })
