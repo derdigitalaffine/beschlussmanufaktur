@@ -19,13 +19,31 @@ def resources(context,query=''):
     if not context or not available_contexts(context.user).filter(pk=context.pk).exists():raise PermissionDenied
     text=query.casefold();rows=[]
     for obj in Meeting.objects.select_related('committee').filter(organization=context.organization):
-        if meeting_access(context,'read',obj) and text in (obj.title+' '+obj.committee.name+' '+obj.location).casefold():rows.append({'id':obj.pk,'kind':'meeting','title':obj.title,'subtitle':str(obj.starts_at)+' · '+obj.committee.name,'url':f'/sitzungen/{obj.pk}/'})
+        if meeting_access(context,'read',obj) and text in (obj.title+' '+obj.committee.name+' '+obj.location).casefold():
+            meeting_state={'preparation':'In Vorbereitung','invited':'Eingeladen','live':'Sitzung läuft','finished':'Beendet','return_pending':'Rückgabe ausstehend'}
+            rows.append({
+                'id':obj.pk,'kind':'meeting','title':obj.title,
+                'subtitle':str(obj.starts_at)+' · '+obj.committee.name,
+                'url':f'/sitzungen/{obj.pk}/','starts_at':obj.starts_at,
+                'location':obj.location,'version':obj.version,
+                'status_label':meeting_state.get(obj.state,'Anderer Sitzungsstand'),
+            })
     if settings.SERVER_ROLE=='internal':
         for obj in Template.objects.select_related('organization','kind','author','unit').all():
-            if template_access(context,'read',obj) and text in (obj.subject+' '+obj.number+' '+obj.markdown).casefold():rows.append({'id':obj.pk,'kind':'template','title':obj.subject,'subtitle':obj.number,'url':f'/vorlagen/{obj.pk}/'})
+            if template_access(context,'read',obj) and text in (obj.subject+' '+obj.number+' '+obj.markdown).casefold():
+                template_state={'draft':'Entwurf','review':'In Prüfung','returned':'Zurückgegeben','ready':'Bereitgestellt'}
+                rows.append({
+                    'id':obj.pk,'kind':'template','title':obj.subject,'subtitle':obj.number,
+                    'url':f'/vorlagen/{obj.pk}/','version':obj.version,
+                    'status_label':template_state.get(obj.state,'Anderer Bearbeitungsstand'),
+                })
     else:
         for obj in ExternalDocument.objects.all():
-            if 'read' in obj.permissions.get(str(context.pk),[]) and text in (obj.title+' '+obj.number+' '+obj.markdown).casefold():rows.append({'id':obj.pk,'kind':'template','title':obj.title,'subtitle':obj.number,'url':f'/dokumente/{obj.pk}/'})
+            if 'read' in obj.permissions.get(str(context.pk),[]) and text in (obj.title+' '+obj.number+' '+obj.markdown).casefold():
+                rows.append({
+                    'id':obj.pk,'kind':'template','title':obj.title,'subtitle':obj.number,
+                    'url':f'/dokumente/{obj.pk}/','status_label':'Zum Lesen bereitgestellt',
+                })
     return rows
 
 @login_required
@@ -41,7 +59,12 @@ def desk(request):
     entries={(entry.kind,entry.resource_id):entry for entry in WorkspaceEntry.objects.filter(owner=request.user,context=context)}
     for row in rows:row['favorite']=bool(entries.get((row['kind'],row['id'])) and entries[(row['kind'],row['id'])].favorite);row['viewed_at']=entries.get((row['kind'],row['id'])).viewed_at if (row['kind'],row['id']) in entries else None
     favorites=[row for row in rows if row['favorite']];recent=sorted([row for row in rows if row['viewed_at']],key=lambda row:row['viewed_at'],reverse=True)[:8]
-    return render(request,'member_desk.html',{'context':context,'objects':rows,'favorites':favorites,'recent':recent,'query':query,'notifications':Notification.objects.filter(user=request.user,read_at__isnull=True).order_by('-created_at')[:20]})
+    upcoming=sorted([row for row in rows if row['kind']=='meeting' and row.get('starts_at') and row['starts_at']>=timezone.now()],key=lambda row:row['starts_at'])
+    return render(request,'member_desk.html',{
+        'context':context,'objects':rows,'favorites':favorites,'recent':recent,
+        'next_meeting':upcoming[0] if upcoming else None,'query':query,
+        'notifications':Notification.objects.filter(user=request.user,read_at__isnull=True).order_by('-created_at')[:20],
+    })
 
 @transaction.atomic
 def save_note(context,meeting_id,version,text):

@@ -1,1 +1,132 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>Mein Arbeitsbereich</h1><a href="/">Arbeitskontext wechseln</a> · <a href="/static/offline.html">Vorbereitete Offline-Unterlagen</a><form method="get"><label>In freigegebenen Sitzungen und Vorlagen suchen <input name="q" value="{{ query }}"></label><button>Suchen</button></form></section><div class="form-grid"><section class="card"><h2>Favoriten</h2>{% for obj in favorites %}<p><a href="{{ obj.url }}">{{ obj.title }}</a></p>{% empty %}<p>Noch keine Favoriten in diesem Arbeitskontext.</p>{% endfor %}</section><section class="card"><h2>Zuletzt geöffnet</h2>{% for obj in recent %}<p><a href="{{ obj.url }}">{{ obj.title }}</a> · {{ obj.viewed_at }}</p>{% empty %}<p>Noch keine zuletzt geöffneten Vorgänge.</p>{% endfor %}</section></div><section class="card"><h2>Hinweise</h2>{% for item in notifications %}<p><a href="{{ item.path }}">{{ item.text }}</a></p>{% empty %}<p>Keine neuen Hinweise.</p>{% endfor %}</section><section class="card"><h2>Freigegebene Vorgänge</h2>{% for obj in objects %}<article><h3><a href="{{ obj.url }}">{{ obj.title }}</a></h3><p>{{ obj.subtitle }}</p><form method="post">{% csrf_token %}<input name="kind" type="hidden" value="{{ obj.kind }}"><input name="resource_id" type="hidden" value="{{ obj.id }}"><button>{% if obj.favorite %}Favorit entfernen{% else %}Als Favorit merken{% endif %}</button></form>{% if obj.kind == 'meeting' %}<p><a href="{% url 'personal_note' obj.id %}">Meine persönliche Notiz</a> · <a href="/static/offline.html?meeting={{ obj.id }}">Offline vorbereiten</a></p>{% endif %}</article>{% empty %}<p>Keine freigegebenen Treffer.</p>{% endfor %}</section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Mein Arbeitsbereich · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-member-desk.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage member-desk">
+  <header class="ui-header">
+    <a class="ui-back" href="{% url 'home' %}#arbeitskontext">← Arbeitskontext wechseln</a>
+    <div class="ui-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · {{ context.get_role_display }}</span>
+        <h1>Mein Arbeitsbereich</h1>
+        <p class="ui-lead">Eigene Sitzungen, wichtige Unterlagen und persönliche Vorbereitung. Ihre Notizen bleiben von der amtlichen Schriftführung getrennt.</p>
+      </div>
+      <div class="ui-hero-actions"><a class="ui-button" href="/static/offline.html">Offline-Vorbereitung öffnen</a></div>
+    </div>
+  </header>
+
+  {% if next_meeting %}
+  <section class="ui-panel member-upcoming" aria-labelledby="member-next-heading">
+    <div class="member-date" aria-hidden="true">
+      <strong>{{ next_meeting.starts_at|date:"d" }}</strong>
+      <span>{{ next_meeting.starts_at|date:"M Y" }}</span>
+    </div>
+    <div class="member-upcoming-content">
+      <span class="ui-kicker">{% if query %}Nächste Sitzung in Ihrer Suche{% else %}Ihre nächste zugängliche Sitzung{% endif %}</span>
+      <h2 id="member-next-heading"><a href="{{ next_meeting.url }}">{{ next_meeting.title }}</a></h2>
+      <p><time datetime="{{ next_meeting.starts_at|date:'c' }}">{{ next_meeting.starts_at|date:"d.m.Y, H:i" }} Uhr</time>{% if next_meeting.location %} · {{ next_meeting.location }}{% endif %}</p>
+      <span class="ui-tag">{{ next_meeting.status_label }}</span>
+    </div>
+    <div class="member-upcoming-links">
+      <a href="{{ next_meeting.url }}" class="ui-button ui-button--primary">Sitzung öffnen</a>
+      <a href="{% url 'personal_note' next_meeting.id %}">Persönliche Notiz</a>
+      <a href="/static/offline.html?meeting={{ next_meeting.id }}">Offline vorbereiten</a>
+    </div>
+  </section>
+  {% else %}
+  <div class="ui-note member-offline-note">Keine zukünftige Sitzung in der aktuellen Auswahl. Vergangene Sitzungen und bereitgestellte Unterlagen bleiben über die Suche erreichbar.</div>
+  {% endif %}
+
+  <section class="member-recent-grid" aria-label="Persönlich markierte und zuletzt geöffnete Vorgänge">
+    <section class="ui-panel ui-panel--padded" aria-labelledby="fav-heading">
+      <div class="ui-section-heading"><h2 id="fav-heading">Favoriten</h2><span class="ui-small">{{ favorites|length }} gemerkt</span></div>
+      {% if favorites %}
+      <ul class="member-compact-list">
+        {% for obj in favorites %}
+        <li><a href="{{ obj.url }}">{{ obj.title }}</a><span class="ui-small">{{ obj.status_label|default:obj.subtitle }}</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="ui-small">Noch keine Favoriten{% if query %} in diesem Suchergebnis{% else %} in Ihrem Arbeitskontext{% endif %}. Sie können Vorgänge in der Liste unten merken.</p>
+      {% endif %}
+    </section>
+    <section class="ui-panel ui-panel--padded" aria-labelledby="recent-heading">
+      <div class="ui-section-heading"><h2 id="recent-heading">Zuletzt geöffnet</h2></div>
+      {% if recent %}
+      <ul class="member-compact-list">
+        {% for obj in recent %}
+        <li><a href="{{ obj.url }}">{{ obj.title }}</a><span class="ui-small">{{ obj.viewed_at|date:"d.m.Y, H:i" }} Uhr</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="ui-small">Noch keine zuletzt geöffneten Vorgänge{% if query %} in Ihrer Suche{% endif %}.</p>
+      {% endif %}
+    </section>
+  </section>
+
+  <form method="get" action="{% url 'member_desk' %}" role="search" class="ui-filter member-search" aria-label="Meine berechtigten Sitzungen und Vorlagen suchen">
+    <div class="ui-filter-field">
+      <label for="member-search-input">In Sitzungen und Vorlagen suchen</label>
+      <input id="member-search-input" type="search" name="q" maxlength="100" value="{{ query }}" placeholder="Titel, Gremium oder Inhalt">
+    </div>
+    <div class="ui-filter-actions">
+      <button class="ui-button" type="submit">Suchen</button>
+      {% if query %}<a href="{% url 'member_desk' %}" class="ui-button ui-button--subtle">Suche löschen</a>{% endif %}
+    </div>
+  </form>
+
+  <section aria-labelledby="my-resources">
+    <div class="ui-section-heading"><h2 id="my-resources">Meine verfügbaren Vorgänge</h2><p aria-live="polite">{{ objects|length }} Treffer{% if query %} in der Suche{% endif %}</p></div>
+    {% if objects %}
+    <ul class="ui-list">
+      {% for obj in objects %}
+      <li class="ui-item">
+        <div class="ui-item-main">
+          <span class="ui-kicker">{% if obj.kind == 'meeting' %}Sitzung{% else %}Vorlage / Unterlage{% endif %}</span>
+          <h3 class="ui-item-title"><a href="{{ obj.url }}">{{ obj.title }}</a></h3>
+          {% if obj.subtitle %}<p class="ui-item-note">{{ obj.subtitle }}</p>{% endif %}
+          <div class="ui-item-meta">
+            {% if obj.status_label %}<span>{{ obj.status_label }}</span>{% endif %}
+            {% if obj.version %}<span>Fassung {{ obj.version }}</span>{% endif %}
+            {% if obj.kind == 'meeting' %}
+            <a href="{% url 'personal_note' obj.id %}">Meine Notiz</a>
+            <a href="/static/offline.html?meeting={{ obj.id }}">Offline vorbereiten</a>
+            {% endif %}
+          </div>
+        </div>
+        <div class="ui-item-aside">
+          <form method="post" class="member-favorite-form">
+            {% csrf_token %}
+            <input name="kind" type="hidden" value="{{ obj.kind }}">
+            <input name="resource_id" type="hidden" value="{{ obj.id }}">
+            <button class="ui-button" type="submit">{% if obj.favorite %}Favorit entfernen{% else %}Als Favorit merken{% endif %}</button>
+          </form>
+          <a class="member-open" href="{{ obj.url }}">Vorgang öffnen <span aria-hidden="true">↗</span></a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty">
+      <h3>Keine freigegebenen Treffer</h3>
+      <p>Für diesen Arbeitskontext{% if query %} und Suchbegriff{% endif %} sind keine zugänglichen Vorgänge vorhanden. Andere Organisationsrollen können eigene Unterlagen haben.</p>
+      {% if query %}<a class="ui-button" href="{% url 'member_desk' %}">Alle zugänglichen Vorgänge anzeigen</a>{% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  <aside class="member-notifications" aria-labelledby="member-notices">
+    <div class="ui-section-heading"><h2 id="member-notices">Persönliche Hinweise</h2><p>Benachrichtigungen können mehrere Ihrer Organisationsrollen betreffen.</p></div>
+    <div class="ui-panel ui-panel--padded">
+      {% for item in notifications %}
+      <p class="member-notice"><a href="{{ item.path }}">{{ item.text }}</a></p>
+      {% empty %}
+      <p class="ui-small">Aktuell keine ungelesenen Hinweise.</p>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <p class="ui-note member-offline-note"><strong>Offline-Hinweis:</strong> Unterlagen sind nicht automatisch offline verfügbar. Die Vorbereitung, den gespeicherten Versionsstand und einen gegebenenfalls nötigen Abgleich prüfen Sie in der Offline-Ansicht. Digitale Abstimmungen bleiben ausschließlich online.</p>
+</div>
+{% endblock %}
