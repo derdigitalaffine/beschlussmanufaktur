@@ -1,0 +1,29 @@
+@charset "UTF-8";
+/* Aufgabenorientierte, kontextgebundene Heute-Panels (#95). */
+.today-work { margin:2.2rem 0; }
+.today-work .section-heading { align-items:flex-end; }
+.today-work .section-heading p { margin:0; font-size:.87rem; max-width:380px; }
+.today-work-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.today-work-panel { padding:1.5rem; margin:0; }
+.today-work-panel h3 { margin:.25rem 0 .85rem; font-size:1.3rem; }
+.today-work-panel h4 { font-size:1.09rem; margin:.35rem 0 .6rem; overflow-wrap:anywhere; }
+.today-work-panel h4 a { color:var(--ink); text-decoration-thickness:1px; text-underline-offset:3px; }
+.today-work-panel p { margin:.35rem 0 .7rem; font-size:.89rem; }
+.today-work-date { font-weight:750; color:var(--green); font-size:.94rem!important; }
+.today-work-action { display:inline-block; text-underline-offset:3px; font-size:.84rem; font-weight:730; }
+.today-work-panel-heading { display:flex; gap:.8rem; align-items:flex-start; justify-content:space-between; }
+.today-task-count { display:grid; place-items:center; min-width:35px; min-height:35px; padding:0 .55rem; border:1px solid var(--line); border-radius:999px; color:var(--ink); font-weight:780; font-variant-numeric:tabular-nums; background:#eff4ef; }
+.today-task-list { padding:0; margin:.1rem 0 1rem; list-style:none; }
+.today-task-list li { display:flex; align-items:center; justify-content:space-between; gap:.8rem; padding:.8rem 0; }
+.today-task-list li+li { border-top:1px solid var(--line); }
+.today-task-list li a { font-weight:700; font-size:.9rem; }
+.today-task-list li p { font-size:.8rem; margin:.12rem 0 0; }
+.today-overdue { color:#8c392c; }
+@media(max-width:770px) {
+ .today-work-grid { grid-template-columns:1fr; }
+ .today-work .section-heading { align-items:flex-start; }
+}
+@media(max-width:470px) {
+ .today-work-panel { padding:1rem; }
+ .today-task-list li { align-items:flex-start; flex-direction:column; gap:.3rem; }
+}
