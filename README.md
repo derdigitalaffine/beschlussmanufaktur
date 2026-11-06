@@ -12,6 +12,7 @@ Für eine **geführte Erstinstallation** des vorhandenen Entwicklungsstands gibt
 bash setup.sh --stack internal          # interner Fachsystemhost
 bash setup.sh --stack external          # getrennter externer Host
 bash setup.sh --stack internal --check  # bestehende private .env prüfen, ohne Deployment
+bash setup.sh --stack internal --initial-user-only  # erstes Konto nach unterbrochenem Setup nachholen
 ```
 
 Der Assistent führt durch Domain-, SMTP-, Schlüssel- und optionale Backup-/Transferkonfiguration, initialisiert Datenbank und erstes Verwaltungskonto nur intern, startet die Compose-Dienste und prüft deren Bereitschaft. **Keine automatische Produktivfreigabe, kein unbeaufsichtigtes Upgrade und kein Restore.** Beide Stacks gehören auf getrennte Hosts. Details, Voraussetzungen und Sicherheitsgrenzen: [Geführte Erstinstallation](docs/12-installation.md#geführte-erstinstallation-bash-setup).

@@ -8,6 +8,7 @@ STACK=""
 ENV_FILE="$ROOT/.env"
 CONFIG_ONLY=0
 CHECK_ONLY=0
+INITIAL_USER_ONLY=0
 CURRENT_STEP="Start"
 TMP_ENV=""
 BACKUP_TARGET=""
@@ -34,12 +35,15 @@ Beschlussmanufaktur – geführtes Erstinstallations-Setup
   bash setup.sh --stack external
   bash setup.sh --stack internal --config-only
   bash setup.sh --stack external --check
+  bash setup.sh --stack internal --initial-user-only
 
 Optionen:
   --stack internal|external   interner bzw. getrennter externer Host
   --env-file DATEI           private Compose-Umgebungsdatei (Standard: .env)
   --config-only              nur .env anlegen und prüfen; kein Docker benötigt
   --check                    bestehende .env prüfen, keine Änderungen
+  --initial-user-only        erstes Verwaltungskonto nachholen (nur internal,
+                             vorhandene DB/Migration, interaktives Terminal)
   --help                     diese Hilfe
 
 WICHTIG: Extern und intern auf ZWEI getrennten Hosts ausführen.
@@ -54,13 +58,16 @@ while (( $# > 0 )); do
     --env-file) (( $# >= 2 )) || die "--env-file benötigt einen Pfad"; ENV_FILE="$2"; shift 2 ;;
     --config-only) CONFIG_ONLY=1; shift ;;
     --check) CHECK_ONLY=1; shift ;;
+    --initial-user-only) INITIAL_USER_ONLY=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) die "Unbekannte Option: $1 (siehe --help)" ;;
   esac
 done
 (( ! (CONFIG_ONLY && CHECK_ONLY) )) || die "--config-only und --check schließen sich aus."
+(( ! (INITIAL_USER_ONLY && (CONFIG_ONLY || CHECK_ONLY)) )) || die "--initial-user-only ist nicht mit --check oder --config-only kombinierbar."
 [[ -n "$STACK" ]] || die "Bitte --stack internal oder --stack external angeben."
 [[ "$STACK" == internal || "$STACK" == external ]] || die "Ungültiger Stack."
+(( ! INITIAL_USER_ONLY )) || [[ "$STACK" == internal ]] || die "Ein erstes Verwaltungskonto darf nur im internen Fachsystem erstellt werden."
 [[ "$ENV_FILE" = /* ]] || ENV_FILE="$PWD/$ENV_FILE"
 # Innerhalb des Repositorys nur Namen verwenden, die .gitignore verlässlich abdeckt.
 # So wird auch eine mit --env-file erstellte Konfiguration nicht versehentlich committed.
@@ -318,6 +325,35 @@ PY
   say "Backup-Schlüssel privat erstellt; an einem getrennten sicheren Ort hinterlegen."
 }
 
+# Die Ersteinrichtung bleibt in Django: keine Passwortübergabe als CLI-Parameter,
+# Docker-Environment, .env-Datei oder Shell-Prozessargument.
+require_initial_user_terminal() {
+  [[ -t 0 && -t 1 ]] || die "Für die Einrichtung des ersten Kontos ist ein interaktives Terminal erforderlich. Ohne TTY keine Passwortübergabe per Skript/Pipe."
+}
+
+bootstrap_initial_user() {
+  local status=""
+  CURRENT_STEP="Erstbenutzer prüfen"
+  if ! status="$(compose run --rm -T --no-deps backend python manage.py shell -c 'from core.models import User; print("BM_INITIAL_USER_EXISTS=" + ("yes" if User.objects.exists() else "no"))')"; then
+    die "Benutzerstatus konnte nicht ermittelt werden. Datenbank und Migrationen prüfen; kein weiterer Benutzer wurde angelegt."
+  fi
+  case "$status" in
+    *BM_INITIAL_USER_EXISTS=yes*)
+      say "Es existieren bereits Konten. Der einmalige Bootstrap wird nicht wiederholt. Weitere Menschen sicher über »Menschen und Rollen« einladen."
+      ;;
+    *BM_INITIAL_USER_EXISTS=no*)
+      require_initial_user_terminal
+      say "Erstes Verwaltungskonto und Verwaltungsverbund einrichten."
+      say "Bitte E-Mail-Adresse, Namen des Verwaltungsverbunds und ein sicheres Passwort (mit Bestätigung) eingeben."
+      say "Das Passwort wird direkt im Django-Container verdeckt gelesen und nie in .env oder in den Setup-Logs gespeichert."
+      CURRENT_STEP="Erstkonto erstellen"
+      compose run --rm --no-deps backend python manage.py bootstrap || die "Kontoanlage fehlgeschlagen. Kein Standardbenutzer wurde angelegt; Eingaben prüfen."
+      say "Verwaltungskonto eingerichtet. Anmeldung benötigt zusätzlich den E-Mail-Code aus der konfigurierten SMTP-Zustellung."
+      ;;
+    *) die "Unbekannter Benutzerstatus; aus Sicherheitsgründen keine Kontoanlage." ;;
+  esac
+}
+
 CURRENT_STEP="Konfiguration"
 say "Beschlussmanufaktur – geführte Erstinstallation ($STACK)"
 warn "Entwicklungsstand, noch nicht produktiv freigegeben. Caddy nutzt aktuell eine lokale CA (tls internal)."
@@ -326,7 +362,10 @@ if [[ "$STACK" == external ]]; then
 fi
 
 if (( ! CHECK_ONLY )); then
-  if [[ -f "$ENV_FILE" ]]; then
+  if (( INITIAL_USER_ONLY )); then
+    [[ -f "$ENV_FILE" ]] || die "Für --initial-user-only wird eine bereits eingerichtete .env benötigt. Zuerst die reguläre Erstinstallation durchführen."
+    require_private_env
+  elif [[ -f "$ENV_FILE" ]]; then
     require_private_env
     if (( CONFIG_ONLY )); then
       say "Vorhandene private Konfiguration unverändert übernommen: $ENV_FILE"
@@ -484,6 +523,20 @@ if (( CHECK_ONLY )); then
 fi
 
 CURRENT_STEP="Docker- und Betriebsprüfung"
+# Ein fehlgeschlagener Erstkonto-Schritt lässt sich nachholen, ohne Images,
+# Migrationen, Worker, TLS oder bestehende Daten zu ändern.
+if (( INITIAL_USER_ONLY )); then
+  require_initial_user_terminal
+  check_compose
+  if ! compose ps --status running --services | grep -qx db; then
+    die "Die interne Datenbank läuft nicht. Zunächst den regulären Setup-Start abschließen; keine Migration bei laufender Installation ausführen."
+  fi
+  bootstrap_initial_user
+  exit 0
+fi
+# Früher Fehler statt halbfertiger Datenbank, falls eine echte Installation
+# ohne Terminal angestoßen wird. Konfiguration/Prüfmodi funktionieren headless.
+if [[ "$STACK" == internal ]]; then require_initial_user_terminal; fi
 check_compose
 check_existing_services
 if [[ -z "$(read_value SMTP_HOST)" || -z "$(read_value SMTP_FROM)" ]]; then
@@ -512,16 +565,7 @@ if [[ "$STACK" == internal ]]; then
   compose up -d --wait db
   CURRENT_STEP="Datenbankschema intern"
   compose run --rm -T --no-deps backend python manage.py migrate --noinput
-  CURRENT_STEP="Erstkonto und Verwaltungsverbund"
-  already_setup="$(compose run --rm -T --no-deps backend python manage.py shell -c 'from core.models import User; print(User.objects.exists())' | tail -n 1)"
-  case "$already_setup" in
-    True) say "Einrichtungs-Konto existiert bereits; einmaliger Bootstrap wird nicht wiederholt." ;;
-    False)
-      [[ -t 0 && -t 1 ]] || die "Für den einmaligen Django-Bootstrap ist ein interaktives Terminal erforderlich."
-      say "Erste Verwaltungsidentität einrichten; Passwort wird vom Django-Bootstrap verdeckt abgefragt."
-      compose run --rm --no-deps backend python manage.py bootstrap ;;
-    *) die "Einrichtungsstatus konnte nicht sicher ermittelt werden." ;;
-  esac
+  bootstrap_initial_user
 else
   compose up -d --wait protected-db public-db
   CURRENT_STEP="Datenbankschema extern"
