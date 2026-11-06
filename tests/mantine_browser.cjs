@@ -37,6 +37,7 @@ async function ensureServer() {
     assert.equal(await page.locator('#invitation-fallback').isHidden(), true);
     assert.equal(await page.locator('[data-fa-icon="home"] svg').count(), 1, 'Local Font Awesome SVG mounted');
     assert.equal(await page.getByText('Vorlage erarbeiten').first().isVisible(), true);
+    await page.screenshot({ path: 'mantine-ui-desktop.png', fullPage: true });
 
     let rolePosted = null;
     await page.route('**/submit-role/', async (route) => {
@@ -79,6 +80,7 @@ async function ensureServer() {
       viewportWidth: window.innerWidth,
     }));
     assert.ok(fit.documentWidth <= fit.viewportWidth + 1, '360px layout must not overflow: ' + JSON.stringify(fit));
+    await narrow.screenshot({ path: 'mantine-ui-mobile-360.png', fullPage: true });
 
     const noJs = await browser.newContext({ javaScriptEnabled: false });
     const plain = await noJs.newPage();
