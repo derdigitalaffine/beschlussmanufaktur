@@ -1,1 +1,55 @@
-{% extends 'base.html' %}{% load static %}{% block content %}<h1>Zugang wiederherstellen</h1>{% if submitted %}<p>Falls ein geeigneter Zugang vorhanden ist, wird eine Wiederherstellung vorbereitet. Auf dem geschützten Arbeitsplatz prüft die interne Administration die Anfrage. Bitte informieren Sie bei verlorenen Faktoren zusätzlich Ihre Administration.</p>{% elif done %}<p>Code und neue Zugangsdaten wurden geprüft. Auf dem geschützten Arbeitsplatz ist die interne Zustimmung und anschließende Bereitstellung erforderlich. Die neuen Daten gelten erst danach. Bestehende zusätzliche Faktoren bleiben erhalten, sofern ihr kontrollierter Reset nicht ausdrücklich veranlasst wurde.</p>{% else %}<form method="post" class="card">{% csrf_token %}{{ form.as_p }}<button class="primary">{% if request_step %}Wiederherstellung anfordern{% else %}Geprüft übernehmen{% endif %}</button></form>{% endif %}<a href="/anmelden/">Zur Anmeldung</a><script src="{% static 'recovery.js' %}" defer></script>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Zugang wiederherstellen · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-onboarding.css' %}">{% endblock %}
+{% block content %}
+<a class="bm-guest-back" href="/anmelden/">← Zur Anmeldung</a>
+<section class="page-heading bm-invitation-hero">
+  <span class="eyebrow">Kontosicherheit / Wiederherstellung</span>
+  <h1>Zugang wiederherstellen</h1>
+  <p>Wiederherstellung benötigt einen geprüften Antrag. Auf geschützten Arbeitsplätzen ist zusätzlich eine interne Zustimmung erforderlich.</p>
+</section>
+<div class="bm-guest-grid">
+  <section class="card form-card bm-guest-main" aria-labelledby="recovery-heading">
+    {% if submitted %}
+      <span class="bm-auth-caption">Anfrage eingereicht</span>
+      <h2 id="recovery-heading">Wiederherstellung wird geprüft</h2>
+      <p>Falls ein geeigneter Zugang vorhanden ist, wird eine Wiederherstellung vorbereitet. Auf dem geschützten Arbeitsplatz prüft die interne Administration die Anfrage. Bitte informieren Sie bei verlorenen Faktoren zusätzlich Ihre Administration.</p>
+      <a class="bm-guest-back" href="/anmelden/">Zur Anmeldung</a>
+    {% elif done %}
+      <span class="bm-auth-caption">Daten geprüft</span>
+      <h2 id="recovery-heading">Interne Freigabe kann noch erforderlich sein</h2>
+      <p>Code und neue Zugangsdaten wurden geprüft. Auf dem geschützten Arbeitsplatz ist die interne Zustimmung und anschließende Bereitstellung erforderlich. Die neuen Daten gelten erst danach. Bestehende zusätzliche Faktoren bleiben erhalten, sofern ihr kontrollierter Reset nicht ausdrücklich veranlasst wurde.</p>
+      <a class="bm-guest-back" href="/anmelden/">Zur Anmeldung</a>
+    {% else %}
+      <span class="bm-auth-caption">{% if request_step %}Antrag{% else %}Prüfung{% endif %}</span>
+      <h2 id="recovery-heading">{% if request_step %}Wiederherstellung anfordern{% else %}Geprüfte Daten übernehmen{% endif %}</h2>
+      <form method="post" class="bm-auth-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div role="alert" class="bm-auth-error">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+          {% if field.is_hidden %}{{ field }}{% else %}
+          <div class="field bm-auth-field{% if field.errors %} bm-auth-field-error{% endif %}">
+            {{ field.label_tag }}{{ field }}
+            {% if field.help_text %}<p class="bm-auth-help">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<div class="bm-auth-error" role="alert">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+        <button class="primary" type="submit">{% if request_step %}Wiederherstellung anfordern{% else %}Geprüft übernehmen{% endif %}</button>
+      </form>
+      <a class="bm-guest-back" href="/anmelden/">Zur Anmeldung</a>
+    {% endif %}
+  </section>
+  <aside class="card bm-guest-aside" aria-labelledby="recovery-guide-title">
+    <span class="eyebrow">Sicherheit geht vor</span>
+    <h2 id="recovery-guide-title">Kontrollierte Wiederherstellung</h2>
+    <ol class="bm-guest-steps">
+      <li><strong>Anfrage</strong><span>Die Angaben werden vertraulich geprüft.</span></li>
+      <li><strong>Freigabe</strong><span>Falls erforderlich, bestätigt die interne Administration die Anfrage.</span></li>
+      <li><strong>Neuer Zugang</strong><span>Neue Anmeldedaten sind erst nach der bestätigten Übernahme wirksam.</span></li>
+    </ol>
+  </aside>
+</div>
+<script src="{% static 'recovery.js' %}" defer></script>
+{% endblock %}
