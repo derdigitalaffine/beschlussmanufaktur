@@ -2,6 +2,7 @@
 {% load static %}
 {% block title %}Heute · Beschlussmanufaktur{% endblock %}
 {% block page_styles %}<link rel="stylesheet" href="{% static 'ux-today.css' %}">{% endblock %}
+{% block page_mantine_assets %}<link rel="stylesheet" href="{% static 'mantine/workspace.css' %}"><script type="module" src="{% static 'mantine/workspace.js' %}"></script>{% endblock %}
 {% block content %}
 <section class="page-heading today-heading">
   <span class="eyebrow">Heute / Meine Arbeit</span>
@@ -36,6 +37,7 @@
 </section>
 
 {% if context %}
+<div id="mantine-dashboard" aria-label="Ihre nächsten Arbeitsschritte"></div>
 <section class="card next-step" aria-labelledby="next-step-title">
   <div>
     <span class="eyebrow">Empfohlener Einstieg für Ihre Rolle</span>
