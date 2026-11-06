@@ -125,7 +125,7 @@ class AdminWorkflowMarkupTests(SimpleTestCase):
         self.assertIn('name="plan"', html)
         self.assertIn('name="operation" value="dns"', html)
         self.assertIn('name="operation" value="apply"', html)
-        self.assertIn("Noch nicht", html.capitalize() if False else "noch nicht erfolgreich")
+        self.assertIn("noch nicht erfolgreich", html)
         self.assertIn("public-txt-marker", html)
         self.assertIn('enctype="multipart/form-data"', html)
 
