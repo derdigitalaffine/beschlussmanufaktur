@@ -1,2 +1,44 @@
-{% extends "base.html" %}{% block content %}<a class="text-link" href="/">← Zum Arbeitsplatz</a><section class="page-heading"><span class="eyebrow">Organisationsverwaltung</span><h1>Neue Organisation</h1><p>Unterhalb von {{ context.organization.name }}. Ihr Verwaltungsrecht wird ausdrücklich für die neue Organisation zugewiesen.</p></section><section class="card form-card"><form method="post">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}<button class="primary" type="submit">Organisation anlegen</button></form></section>{% endblock %}
-
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Neue Organisation · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+<section class="page-heading">
+  <span class="eyebrow">Organisationsverwaltung / Neue Körperschaft</span>
+  <h1>Neue Organisation</h1>
+  <p>Unterhalb von {{ context.organization.name }}. Ihr Verwaltungsrecht wird für die neue Organisation ausdrücklich zugewiesen.</p>
+</section>
+<div class="bm-task-grid">
+  <section class="card bm-task-main" aria-labelledby="org-form-heading">
+    <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Organisationsdaten</span></div>
+    <h2 id="org-form-heading">Körperschaft anlegen</h2>
+    <form method="post" class="bm-task-form" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="bm-task-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+        {% if field.is_hidden %}{{ field }}{% else %}
+        <div class="bm-task-field{% if field.errors %} bm-task-field-error{% endif %}">
+          {{ field.label_tag }}{{ field }}
+          {% if field.help_text %}<p class="bm-task-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<div role="alert" class="bm-task-error">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div class="bm-task-actions">
+        <a href="{% url 'home' %}" class="bm-task-cancel">Abbrechen</a>
+        <button class="primary" type="submit">Organisation anlegen</button>
+      </div>
+    </form>
+  </section>
+  <aside class="card bm-task-aside" aria-labelledby="org-guide-heading">
+    <span class="eyebrow">Was als Nächstes geschieht</span>
+    <h2 id="org-guide-heading">Verantwortung eindeutig zuordnen</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>Stammdaten</strong><span>Bezeichnung und Typ müssen zur gewünschten Körperschaft passen.</span></li>
+      <li><strong>Arbeitskontext</strong><span>Die neue Organisation ist nicht automatisch für andere Konten sichtbar.</span></li>
+      <li><strong>Mitgliedschaften</strong><span>Zusätzliche Personen erhalten Rollen ausschließlich über die Einladung.</span></li>
+    </ol>
+  </aside>
+</div>
+{% endblock %}
