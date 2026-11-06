@@ -41,6 +41,7 @@ TEMPLATES = [{
     "OPTIONS": {"context_processors": [
         "django.template.context_processors.request", "django.contrib.auth.context_processors.auth",
         "django.contrib.messages.context_processors.messages", "core.portal_configuration.context_processor",
+        "core.shell.workspace_shell",
     ]},
 }]
 DATABASES = {"default": {
