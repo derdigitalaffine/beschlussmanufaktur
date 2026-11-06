@@ -1,1 +1,29 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>Bereitgestellte Unterlagen</h1><a href="/">Arbeitsplatz</a></section>{% for record in records %}<section class="card"><h2>{{ record.name }}</h2><p>{{ record.details|linebreaksbr }}</p><a href="{% url 'propose' record.pk %}">Änderung vorschlagen</a></section>{% empty %}<section class="card"><p>Keine aktuell freigegebenen Unterlagen. Bereitstellung und Gremienzugehörigkeit intern prüfen.</p></section>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Bereitgestellte Unterlagen · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span>
+  <h1>Bereitgestellte Unterlagen</h1>
+  <p>Freigegebene Unterlagen und zulässige Änderungsvorschläge bleiben vom internen Fachsystem getrennt.</p>
+  <a class="bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+</section>
+<section class="bm-task-section" aria-labelledby="external-results-title">
+  <div class="bm-task-section-title"><div><span class="eyebrow">Zugängliche Einträge</span><h2 id="external-results-title">Unterlagen im Überblick</h2></div></div>
+  <div class="bm-record-list">
+    {% for record in records %}
+    <article class="card bm-record">
+      <div><span class="bm-task-status bm-status-active">Bereitgestellt</span>
+        <h3>{{ record.name }}</h3>
+        <p>{{ record.details|linebreaksbr }}</p></div>
+      <a href="{% url 'propose' record.pk %}" class="bm-record-action">Änderung vorschlagen →</a>
+    </article>
+    {% empty %}
+    <section class="card bm-task-empty"><h3>Derzeit keine freigegebenen Unterlagen</h3>
+      <p>Bereitstellung und Gremienzugehörigkeit können im internen System geprüft werden.</p>
+    </section>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
