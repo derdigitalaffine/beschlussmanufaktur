@@ -1,1 +1,61 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><h1>Kontrollierte Sitzungsrückgabe · {{ obj.title }}</h1><a href="{% url 'meeting_detail' obj.pk %}">Zur Sitzung</a><p>Intern werden abgeschlossene Journale abgeholt und erst nach ausdrücklicher Genehmigung übernommen. Die externe Fassung wird beim Vorlegen eingefroren.</p>{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}</section>{% if external %}<section class="card"><form method="post">{% csrf_token %}<input type="hidden" name="expected_version" value="{{ obj.version }}"><button>Abgeschlossene Sitzung verbindlich zur Rückgabe vorlegen</button></form></section>{% endif %}{% for change in returns %}<section class="card"><h2>{{ change.state }} · {{ change.created_at }}</h2><p>Basis {{ change.base_version }} · {{ change.digest }}</p><details><summary>Vollständiges Journal prüfen</summary><pre>{{ change.bundle }}</pre></details>{% if not external and change.state == 'pending' %}<form method="post">{% csrf_token %}<input type="hidden" name="return_id" value="{{ change.pk }}"><label>Prüfung und Genehmigungsgrund <textarea name="reason" required maxlength="1000"></textarea></label><button class="primary">Journal genehmigen und intern übernehmen</button></form>{% endif %}</section>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Kontrollierte Sitzungsrückgabe · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-sensitive-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'meeting_detail' obj.pk %}">← Zur Sitzung</a>
+<section class="page-heading">
+  <span class="eyebrow">Sitzungsführung / Kontrollierte Rückgabe</span>
+  <h1>Kontrollierte Sitzungsrückgabe</h1>
+  <p>{{ obj.title }} · Externe Journale werden beim Vorlegen eingefroren. Die interne Übernahme ist eine gesondert zu genehmigende Aktion, kein automatischer Abgleich.</p>
+  {% if error %}<div role="alert" class="bm-sensitive-error">{{ error }}</div>{% endif %}
+</section>
+{% if external %}
+<section class="card bm-sensitive-main bm-return-submit" aria-labelledby="return-submit-title">
+  <span class="bm-sensitive-tag bm-sensitive-alert-tag">Verbindliche Vorlage</span>
+  <h2 id="return-submit-title">Sitzungsjournal zur Rückgabe vorlegen</h2>
+  <p>Die externe Fassung wird für die Prüfung eingefroren. Erst die interne Genehmigung entscheidet über eine Übernahme.</p>
+  <form method="post" class="bm-sensitive-form">
+    {% csrf_token %}
+    <input type="hidden" name="expected_version" value="{{ obj.version }}">
+    <button class="primary" type="submit">Abgeschlossene Sitzung verbindlich zur Rückgabe vorlegen</button>
+  </form>
+</section>
+{% endif %}
+<section class="bm-sensitive-section" aria-labelledby="returns-heading">
+  <div class="bm-sensitive-section-title">
+    <div><span class="eyebrow">Journale und Entscheidungen</span><h2 id="returns-heading">Rückgaben im Überblick</h2></div>
+  </div>
+  <div class="bm-sensitive-list">
+  {% for change in returns %}
+  <article class="card bm-return-item">
+    <div class="bm-return-head">
+      <div><span class="bm-sensitive-tag">{{ change.state }}</span>
+        <h3>Journal vom {{ change.created_at }}</h3></div>
+      <span class="bm-return-version">Ausgangsversion {{ change.base_version }}</span>
+    </div>
+    <dl class="bm-sensitive-meta">
+      <div><dt>Integritätsnachweis</dt><dd><code>{{ change.digest }}</code></dd></div>
+    </dl>
+    <details class="bm-return-details">
+      <summary>Vollständiges Journal prüfen</summary>
+      <pre>{{ change.bundle }}</pre>
+    </details>
+    {% if not external and change.state == 'pending' %}
+    <form method="post" class="bm-sensitive-form bm-return-approve">
+      {% csrf_token %}
+      <input type="hidden" name="return_id" value="{{ change.pk }}">
+      <label for="return-reason-{{ forloop.counter }}">Prüfung und Genehmigungsgrund</label>
+      <textarea id="return-reason-{{ forloop.counter }}" name="reason" required maxlength="1000"></textarea>
+      <button class="primary" type="submit">Journal genehmigen und intern übernehmen</button>
+    </form>
+    {% endif %}
+  </article>
+  {% empty %}
+  <section class="card bm-sensitive-empty"><h3>Noch keine Rückgabe</h3>
+    <p>Abgeschlossene und vorgelegte Sitzungsjournale erscheinen hier zur Prüfung.</p>
+  </section>
+  {% endfor %}
+  </div>
+</section>
+{% endblock %}
