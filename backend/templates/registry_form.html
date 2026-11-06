@@ -1,1 +1,47 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>{{ title }}</h1><p>Für Wechsel frühere Amtszeit schließen und eine neue Zuordnung anlegen. Konto und Stimmberechtigung sind getrennte Angaben.</p></section><section class="card"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="primary">Speichern</button> <a href="{% url 'registry' %}">Zurück</a></form></section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ title }} · Stammdaten · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'registry' %}">← Zurück zu Gremien und Stammdaten</a>
+<section class="page-heading">
+  <span class="eyebrow">Stammdaten / Gültige Zuordnungen</span>
+  <h1>{{ title }}</h1>
+  <p>Frühere Amtszeiten werden abgeschlossen, bevor eine neue Zuordnung angelegt wird. Konto, Zugehörigkeit und Stimmberechtigung sind eigenständige Angaben.</p>
+</section>
+<div class="bm-task-grid">
+  <section class="card bm-task-main" aria-labelledby="registry-form-title">
+    <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Fachliche Angaben</span></div>
+    <h2 id="registry-form-title">Stammdaten erfassen</h2>
+    <p class="muted">Prüfen Sie die Gültigkeit und speichern Sie erst nach vollständiger Eingabe.</p>
+    <form method="post" class="bm-task-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="bm-task-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+        {% if field.is_hidden %}{{ field }}{% else %}
+        <div class="bm-task-field{% if field.errors %} bm-task-field-error{% endif %}">
+          {{ field.label_tag }}
+          {{ field }}
+          {% if field.help_text %}<p class="bm-task-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<div class="bm-task-error" role="alert">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div class="bm-task-actions">
+        <a class="bm-task-cancel" href="{% url 'registry' %}">Abbrechen</a>
+        <button class="primary" type="submit">Stammdaten speichern</button>
+      </div>
+    </form>
+  </section>
+  <aside class="bm-task-aside card" aria-labelledby="registry-guide-title">
+    <span class="eyebrow">Orientierung</span>
+    <h2 id="registry-guide-title">Vor dem Speichern prüfen</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>Körperschaft</strong><span>Die Zuordnung gilt für den aktiven Arbeitskontext.</span></li>
+      <li><strong>Zeiträume</strong><span>Bestehende Amtszeiten und Gültigkeiten berücksichtigen.</span></li>
+      <li><strong>Berechtigungen</strong><span>Eine Zuordnung ersetzt keine ausdrücklich erforderliche Rolle.</span></li>
+    </ol>
+    <p class="bm-task-hint">Die fachliche Gültigkeit wird beim Speichern vom Server geprüft.</p>
+  </aside>
+</div>
+{% endblock %}
