@@ -1,0 +1,39 @@
+@charset "UTF-8";
+.registry-workspace [id]{scroll-margin-top:1.25rem}
+.registry-workspace .registry-section-nav{display:flex;flex-wrap:wrap;gap:.35rem;border-bottom:1px solid var(--ui-border);padding-bottom:.8rem;margin:1.2rem 0 1.4rem}
+.registry-workspace .registry-section-nav a{display:inline-flex;align-items:center;min-height:40px;padding:.4rem .75rem;text-decoration:none;border-radius:8px;font-weight:720;font-size:.84rem}
+.registry-workspace .registry-section-nav a:hover{background:var(--ui-surface-alt)}
+.registry-workspace .ui-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+.registry-workspace .ui-section-heading{margin:2rem 0 .85rem}
+.registry-workspace .ui-panel .ui-section-heading{margin:0 0 1rem}
+.registry-workspace .registry-tree{list-style:none;margin:1.1rem 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.7rem}
+.registry-workspace .registry-tree li{display:flex;align-items:flex-start;gap:.7rem;border:1px solid var(--ui-border);border-radius:11px;padding:.95rem;background:var(--ui-surface-alt)}
+.registry-workspace .registry-tree li strong{display:block;font-size:.93rem}
+.registry-workspace .registry-tree li .ui-small{display:block;margin:.16rem 0;font-size:.78rem}
+.registry-workspace .registry-tree-mark{display:grid;place-items:center;flex-shrink:0;width:32px;height:32px;border:1px solid #bed3c2;border-radius:8px;background:#fff;color:var(--ui-brand);font-size:.84rem;font-weight:800}
+.registry-workspace .registry-open{font-size:.83rem;font-weight:760;text-decoration:none;white-space:nowrap}
+.registry-workspace .registry-open:hover{text-decoration:underline;text-underline-offset:.22em}
+.registry-workspace .registry-list .ui-item{gap:1rem}
+.registry-workspace .registry-list .ui-item-meta{margin-top:.75rem}
+.registry-workspace .registry-relations{margin-top:1rem}
+.registry-workspace .registry-relations summary,.registry-workspace .registry-display-settings summary{cursor:pointer;font-weight:740}
+.registry-workspace .registry-relations-list{list-style:none;margin:1.1rem 0;padding:0}
+.registry-workspace .registry-relations-list li{display:flex;justify-content:space-between;align-items:flex-start;gap:1.4rem;border-top:1px solid var(--ui-border);padding:1.1rem 0}
+.registry-workspace .registry-relations-list li strong{font-size:.95rem}
+.registry-workspace .registry-relations-list li p{margin:.2rem 0}
+.registry-workspace .registry-relation-meta{display:flex;align-items:flex-end;flex-direction:column;gap:.25rem;font-size:.83rem;font-weight:670;flex-shrink:0}
+.registry-workspace .registry-relation-form{border-top:1px solid var(--ui-border);margin-top:1.3rem;padding-top:1rem}
+.registry-workspace .registry-relation-form h3{font-size:1.08rem;margin:.2rem 0 .8rem}
+.registry-workspace .registry-relation-form form{display:grid;gap:.7rem;max-width:750px}
+.registry-workspace .registry-relation-form form p{display:flex;flex-direction:column;gap:.2rem;margin:.2rem 0}
+.registry-workspace .registry-relation-form label,.registry-workspace .registry-mode-form label{font-size:.85rem;font-weight:740}
+.registry-workspace .registry-relation-form button{justify-self:start}
+.registry-workspace .registry-display-settings{margin-top:1.9rem}
+.registry-workspace .registry-mode-form{display:grid;gap:.55rem;max-width:440px;margin-top:1rem}
+.registry-workspace .registry-mode-form button{justify-self:start}
+@media(max-width:700px){
+ .registry-workspace .ui-summary{grid-template-columns:1fr}
+ .registry-workspace .registry-relations-list li{flex-direction:column;gap:.5rem}
+ .registry-workspace .registry-relation-meta{align-items:flex-start}
+ .registry-workspace .registry-list .ui-item-aside{align-items:flex-start}
+}
