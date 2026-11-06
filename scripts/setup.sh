@@ -62,6 +62,14 @@ done
 [[ -n "$STACK" ]] || die "Bitte --stack internal oder --stack external angeben."
 [[ "$STACK" == internal || "$STACK" == external ]] || die "Ungültiger Stack."
 [[ "$ENV_FILE" = /* ]] || ENV_FILE="$PWD/$ENV_FILE"
+# Innerhalb des Repositorys nur Namen verwenden, die .gitignore verlässlich abdeckt.
+# So wird auch eine mit --env-file erstellte Konfiguration nicht versehentlich committed.
+if [[ "$ENV_FILE" == "$ROOT/"* ]]; then
+  case "${ENV_FILE##*/}" in
+    .env|.env.*) ;;
+    *) die "Konfigurationsdateien im Repository müssen .env oder .env.* heißen (Git-Ignore-Schutz)." ;;
+  esac
+fi
 COMPOSE_FILE="$ROOT/compose.yaml"
 [[ "$STACK" == external ]] && COMPOSE_FILE="$ROOT/compose.external.yaml"
 
@@ -100,8 +108,16 @@ new_uuid() {
   python3 -c 'import uuid; print(uuid.uuid4())'
 }
 valid_hostname() {
-  [[ "$1" =~ ^[[:alnum:]]([[:alnum:].-]{0,251}[[:alnum:]])?$ ]] &&
-  [[ "$1" != *..* && "$1" != *--* && "$1" != *"_"* && "$1" != .* && "$1" != *"." ]]
+  python3 - "$1" <<'PY'
+import re,sys
+host=sys.argv[1]
+labels=host.split(".")
+if not host or len(host)>253 or any(
+    len(label)>63 or not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?", label)
+    for label in labels
+):
+    sys.exit(1)
+PY
 }
 valid_origin() {
   python3 - "$1" <<'PY'
@@ -111,6 +127,11 @@ try:
     u = urlsplit(sys.argv[1])
     assert u.scheme == "https" and u.hostname and not u.username and not u.password
     assert not u.path and not u.query and not u.fragment
+    import re
+    assert len(u.hostname) <= 253 and all(
+        re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?", label)
+        for label in u.hostname.split(".")
+    )
     assert u.port is None or 1 <= u.port <= 65535
 except (AssertionError, ValueError):
     sys.exit(1)
@@ -163,17 +184,19 @@ if values.get("BM_SETUP_STACK") not in ("",stack):
 def required(key,n=1):
     if len(values.get(key,"")) < n:
         sys.exit("FEHLER: Wert fehlt oder ist zu kurz: "+key)
+def valid_host(v):
+    return bool(v and len(v)<=253 and all(
+        len(label)<=63 and re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?",label)
+        for label in v.split(".")
+    ))
 def host(key):
     required(key)
-    v=values[key]
-    if len(v)>253 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]",v) and v!="localhost":
-        sys.exit("FEHLER: Ungültiger Hostname: "+key)
-    if ".." in v or v.endswith("."):
+    if not valid_host(values[key]):
         sys.exit("FEHLER: Ungültiger Hostname: "+key)
 def origin(key):
     required(key)
     u=urlsplit(values[key])
-    if u.scheme!="https" or not u.hostname or u.username or u.password or u.path or u.query or u.fragment:
+    if u.scheme!="https" or not valid_host(u.hostname) or u.username or u.password or u.path or u.query or u.fragment:
         sys.exit("FEHLER: Unsicherer HTTPS-Origin: "+key)
     try: u.port
     except ValueError: sys.exit("FEHLER: Ungültiger Port: "+key)
@@ -254,15 +277,22 @@ dns_hint() {
   fi
 }
 check_existing_services() {
-  local running=""
-  running="$(compose ps --status running --services 2>/dev/null || true)"
+  local existing="" other_project=""
+  # Separate Hostgrenze: nie beide Compose-Projekte auf demselben Docker-Host.
+  other_project=beschlussmanufaktur-external
+  [[ "$STACK" == external ]] && other_project=beschlussmanufaktur
+  if [[ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$other_project")" ]]; then
+    die "Andere Betriebszone auf demselben Docker-Host erkannt ($other_project). Intern/extern getrennt betreiben."
+  fi
+  # Auch gestoppte Anwendungskontainer zeigen eine bereits betriebene Installation an.
+  existing="$(compose ps --all --services 2>/dev/null || true)"
   while IFS= read -r svc; do
     [[ -n "$svc" ]] || continue
     case "$svc" in
       db|protected-db|public-db) ;;
       *) die "Dienste laufen bereits ($svc). Dieses Skript ist NUR für Erstinstallationen; Updates nach docs/12-installation.md." ;;
     esac
-  done <<< "$running"
+  done <<< "$existing"
 }
 backup_key() {
   local file="$1"
