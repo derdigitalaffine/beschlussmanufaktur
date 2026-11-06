@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy"
+ content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<title>RIS-Arbeitsoberfläche – Integration</title>
+<link rel="stylesheet" href="/backend/static/app.css">
+<link rel="stylesheet" href="/backend/static/ux-system.css">
+<link rel="stylesheet" href="/backend/static/ux-polish.css">
+<link rel="stylesheet" href="/backend/static/ux-workbench.css">
+<link rel="stylesheet" href="/backend/static/mantine/workspace.css">
+<script type="module" src="/backend/static/mantine/shell.js"></script>
+<script type="module" src="/backend/static/mantine/workbench.js"></script>
+</head>
+<body class="bm-private-ui" data-bm-route="template_detail">
+<a class="skip-link" href="#inhalt">Direkt zum Inhalt</a>
+<header class="topbar">
+ <div class="topbar-main"><a class="brand" href="/"><span class="brand-mark">B</span>Beschlussmanufaktur</a>
+ <div class="header-context"><strong>Beispielgemeinde</strong><span>Sitzungsdienst</span></div></div>
+ <div class="workspace-toolbar">
+  <nav class="global-nav" aria-label="Hauptnavigation">
+  <a href="/"><span class="nav-glyph" data-fa-icon="home"></span>Heute</a>
+  <a href="/vorlagen/">Vorlagen &amp; Vorgänge</a>
+  <a href="/sitzungen/">Sitzungen</a>
+  </nav>
+ </div>
+</header>
+<main id="inhalt">
+<div id="bm-workbench-root" aria-label="Arbeitsbereich und Seitennavigation"></div>
+<section class="page-heading"><span class="eyebrow">Vorlage in Bearbeitung</span>
+<h1>Schulwegsicherung im Ortsbeirat</h1><p>Fassung, Anhänge, Freigaben und Prüfschritte</p>
+<a class="primary" href="/vorlagen/bearbeiten/">Vorlage bearbeiten</a></section>
+<div class="workpage">
+ <section class="ui-panel ui-panel--padded"><h2>Bearbeitungsweg</h2><p>Aktuelle Bearbeitungsphase sichtbar.</p></section>
+ <section class="ui-panel ui-panel--padded"><h2>Versionen</h2><p>Frühere Fassungen erhalten.</p></section>
+ <section class="ui-panel ui-panel--padded"><h2>Anlagen</h2><p>Anlagen bleiben versioniert.</p></section>
+ <section class="ui-panel ui-panel--padded"><h2>Prüfung und Bereitstellung</h2>
+  <form method="post" action="/save-step/">
+   <input type="hidden" name="csrfmiddlewaretoken" value="test-csrf">
+   <input type="hidden" name="version" value="13">
+   <label for="note">Bemerkung</label><textarea id="note" name="note" required rows="3"></textarea>
+   <button class="primary" type="submit">Prüfschritt speichern</button>
+  </form></section>
+ <section class="ui-panel ui-panel--padded"><h2>Beratungsfolge</h2><p>Ausschüsse und Sitzungen.</p></section>
+</div>
+</main>
+<footer>Beschlussmanufaktur · Entwicklung</footer>
+</body></html>

@@ -1,0 +1,170 @@
+@charset "UTF-8";
+/* Public/unauthenticated experience: polished, low-dependency and isolated
+   from private Mantine navigation and protected application metadata. */
+body.bm-public-ui,body.bm-guest-ui{
+  --ink:#1b363a;--green:#0c756b;--line:#dce6e0;--pale:#eef6f0;
+  --muted:#5c7274;--paper:#fff;--accent:#d5a761;
+  color:var(--ink);
+  background:linear-gradient(175deg,#eef5f0 0,#f8faf7 320px,#f7f8f6 100%);
+  font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+:is(.bm-public-ui,.bm-guest-ui) :where(h1,h2,h3){
+  color:#1c3b3e;letter-spacing:-.052em;line-height:1.15;
+}
+:is(.bm-public-ui,.bm-guest-ui) :where(a,button,input,select,textarea):focus-visible{
+  outline:3px solid #b17b20;outline-offset:3px;
+}
+:is(.bm-public-ui,.bm-guest-ui) .topbar{
+  background:#173b3d;border:0;color:#eff8f5;
+  box-shadow:0 8px 30px rgba(18,52,51,.09);
+  padding:1.05rem clamp(1rem,4.5vw,4.5rem);
+}
+:is(.bm-public-ui,.bm-guest-ui) .brand{color:#fff;font-size:1.12rem;letter-spacing:-.03em}
+:is(.bm-public-ui,.bm-guest-ui) .brand small{color:#b7d0c8;letter-spacing:.045em}
+:is(.bm-public-ui,.bm-guest-ui) .brand-mark{
+  background:linear-gradient(135deg,#f2d296,#ddb46e);
+  color:#173b3d;border-radius:12px;width:47px;height:47px;
+  font-weight:850;box-shadow:0 5px 12px #081f2033;
+}
+:is(.bm-public-ui,.bm-guest-ui) main{
+  max-width:1320px;padding:clamp(1.25rem,4vw,3.5rem) clamp(1rem,5vw,5rem) 5rem;
+}
+:is(.bm-public-ui,.bm-guest-ui) .page-heading{
+  padding:clamp(2rem,5vw,4rem);border-radius:23px;
+  border:1px solid #d9e7dd;background:
+  radial-gradient(ellipse 600px 320px at 100% 0,#dff1e8,transparent 76%),
+  linear-gradient(110deg,#fff 15%,#f5faf6 100%);
+  margin:0 0 2rem;
+  box-shadow:0 12px 39px #1f483f0a;
+}
+:is(.bm-public-ui,.bm-guest-ui) .page-heading h1{
+  font-size:clamp(2.1rem,5vw,4.25rem);letter-spacing:-.07em;max-width:22ch;
+  margin:.7rem 0 1rem;text-wrap:balance;
+}
+:is(.bm-public-ui,.bm-guest-ui) .page-heading p{font-size:1.05rem;line-height:1.75;color:#5b7070;max-width:66ch}
+:is(.bm-public-ui,.bm-guest-ui) .eyebrow{
+  color:#0c8172;font-size:.72rem;font-weight:820;letter-spacing:.14em;
+}
+:is(.bm-public-ui,.bm-guest-ui) .card{
+  border:1px solid #dce9e2;border-radius:18px;background:#fff;
+  padding:clamp(1.35rem,2.8vw,2.25rem);
+  box-shadow:0 11px 27px rgba(25,58,53,.035);
+}
+:is(.bm-public-ui,.bm-guest-ui) .card h2{
+  letter-spacing:-.046em;font-size:clamp(1.2rem,2vw,1.55rem);
+}
+:is(.bm-public-ui,.bm-guest-ui) .card p{color:#566d70;line-height:1.7}
+:is(.bm-public-ui,.bm-guest-ui) :where(input,select,textarea){
+  background:#fcfefd;border:1px solid #bfd2c9;border-radius:10px;
+  color:#183c3d;min-height:44px;max-width:100%;
+}
+:is(.bm-public-ui,.bm-guest-ui) :where(input,select,textarea):focus-visible{
+  border-color:#0b776c;box-shadow:0 0 0 3px #b9e4d5;
+}
+:is(.bm-public-ui,.bm-guest-ui) label{color:#244b49;font-weight:730;font-size:.86rem}
+:is(.bm-public-ui,.bm-guest-ui) :where(button.primary,a.primary){
+  border-radius:10px;min-height:44px;background:#0d776e;
+  border-color:#0d776e;color:white;padding:.7rem 1.2rem;
+  font-size:.88rem;font-weight:790;display:inline-flex;
+  align-items:center;justify-content:center;
+}
+:is(.bm-public-ui,.bm-guest-ui) :where(button.primary,a.primary):hover{
+  background:#0c5c55;border-color:#0c5c55;color:#fff;
+}
+:is(.bm-public-ui,.bm-guest-ui) :where(.errorlist,[role="alert"]){border-radius:12px}
+:is(.bm-public-ui,.bm-guest-ui) :where(pre,.markdown){overflow-wrap:anywhere;max-width:100%}
+:is(.bm-public-ui,.bm-guest-ui) footer{
+  color:#627a79;border-top:1px solid #dae7df;background:transparent;
+}
+.bm-public-ui main>form.card{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:1.05rem 1.2rem;align-items:end;margin-bottom:clamp(1.3rem,3vw,2.5rem);
+}
+.bm-public-ui main>form.card label{
+  display:grid;gap:.4rem;margin:0;min-width:0;
+}
+.bm-public-ui main>form.card :where(input,select){
+  width:100%;min-width:0;
+}
+.bm-public-ui main>form.card button.primary{width:100%}
+.bm-public-ui main>form.card a{
+  font-weight:700;font-size:.83rem;text-underline-offset:3px;white-space:normal;
+}
+.bm-public-ui main>article.card{
+  position:relative;margin-block:1rem;padding:clamp(1.5rem,3vw,2.2rem);
+  border-left:4px solid #b7d5c7;
+}
+.bm-public-ui main>article.card:hover{border-left-color:#0c8173;box-shadow:0 13px 33px #1b5a4d10}
+.bm-public-ui main>article.card h2{margin:.6rem 0;font-size:clamp(1.25rem,2.4vw,1.75rem)}
+.bm-public-ui main>article.card h2 a{color:#17494a;text-decoration:none}
+.bm-public-ui main>article.card h2 a:hover{text-decoration:underline}
+.bm-public-ui main>article.card .eyebrow{
+  display:inline-block;background:#e6f4ec;color:#176a60;
+  border-radius:999px;padding:.25rem .7rem;font-size:.68rem;
+}
+.bm-public-ui main>article.card .markdown{font-size:1.02rem;line-height:1.75}
+.bm-public-ui main>nav[aria-label="Ergebnisseiten"]{
+  background:#fff;border:1px solid #e0eae5;border-radius:12px;
+  padding:1rem 1.4rem;display:flex;gap:1rem;align-items:center;
+  justify-content:center;flex-wrap:wrap;font-size:.89rem;font-weight:650;
+}
+.bm-public-ui main>.empty{border-style:dashed;background:#f9fbfa}
+.bm-public-ui main>article.card img{max-width:100%;height:auto;border-radius:12px}
+.bm-guest-ui .auth-layout{
+  display:grid;grid-template-columns:minmax(0,1.04fr) minmax(340px,.96fr);
+  gap:clamp(2rem,6vw,6rem);align-items:center;
+  min-height:min(75vh,780px);
+}
+.bm-guest-ui .intro{padding:2rem clamp(0px,3vw,3rem) 2rem 0}
+.bm-guest-ui .intro h1{
+  font-size:clamp(2.6rem,5.4vw,5.2rem);letter-spacing:-.075em;
+  line-height:1.02;max-width:13ch;margin:.9rem 0 1.7rem;text-wrap:balance;
+}
+.bm-guest-ui .intro p{font-size:1.12rem;line-height:1.75;color:#597270;max-width:48ch}
+.bm-guest-ui .intro-note{
+  margin-top:2.5rem;display:inline-flex;padding:1rem 1.3rem;
+  border-left:4px solid #d1a05f;background:#eaf2ec;
+  border-radius:0 10px 10px 0;color:#335e5b;font-weight:730;font-size:.8rem;
+}
+.bm-guest-ui .auth-card{
+  max-width:560px;width:100%;padding:clamp(1.5rem,3vw,3.2rem);
+  border:1px solid #d9e8df;border-radius:24px;
+  box-shadow:0 28px 65px #163a2d15;
+}
+.bm-guest-ui .auth-card h2{font-size:clamp(1.5rem,2.7vw,2rem);margin:.5rem 0}
+.bm-guest-ui .auth-card .field{margin:1.25rem 0}
+.bm-guest-ui .auth-card :where(input,select){width:100%;min-height:48px}
+.bm-guest-ui .auth-card .primary{width:100%;font-size:.95rem;min-height:48px;margin:.55rem 0}
+.bm-guest-ui main>form.card{
+  width:min(100%,680px);margin:1.5rem auto;display:grid;gap:1rem;
+}
+.bm-guest-ui main>h1{font-size:clamp(2rem,4vw,3rem);margin-bottom:1rem}
+.bm-guest-ui main>.form-card{max-width:780px;margin:2rem auto}
+.bm-guest-ui main>.page-heading+.form-card{margin-top:1.2rem}
+.bm-guest-ui .auth-card [data-passkey]{width:100%;min-height:43px;margin:.5rem 0}
+.bm-guest-ui .help{color:#657979;font-size:.79rem;line-height:1.6}
+@media(max-width:950px){
+  .bm-public-ui main>form.card{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bm-guest-ui .auth-layout{gap:2rem;grid-template-columns:1fr 1fr}
+}
+@media(max-width:720px){
+  :is(.bm-public-ui,.bm-guest-ui) main{padding:1.2rem 1rem 4rem}
+  :is(.bm-public-ui,.bm-guest-ui) .page-heading{padding:1.6rem;border-radius:16px}
+  .bm-guest-ui .auth-layout{grid-template-columns:1fr;min-height:auto;gap:1rem}
+  .bm-guest-ui .intro{padding:1.2rem 0}
+  .bm-guest-ui .intro h1{font-size:clamp(2.3rem,9vw,3.8rem)}
+  .bm-guest-ui .auth-card{max-width:none}
+}
+@media(max-width:520px){
+  .bm-public-ui main>form.card{grid-template-columns:1fr;gap:.8rem}
+  .bm-public-ui main>form.card button.primary{width:100%}
+  :is(.bm-public-ui,.bm-guest-ui) .topbar{padding:1rem}
+  :is(.bm-public-ui,.bm-guest-ui) .brand{font-size:.9rem;gap:.55rem}
+  :is(.bm-public-ui,.bm-guest-ui) .brand-mark{width:39px;height:39px}
+}
+@media(prefers-reduced-motion:reduce){
+  :is(.bm-public-ui,.bm-guest-ui) *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+}
+@media(forced-colors:active){
+  :is(.bm-public-ui,.bm-guest-ui) :where(.card,.page-heading,fieldset){border:1px solid CanvasText}
+}

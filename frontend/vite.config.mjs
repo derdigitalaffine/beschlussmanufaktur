@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         shell: file('./src/shell.js'),
         workspace: file('./src/workspace.jsx'),
+        workbench: file('./src/workbench.jsx'),
       },
       output: {
         entryFileNames: '[name].js',
