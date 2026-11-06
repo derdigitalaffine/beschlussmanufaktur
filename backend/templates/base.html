@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Beschlussmanufaktur{% endblock %}</title>
 <link rel="stylesheet" href="{% static 'app.css' %}">
+{% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'ux-system.css' %}">{% endif %}
+{% block page_styles %}{% endblock %}
 <script src="{% static 'auth-events.js' %}" defer></script>
 {% if portal %}<link rel="stylesheet" href="/portal.css">{% endif %}
 </head>
