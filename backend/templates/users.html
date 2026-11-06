@@ -1,8 +1,177 @@
 {% extends "base.html" %}
-{% block content %}<a class="text-link" href="/">← Zum Arbeitsplatz</a><section class="page-heading"><span class="eyebrow">{{ context.organization.name }} · Organisationsverwaltung</span><h1>Menschen und Rollen</h1><p>Verwalten Sie ausschließlich die Zugänge dieser Organisation. Andere Rollen und persönliche Konten bleiben unabhängig.</p></section>
-<div class="admin-layout"><section><div class="section-heading"><h2>Zugewiesene Rollen</h2></div><form class="search-form" method="get"><label for="search">In dieser Organisation suchen</label><div class="context-picker"><input id="search" name="q" value="{{ query }}" placeholder="Name oder E-Mail-Adresse"><button class="primary" type="submit">Suchen</button></div></form>
-<div class="member-list">{% for membership in page %}<article class="card member-row"><div><h3>{% if membership.user.first_name %}{{ membership.user.first_name }} {{ membership.user.last_name }}{% else %}{{ membership.user.email }}{% endif %}</h3><p class="muted">{{ membership.user.email }}</p><span class="pill">{{ membership.get_role_display }}</span> <span class="pill">{{ membership.access_state }}</span><p class="help">Ab {{ membership.starts_at|date:"d.m.Y H:i" }}{% if membership.ends_at %} · bis {{ membership.ends_at|date:"d.m.Y H:i" }}{% endif %}</p></div>{% if not membership.revoked_at %}<div class="row-actions"><a href="{% url 'edit_membership' membership.pk %}">Bearbeiten</a><a href="{% url 'remove_membership' membership.pk %}">Zugriff entziehen</a></div>{% endif %}</article>{% empty %}<section class="card empty"><h3>Keine passenden Rollen</h3><p>Laden Sie Personen ein oder passen Sie Ihre Suche an.</p></section>{% endfor %}</div>
-{% if page.has_other_pages %}<nav class="pagination" aria-label="Seiten">{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&amp;q={{ query|urlencode }}">← Zurück</a>{% endif %}<span>Seite {{ page.number }} von {{ page.paginator.num_pages }}</span>{% if page.has_next %}<a href="?page={{ page.next_page_number }}&amp;q={{ query|urlencode }}">Weiter →</a>{% endif %}</nav>{% endif %}
-<h2>Letzte Einladungen</h2><p class="help">Die letzten 20 Einladungen dieser Organisation.</p><div class="member-list">{% for invitation in invitations %}<article class="card invitation-row"><div><strong>{{ invitation.email }}</strong><p class="muted">{{ invitation.get_role_display }} · {{ invitation.delivery_state }}</p><p class="help">Einladungsfrist bis {{ invitation.expires_at|date:"d.m.Y H:i" }}</p></div>{% if not invitation.accepted_at and not invitation.revoked_at %}<a href="{% url 'remove_invitation' invitation.pk %}">Zurückziehen</a>{% endif %}</article>{% empty %}<p class="muted">Noch keine Einladungen versendet.</p>{% endfor %}</div></section>
-<section class="card invitation-panel"><span class="eyebrow">Neuer Zugang</span><h2>Person einladen</h2><p class="muted">Die Person erhält einen persönlichen Link und nimmt die Rolle ausdrücklich an.</p><form method="post">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}<button type="submit" class="primary wide">Einladung senden</button></form><p class="help">Einladungslinks gelten sieben Tage. Ohne Beginn gilt die Rolle ab jetzt; ein Ende ist optional.</p></section></div>{% endblock %}
+{% load static %}
+{% block title %}Menschen und Rollen · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-users.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage people-workspace">
+  <header class="ui-header">
+    <a class="ui-back" href="{% url 'home' %}">← Heute / Meine Arbeit</a>
+    <div class="ui-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · Organisationsverwaltung</span>
+        <h1>Menschen &amp; Rollen</h1>
+        <p class="ui-lead">Zugänge, Aufgabenrollen und Gültigkeitszeiträume in dieser Körperschaft. Rollen anderer Organisationen und persönliche Konten werden hier nicht verändert.</p>
+      </div>
+      <div class="ui-hero-actions">
+        <a class="ui-button ui-button--primary" href="#person-einladen">Person einladen</a>
+      </div>
+    </div>
+  </header>
 
+  <nav class="people-section-nav" aria-label="Bereiche der Rollenverwaltung">
+    <a href="#zugewiesene-rollen">Zugewiesene Rollen</a>
+    <a href="#letzte-einladungen">Einladungen</a>
+    <a href="#person-einladen">Neuer Zugang</a>
+  </nav>
+
+  <section class="ui-note" aria-label="Hinweis zu Zugriffsrechten">
+    Eine Einladung erteilt noch keinen aktiven Zugriff. Die Person nimmt die Rolle selbst an; zusätzlich gelten Anfang, Ende und ein möglicher Entzug. Das technische Konto und andere Rollen bleiben getrennt.
+  </section>
+
+  <section aria-labelledby="roles-title" id="zugewiesene-rollen">
+    <div class="ui-section-heading">
+      <div><span class="ui-kicker">Bestehende Zugänge</span><h2 id="roles-title">Zugewiesene Rollen</h2></div>
+      <span class="ui-small">Seite {{ page.number }} von {{ page.paginator.num_pages }} · bis zu 20 Einträge je Seite</span>
+    </div>
+    <form class="ui-filter people-search" method="get" action="{% url 'users' %}" role="search" aria-label="Rollen in dieser Organisation suchen">
+      <div class="ui-filter-field">
+        <label for="people-search">Name oder E-Mail-Adresse</label>
+        <input id="people-search" type="search" name="q" maxlength="100" value="{{ query }}" placeholder="Person in dieser Körperschaft finden">
+      </div>
+      <div class="ui-filter-actions">
+        <button class="ui-button" type="submit">Suchen</button>
+        {% if query %}<a class="ui-button ui-button--subtle" href="{% url 'users' %}">Suche löschen</a>{% endif %}
+      </div>
+    </form>
+    <p class="people-count" aria-live="polite">{{ page.paginator.count }} passende Rollenzuweisungen{% if query %} für diese Suche{% endif %}</p>
+
+    {% if page %}
+    <ul class="ui-list people-list">
+      {% for membership in page %}
+      <li class="ui-item">
+        <div class="ui-item-main">
+          <span class="ui-kicker">{{ membership.get_role_display }}</span>
+          <h3 class="ui-item-title">
+            {% if membership.user.first_name %}{{ membership.user.first_name }} {{ membership.user.last_name }}{% else %}{{ membership.user.email }}{% endif %}
+          </h3>
+          <p class="ui-item-note">{{ membership.user.email }}</p>
+          <div class="ui-item-meta">
+            <span><strong>Beginn:</strong> <time datetime="{{ membership.starts_at|date:'c' }}">{{ membership.starts_at|date:"d.m.Y, H:i" }} Uhr</time></span>
+            <span><strong>Ende:</strong>
+              {% if membership.ends_at %}
+              <time datetime="{{ membership.ends_at|date:'c' }}">{{ membership.ends_at|date:"d.m.Y, H:i" }} Uhr</time>
+              {% else %}Offen{% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="ui-item-aside">
+          {% if membership.access_state == "Aktiv" %}
+          <span class="ui-tag" data-tone="success">Aktiv</span>
+          {% elif membership.access_state == "Geplant" %}
+          <span class="ui-tag" data-tone="info">Geplant</span>
+          {% elif membership.access_state == "Konto gesperrt" %}
+          <span class="ui-tag" data-tone="danger">Konto gesperrt</span>
+          {% else %}
+          <span class="ui-tag">{{ membership.access_state }}</span>
+          {% endif %}
+          {% if not membership.revoked_at %}
+          <div class="people-actions">
+            <a href="{% url 'edit_membership' membership.pk %}">Rolle bearbeiten</a>
+            <a href="{% url 'remove_membership' membership.pk %}">Zugriff entziehen</a>
+          </div>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty">
+      <h3>Keine passenden Rollen</h3>
+      <p>{% if query %}Für diese Suche sind in der aktuellen Körperschaft keine Rollen zugeordnet.{% else %}Für diese Körperschaft sind noch keine weiteren Rollen eingerichtet.{% endif %}</p>
+      {% if query %}<a class="ui-button" href="{% url 'users' %}">Alle Rollen anzeigen</a>{% else %}<a class="ui-button ui-button--primary" href="#person-einladen">Erste Person einladen</a>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if page.has_other_pages %}
+    <nav class="people-pages" aria-label="Seiten der Rollenzuweisungen">
+      {% if page.has_previous %}
+      <a class="ui-button" href="?page={{ page.previous_page_number }}&amp;q={{ query|urlencode }}">← Vorherige Seite</a>
+      {% endif %}
+      <span class="ui-small">Seite {{ page.number }} von {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}
+      <a class="ui-button" href="?page={{ page.next_page_number }}&amp;q={{ query|urlencode }}">Nächste Seite →</a>
+      {% endif %}
+    </nav>
+    {% endif %}
+  </section>
+
+  <section id="letzte-einladungen" aria-labelledby="invitations-title">
+    <div class="ui-section-heading">
+      <div><span class="ui-kicker">Noch nicht abgeschlossene und frühere Einladungen</span><h2 id="invitations-title">Letzte Einladungen</h2></div>
+      <p>Die letzten 20 Einladungen dieser Körperschaft.</p>
+    </div>
+    {% if invitations %}
+    <ul class="ui-list people-invitations">
+      {% for invitation in invitations %}
+      <li class="ui-item">
+        <div class="ui-item-main">
+          <span class="ui-kicker">{{ invitation.get_role_display }}</span>
+          <h3 class="ui-item-title">{{ invitation.email }}</h3>
+          <div class="ui-item-meta">
+            <span><strong>Ablauf:</strong> <time datetime="{{ invitation.expires_at|date:'c' }}">{{ invitation.expires_at|date:"d.m.Y, H:i" }} Uhr</time></span>
+          </div>
+        </div>
+        <div class="ui-item-aside">
+          {% if invitation.delivery_state == "Angenommen" %}
+          <span class="ui-tag" data-tone="success">Angenommen</span>
+          {% elif invitation.delivery_state == "Offen" %}
+          <span class="ui-tag" data-tone="attention">Offen</span>
+          {% else %}
+          <span class="ui-tag">{{ invitation.delivery_state }}</span>
+          {% endif %}
+          {% if not invitation.accepted_at and not invitation.revoked_at %}
+          <a class="people-revoke" href="{% url 'remove_invitation' invitation.pk %}">Einladung zurückziehen</a>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty"><h3>Noch keine Einladungen</h3><p>Sobald eine Einladung versendet wird, ist ihr aktueller Bearbeitungsstand hier nachvollziehbar.</p></div>
+    {% endif %}
+  </section>
+
+  <section id="person-einladen" class="ui-panel ui-panel--padded people-invite" aria-labelledby="invite-title">
+    <div class="ui-section-heading">
+      <div><span class="ui-kicker">Neuer Zugang</span><h2 id="invite-title">Person einladen</h2></div>
+    </div>
+    <p class="ui-lead">Die Person erhält einen persönlichen Einladungslink. Eine Einladung gilt sieben Tage; die Rolle beginnt erst nach Annahme und erreichtem Startzeitpunkt.</p>
+    {% if form.errors %}
+    <div class="people-errors" role="alert" tabindex="-1">
+      <strong>Einladung konnte nicht versendet werden.</strong>
+      {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+      <ul>
+        {% for field in form %}
+        {% if field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}</a>: {{ field.errors|striptags }}</li>{% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    <form method="post" action="{% url 'users' %}" class="people-invite-form">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="people-field{% if field.errors %} has-error{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="people-required" aria-label="Pflichtfeld">*</span>{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="ui-small">{{ field.help_text }}</p>{% endif %}
+        {% for error in field.errors %}<p class="people-field-error" role="alert">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+      <div class="people-invite-actions">
+        <button class="ui-button ui-button--primary" type="submit">Einladung senden</button>
+        <p class="ui-small">Nur für diese Körperschaft. Der tatsächliche Zugriff wird bei jeder Fachaktion geprüft.</p>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
