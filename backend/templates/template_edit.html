@@ -23,7 +23,7 @@
       <label for="template-kind">Vorlagenart</label>
       <select name="kind" id="template-kind">
         {% for name in default_kinds %}
-        <option value="default:{{ name }}" {% if selection == name %}selected{% endif %}>{{ name }}</option>
+        <option value="default:{{ name }}" >{{ name }}</option>
         {% endfor %}
         {% for item in kinds %}
         <option value="{{ item.pk }}">{{ item.name }}</option>
@@ -47,7 +47,7 @@
   </div>
   {% endif %}
 
-  <form method="post" class="template-editor-form" novalidate>
+  <form method="post" class="template-editor-form">
     {% csrf_token %}
     <input type="hidden" name="kind" value="{{ selection }}">
     {% for field in form.hidden_fields %}{{ field }}{% endfor %}
