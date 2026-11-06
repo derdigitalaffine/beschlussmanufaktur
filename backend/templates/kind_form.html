@@ -1,1 +1,75 @@
-{% extends 'base.html' %}{% block content %}<a href="/">← Arbeitsplatz</a><h1>Vorlagenart konfigurieren</h1><p>{{ context.organization }} · Einfach: Sachbearbeitung → Fachbereichsleitung → Sitzungsdienst. Vorhandene erweiterte Einstellungen bleiben im einfachen Modus erhalten.</p><form method="post" class="card">{% csrf_token %}{{ form.as_p }}{% if advanced %}<h2>Zusatzfelder</h2>{{ fieldset.management_form }}{{ fieldset.non_form_errors }}{% for row in fieldset %}<fieldset><legend>Feld {{ forloop.counter }}</legend>{{ row.as_p }}</fieldset>{% endfor %}<h2>Prüfschritte</h2><p>Gleiche Gruppennummer bedeutet parallele Bearbeitung. Leere Liste verwendet den einfachen Standardablauf.</p>{{ stepset.management_form }}{{ stepset.non_form_errors }}{% for row in stepset %}<fieldset><legend>Prüfschritt {{ forloop.counter }}</legend>{{ row.as_p }}</fieldset>{% endfor %}{% endif %}<button class="primary">Konfiguration speichern</button></form>{% if advanced %}<form method="get"><label>Anzahl Feldzeilen<input type="number" name="felder" min="2" max="40" value="{{ fieldset.total_form_count }}"></label><label>Anzahl Prüfschrittzeilen<input type="number" name="schritte" min="2" max="12" value="{{ stepset.total_form_count }}"></label><button>Zeilen vor der Bearbeitung anpassen</button></form>{% endif %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Vorlagenart konfigurieren · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'kind_list' %}">← Zu den Vorlagenarten</a>
+<section class="page-heading">
+  <span class="eyebrow">Vorlagen / Konfiguration</span><h1>Vorlagenart konfigurieren</h1>
+  <p>{{ context.organization }} · Standardprüfweg: Sachbearbeitung → Fachbereichsleitung → Sitzungsdienst. Im einfachen Modus bleiben bestehende erweiterte Einstellungen erhalten.</p>
+</section>
+<div class="bm-task-grid">
+  <section class="card bm-task-main" aria-labelledby="kind-settings-title">
+    <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Aufbau und Prüfung</span></div>
+    <h2 id="kind-settings-title">Grundeinstellungen</h2>
+    <form method="post" class="bm-task-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="bm-task-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+      {% if field.is_hidden %}{{ field }}{% else %}
+      <div class="bm-task-field{% if field.errors %} bm-task-field-error{% endif %}">
+        {{ field.label_tag }}{{ field }}
+        {% if field.help_text %}<p class="bm-task-help">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<div class="bm-task-error" role="alert">{{ field.errors }}</div>{% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% if advanced %}
+      <section class="bm-task-subsection" aria-labelledby="kind-fields-title">
+        <h3 id="kind-fields-title">Zusatzfelder</h3>
+        <p class="muted">Erweiterte Felder werden als eigene prüfbare Einträge verwaltet.</p>
+        {{ fieldset.management_form }}
+        {% if fieldset.non_form_errors %}<div class="bm-task-error" role="alert">{{ fieldset.non_form_errors }}</div>{% endif %}
+        {% for row in fieldset %}
+        <fieldset class="bm-kind-fieldset"><legend>Feld {{ forloop.counter }}</legend>{{ row.as_p }}</fieldset>
+        {% endfor %}
+      </section>
+      <section class="bm-task-subsection" aria-labelledby="kind-steps-title">
+        <h3 id="kind-steps-title">Prüfschritte</h3>
+        <p class="muted">Gleiche Gruppennummer bedeutet parallele Bearbeitung. Eine leere Liste verwendet den einfachen Standardablauf.</p>
+        {{ stepset.management_form }}
+        {% if stepset.non_form_errors %}<div class="bm-task-error" role="alert">{{ stepset.non_form_errors }}</div>{% endif %}
+        {% for row in stepset %}
+        <fieldset class="bm-kind-fieldset"><legend>Prüfschritt {{ forloop.counter }}</legend>{{ row.as_p }}</fieldset>
+        {% endfor %}
+      </section>
+      {% endif %}
+      <div class="bm-task-actions">
+        <a class="bm-task-cancel" href="{% url 'kind_list' %}">Abbrechen</a>
+        <button class="primary" type="submit">Konfiguration speichern</button>
+      </div>
+    </form>
+  </section>
+  <aside class="card bm-task-aside" aria-labelledby="kind-guide-title">
+    <span class="eyebrow">Fachliche Reihenfolge</span><h2 id="kind-guide-title">Vom Entwurf zur Freigabe</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>Aufbau</strong><span>Art und Pflichtfelder passend zum Vorgang wählen.</span></li>
+      <li><strong>Prüfweg</strong><span>Reihenfolge und gegebenenfalls parallele Schritte festlegen.</span></li>
+      <li><strong>Freigabe</strong><span>Die Rechte- und Freigabeprüfung erfolgt unverändert im Backend.</span></li>
+    </ol>
+    {% if advanced %}
+    <details class="bm-kind-counts">
+      <summary>Erweiterte Zeilenanzahl anpassen</summary>
+      <p>Die Anpassung öffnet das Formular mit der gewählten Anzahl neu. Ungespeicherte Eingaben zuvor sichern.</p>
+      <form method="get" class="bm-task-form">
+        <div class="bm-task-field"><label for="kind-fields-count">Anzahl Feldzeilen</label>
+          <input id="kind-fields-count" type="number" name="felder" min="2" max="40" value="{{ fieldset.total_form_count }}"></div>
+        <div class="bm-task-field"><label for="kind-steps-count">Anzahl Prüfschrittzeilen</label>
+          <input id="kind-steps-count" type="number" name="schritte" min="2" max="12" value="{{ stepset.total_form_count }}"></div>
+        <button type="submit" class="bm-task-secondary">Zeilen neu laden</button>
+      </form>
+    </details>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

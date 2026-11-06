@@ -1,1 +1,34 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>Vorlagenarten und Prüfwege</h1><a href="/">Arbeitsplatz</a> · <a href="{% url 'kind_new' %}">Eigene Art hinzufügen</a></section>{% for kind in kinds %}<section class="card"><a href="{% url 'kind_edit' kind.pk %}">{{ kind.name }}</a> · {% if kind.four_eyes %}Vieraugenprinzip{% else %}Vieraugenprinzip aus{% endif %}</section>{% empty %}<section class="card">Standardarten werden bei der ersten Vorlage eingerichtet. Weitere Arten können Sie hier anlegen.</section>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Vorlagenarten und Prüfwege · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span>
+  <h1>Vorlagenarten und Prüfwege</h1>
+  <p>Jede Vorlagenart definiert ihren fachlichen Aufbau und die notwendigen Prüfschritte. Der Vieraugenstatus wird für jede Art ausdrücklich angezeigt.</p>
+  <a class="bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+  <a class="primary bm-kind-new" href="{% url 'kind_new' %}">Eigene Vorlagenart hinzufügen</a>
+</section>
+<section class="bm-task-section" aria-labelledby="kinds-title">
+  <div class="bm-task-section-title"><div><span class="eyebrow">Konfiguration</span><h2 id="kinds-title">Vorlagenarten im Überblick</h2></div></div>
+  <div class="bm-record-list">
+    {% for kind in kinds %}
+    <article class="card bm-record">
+      <div>
+        <span class="bm-task-status {% if kind.four_eyes %}bm-status-active{% else %}bm-status-attention{% endif %}">
+          {% if kind.four_eyes %}Vieraugenprinzip aktiv{% else %}Vieraugenprinzip aus{% endif %}
+        </span>
+        <h3><a href="{% url 'kind_edit' kind.pk %}">{{ kind.name }}</a></h3>
+        <p>Prüfweg und Aufbau bearbeiten</p>
+      </div>
+      <a class="bm-record-action" href="{% url 'kind_edit' kind.pk %}">Konfiguration öffnen →</a>
+    </article>
+    {% empty %}
+    <section class="card bm-task-empty"><h3>Noch keine zusätzlichen Vorlagenarten</h3>
+      <p>Standardarten werden bei der ersten Vorlage eingerichtet. Weitere Arten können Sie hier ergänzen.</p>
+    </section>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
