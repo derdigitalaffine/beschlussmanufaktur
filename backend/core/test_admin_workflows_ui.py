@@ -72,10 +72,10 @@ class AdminWorkflowMarkupTests(SimpleTestCase):
             get_role_display=lambda: "Sachbearbeitung",
         )
         grants = [
-            SimpleNamespace(pk=1, membership=membership, resource_kind="template",
+            SimpleNamespace(pk="00000000-0000-0000-0000-000000000001", membership=membership, resource_kind="template",
                             resource_id="t1", actions=["edit"], reason="Notwendig",
                             revoked_at=None),
-            SimpleNamespace(pk=2, membership=membership, resource_kind="template",
+            SimpleNamespace(pk="00000000-0000-0000-0000-000000000002", membership=membership, resource_kind="template",
                             resource_id="t2", actions=["view"], reason="Erledigt",
                             revoked_at="2026-11-06"),
         ]
@@ -134,7 +134,7 @@ class AdminWorkflowMarkupTests(SimpleTestCase):
     @patch("core.shell.active_context")
     def test_protected_replica_search_keeps_get_and_server_result_links(self, active, manage):
         active.return_value = self.context
-        obj = SimpleNamespace(pk=3, title="Vorlage A", number="001", version=2)
+        obj = SimpleNamespace(pk="00000000-0000-0000-0000-000000000003", title="Vorlage A", number="001", version=2)
         html = render_to_string("replica_documents.html", {
             "context": self.context, "query": "", "objects": [obj],
         }, request=self.request())
