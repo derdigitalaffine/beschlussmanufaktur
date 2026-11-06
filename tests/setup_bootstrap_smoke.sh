@@ -10,6 +10,7 @@ bash -n setup.sh scripts/setup.sh
 bash setup.sh --help > "$workspace/help.log"
 grep -q -- '--stack internal' "$workspace/help.log"
 grep -q -- '--stack external' "$workspace/help.log"
+grep -q -- '--initial-user-only' "$workspace/help.log"
 
 # Alle Fragen werden wie am Terminal beantwortet: leere Werte übernehmen Defaults.
 printf '\n\n\nn\nn\n\n' |
@@ -68,10 +69,27 @@ printf 'https://example.invalid/not-a-host\n' |
     fi; }
 [[ ! -f "$workspace/bad.env" ]] || { echo "Ungültige .env erstellt." >&2; exit 1; }
 
+# Die Ein-Konto-Nachholung muss für den externen Stack, ohne TTY oder
+# mit einem reinen Prüfmodus VOR dem Docker-Aufruf abbrechen.
+if bash setup.sh --stack external --initial-user-only --env-file "$workspace/external.env" > "$workspace/role.log" 2>&1; then
+  echo "Fehler: externer Host durfte Bootstrap-Konto anlegen." >&2; exit 1
+fi
+grep -q 'nur im internen Fachsystem' "$workspace/role.log"
+if bash setup.sh --stack internal --initial-user-only --check --env-file "$workspace/internal.env" > "$workspace/options.log" 2>&1; then
+  echo "Fehler: Bootstrap- und Prüflauf fälschlich gleichzeitig erlaubt." >&2; exit 1
+fi
+if bash setup.sh --stack internal --initial-user-only --env-file "$workspace/internal.env" > "$workspace/tty.log" 2>&1; then
+  echo "Fehler: Erstkontoanlage ohne interaktives Terminal zugelassen." >&2; exit 1
+fi
+grep -q 'interaktives Terminal' "$workspace/tty.log"
+[[ "$(sha256sum "$workspace/internal.env" | cut -d' ' -f1)" == "$after" ]] || {
+  echo "Fehler: Nachholmodus änderte private Konfiguration." >&2; exit 1;
+}
+
 # Auch nach manuellem, fehlerhaftem Exchange-Teilsetup keine stille Freigabe.
 printf "EXCHANGE_PROTECTED_KEY='unpaired-secret'\n" >> "$workspace/internal.env"
 if bash setup.sh --stack internal --env-file "$workspace/internal.env" --check > "$workspace/exchange.log" 2>&1; then
   echo "Fehler: unvollständige Exchange-Konfiguration akzeptiert." >&2; exit 1
 fi
 
-echo "Setup-Smoketests: interne/externe Schlüssel, Re-Run, Secrets, Berechtigungen und Negativfälle bestanden."
+echo "Setup-Smoketests: interne/externe Schlüssel, Re-Run, Secrets, Berechtigungen, First-Admin-Grenzen und Negativfälle bestanden."
