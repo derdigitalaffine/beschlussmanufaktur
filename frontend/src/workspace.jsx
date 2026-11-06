@@ -22,11 +22,12 @@ const clean = (node) => node?.textContent?.trim() || '';
 const target = (el) => el?.getAttribute('href') || '#';
 const displayLabel = (node) => clean(node).replace(/\s+/g, ' ').trim();
 
-function Ready({ children, fallback }) {
+function Ready({ children, fallback, hiddenCompanions = [] }) {
   useEffect(() => {
-    // Keep the fully functional server-rendered page until the island mounted.
-    if (fallback) fallback.hidden = true;
-    return () => { if (fallback) fallback.hidden = false; };
+    // Keep the authorized Django content until the entire enhanced view mounts.
+    const nodes = [fallback, ...hiddenCompanions].filter(Boolean);
+    for (const node of nodes) node.hidden = true;
+    return () => { for (const node of nodes) node.hidden = false; };
   }, [fallback]);
   return children;
 }
@@ -45,12 +46,12 @@ class IslandBoundary extends React.Component {
   }
 }
 
-function mount(element, fallback, child) {
+function mount(element, fallback, child, hiddenCompanions = []) {
   if (!element || !fallback) return;
   createRoot(element).render(
     <IslandBoundary fallback={fallback}>
       <MantineProvider withCSSVariables={false} defaultColorScheme="light">
-        <Ready fallback={fallback}>{child}</Ready>
+        <Ready fallback={fallback} hiddenCompanions={hiddenCompanions}>{child}</Ready>
       </MantineProvider>
     </IslandBoundary>
   );
@@ -88,6 +89,15 @@ function Dashboard({ fallback }) {
   const decision = document.querySelector('.today-work-panel:nth-child(2)');
   const meetingLink = meeting?.querySelector('h4 a, .today-work-action');
   const decisionCount = decision?.querySelector('.today-task-count');
+  const tasks = Array.from(decision?.querySelectorAll('.today-task-list li') || []).map((node) => {
+    const link = node.querySelector('a[href]');
+    return {
+      title: clean(link),
+      url: target(link),
+      detail: clean(node.querySelector('p')),
+      overdue: Boolean(node.querySelector('.today-overdue')),
+    };
+  }).filter((task) => task.title);
   const role = document.querySelector('#arbeitskontext .pill');
   const context = document.querySelector('#context-title');
 
@@ -149,6 +159,30 @@ function Dashboard({ fallback }) {
           </Stack>
         </Grid.Col>
       </Grid>
+      {tasks.length > 0 && (
+        <Paper className="bm-task-worklist" withBorder radius="xl" mt="lg" p={{ base: 'lg', sm: 'xl' }}>
+          <Group justify="space-between" align="center" gap="md" mb="md">
+            <Group gap="sm">
+              <ThemeIcon variant="light" size={36} color="orange" radius="md">{glyph(faClipboardCheck)}</ThemeIcon>
+              <Title order={3}>Meine nächsten Beschlussaufgaben</Title>
+            </Group>
+            <Anchor href={target(decision?.querySelector('a.today-work-action'))}>Alle Aufgaben ansehen</Anchor>
+          </Group>
+          <Stack gap={0}>
+            {tasks.map((task, index) => (
+              <Group key={task.url + '-' + index} className="bm-task-row" justify="space-between" align="center" wrap="nowrap" gap="sm">
+                <div>
+                  <Anchor href={task.url} className="bm-task-title">{task.title}</Anchor>
+                  <Text size="sm" className="bm-task-detail">{task.detail}</Text>
+                </div>
+                <Badge variant="light" color={task.overdue ? 'red' : 'gray'} radius="sm">
+                  {task.overdue ? 'Überfällig' : 'Offen'}
+                </Badge>
+              </Group>
+            ))}
+          </Stack>
+        </Paper>
+      )}
     </div>
   );
 }
@@ -337,7 +371,11 @@ function Invitation({ model }) {
 // Progressive enhancement: native HTML remains functional without JavaScript.
 const dashboardNode = document.getElementById('mantine-dashboard');
 const dashboardFallback = document.querySelector('.next-step');
-if (dashboardNode && dashboardFallback) mount(dashboardNode, dashboardFallback, <Dashboard fallback={dashboardFallback} />);
+if (dashboardNode && dashboardFallback) mount(
+  dashboardNode, dashboardFallback,
+  <Dashboard fallback={dashboardFallback} />,
+  [document.querySelector('.today-work')]
+);
 
 const membershipNode = document.getElementById('mantine-membership');
 const membershipFallback = document.getElementById('membership-fallback');
