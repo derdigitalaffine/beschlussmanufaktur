@@ -1,1 +1,47 @@
-{% extends 'base.html' %}{% block content %}<a href="/">← Arbeitsplatz</a><h1>Markierte Beispieldaten</h1><p>Eine separate Testkörperschaft, ein Rat, ein Raum und eine Legislaturperiode. Keine künstlichen Benutzer und keine Standardpasswörter.</p>{% if error %}<p role="alert" class="errorlist">{{ error }}</p>{% endif %}{% for b in bundles %}<section class="card"><h2>{{ b.organization.name }}</h2><p>Umfang: eine Körperschaft, {{ b.record_ids|length }} Stammdatensätze, Ihre ausdrückliche Verwaltungsrolle. Bei neuen Fachreferenzen ist das Löschen gesperrt.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="remove"><input type="hidden" name="bundle" value="{{ b.pk }}"><button>Markierte Beispieldaten vollständig löschen</button></form></section>{% empty %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="create"><button>Wenige markierte Beispieldaten anlegen</button></form>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Beispieldaten · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+<section class="page-heading">
+  <span class="eyebrow">Administration / Testdaten</span><h1>Markierte Beispieldaten</h1>
+  <p>Ein nachvollziehbares Datenpaket aus separater Testkörperschaft, Rat, Raum und Legislaturperiode. Keine künstlichen Benutzer und keine Standardpasswörter.</p>
+</section>
+{% if error %}<div role="alert" class="bm-task-error">{{ error }}</div>{% endif %}
+<section class="bm-task-section" aria-labelledby="sample-title">
+  <div class="bm-task-section-title">
+    <div><span class="eyebrow">Verwaltete Testpakete</span><h2 id="sample-title">Vorhandene Beispieldaten</h2></div>
+  </div>
+  {% for b in bundles %}
+  <article class="card bm-sample-card">
+    <div class="bm-sample-details">
+      <span class="bm-task-status bm-status-muted">Testdaten</span>
+      <h3>{{ b.organization.name }}</h3>
+      <p>Eine Testkörperschaft, {{ b.record_ids|length }} Stammdatensätze und Ihre ausdrückliche Verwaltungsrolle.</p>
+      <p class="bm-task-hint">Bei neuen Fachreferenzen ist das Löschen gesperrt.</p>
+    </div>
+    <form method="post" class="bm-access-revoke">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="remove">
+      <input type="hidden" name="bundle" value="{{ b.pk }}">
+      <button type="submit" class="bm-danger-button">Markierte Beispieldaten vollständig löschen</button>
+    </form>
+  </article>
+  {% empty %}
+  <div class="bm-task-grid">
+    <section class="card bm-task-main">
+      <h3>Keine Beispieldaten vorhanden</h3>
+      <p>Für Test- und Schulungszwecke kann eine separat markierte Datenstruktur angelegt werden. Sie enthält keine Benutzer oder Anmeldedaten.</p>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="create">
+        <button class="primary" type="submit">Markierte Beispieldaten anlegen</button>
+      </form>
+    </section>
+    <aside class="card bm-task-aside">
+      <span class="eyebrow">Abgrenzung</span><h3>Nur für Testzwecke</h3>
+      <p>Die markierte Testkörperschaft ist von realen Fachvorgängen getrennt. Löschvorgänge werden serverseitig auf Referenzen geprüft.</p>
+    </aside>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}
