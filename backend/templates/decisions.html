@@ -1,1 +1,104 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><h1>Beschlusskontrolle</h1><p>{{ context.organization }} · {{ context.get_role_display }}</p><form method="get"><label>Wortlaut suchen <input name="q" value="{{ query }}"></label><label>Status <select name="state"><option value="">Alle</option><option value="open">Offen</option><option value="in_progress">In Arbeit</option><option value="reported">Erledigung gemeldet</option><option value="closed">Abgeschlossen</option><option value="not_required">Keine Aufgabe</option></select></label><button>Filtern</button></form></section>{% for obj in objects %}<section class="card"><h2><a href="{% url 'decision' obj.pk %}">{{ obj.vote.item.title }}</a></h2><p>{{ obj.wording|truncatechars:250 }}</p><p>{{ obj.status }} · {{ obj.responsible.email|default:'keine Zuständigkeit' }} · {{ obj.due_on|default:'keine Frist' }}{% if obj.overdue %} · Überfällig{% endif %}</p></section>{% empty %}<section class="card">Keine für diesen Arbeitskontext freigegebenen Beschlüsse.</section>{% endfor %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Beschlüsse & Umsetzung · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-decisions.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage decision-worklist">
+  <header class="ui-header">
+    <a class="ui-back" href="{% url 'home' %}">← Heute / Meine Arbeit</a>
+    <div class="ui-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · {{ context.get_role_display }}</span>
+        <h1>Beschlüsse &amp; Umsetzung</h1>
+        <p class="ui-lead">Was wurde beschlossen, wer ist zuständig und welche Frist gilt? Die Übersicht zeigt ausschließlich Beschlüsse, die Sie in diesem Arbeitskontext einsehen dürfen.</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="ui-summary" aria-label="Beschlüsse in Ihrem Arbeitskontext">
+    <div class="ui-metric"><strong>{{ accessible_count }}</strong><span>Zugängliche Beschlüsse</span></div>
+    <div class="ui-metric"><strong>{{ active_count }}</strong><span>Mit offenem Umsetzungsstand</span></div>
+    <a class="ui-metric decision-metric-link{% if focus == 'overdue' %} is-selected{% endif %}" href="{% url 'decisions' %}?focus=overdue">
+      <strong>{{ overdue_count }}</strong><span>Überfällige Beschlüsse anzeigen</span>
+    </a>
+    <a class="ui-metric decision-metric-link{% if focus == 'mine' %} is-selected{% endif %}" href="{% url 'decisions' %}?focus=mine">
+      <strong>{{ mine_count }}</strong><span>Mir zugewiesen anzeigen</span>
+    </a>
+  </section>
+
+  <form method="get" action="{% url 'decisions' %}" role="search" aria-label="Beschlüsse suchen und filtern" class="ui-filter decision-filter">
+    <div class="ui-filter-field">
+      <label for="decision-search">Beschluss, Tagesordnungspunkt oder Sitzung</label>
+      <input type="search" id="decision-search" name="q" value="{{ query }}" maxlength="100" placeholder="Wortlaut oder Sitzungstitel">
+    </div>
+    <div class="ui-filter-field">
+      <label for="decision-state">Bearbeitungsstand</label>
+      <select name="state" id="decision-state">
+        <option value="">Alle Bearbeitungsstände</option>
+        {% for filter in state_filters %}
+        <option value="{{ filter.value }}" {% if state == filter.value %}selected{% endif %}>{{ filter.label }} ({{ filter.count }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="ui-filter-field">
+      <label for="decision-focus">Zuständigkeit und Frist</label>
+      <select name="focus" id="decision-focus">
+        <option value="">Alle zugänglichen Beschlüsse</option>
+        <option value="overdue" {% if focus == 'overdue' %}selected{% endif %}>Frist überschritten</option>
+        <option value="mine" {% if focus == 'mine' %}selected{% endif %}>Mir zugewiesen</option>
+      </select>
+    </div>
+    <div class="ui-filter-actions">
+      <button class="ui-button" type="submit">Ergebnisse anzeigen</button>
+      {% if query or state or focus %}<a class="ui-button ui-button--subtle" href="{% url 'decisions' %}">Filter zurücksetzen</a>{% endif %}
+    </div>
+  </form>
+
+  <section aria-labelledby="decisions-title">
+    <div class="ui-section-heading">
+      <h2 id="decisions-title">Beschlusskontrolle</h2>
+      <p aria-live="polite">{{ objects|length }} Beschlüsse angezeigt{% if query or state or focus %} · Filter aktiv{% endif %}</p>
+    </div>
+    {% if objects %}
+    <ul class="ui-list">
+      {% for obj in objects %}
+      <li class="ui-item{% if obj.overdue %} decision-overdue{% endif %}">
+        <div class="ui-item-main">
+          <span class="ui-kicker">{{ obj.vote.meeting.title }}</span>
+          <h3 class="ui-item-title"><a href="{% url 'decision' obj.pk %}">{{ obj.vote.item.title }}</a></h3>
+          <p class="ui-item-note">{{ obj.wording|truncatechars:220 }}</p>
+          <div class="ui-item-meta">
+            <span><strong>Zuständig:</strong>
+              {% if obj.responsible %}
+              {{ obj.responsible.get_full_name|default:obj.responsible.email }}
+              {% else %}Noch nicht zugewiesen{% endif %}
+            </span>
+            <span><strong>Frist:</strong> {% if obj.due_on %}<time datetime="{{ obj.due_on|date:'Y-m-d' }}">{{ obj.due_on|date:"d.m.Y" }}</time>{% else %}Noch keine Frist{% endif %}</span>
+            <span>Fassung {{ obj.version }}</span>
+          </div>
+        </div>
+        <div class="ui-item-aside">
+          {% if obj.overdue %}<span class="ui-tag" data-tone="danger">Frist überschritten</span>{% endif %}
+          <span class="ui-tag" data-tone="{{ obj.ui_tone }}">{{ obj.ui_status }}</span>
+          <a class="decision-open" href="{% url 'decision' obj.pk %}">Sachstand öffnen <span aria-hidden="true">↗</span></a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty">
+      <h3>Keine passenden Beschlüsse</h3>
+      {% if query or state or focus %}
+      <p>Für Ihre Filterauswahl gibt es keine freigegebenen Treffer. Prüfen Sie Bearbeitungsstand, Frist und Suchbegriff.</p>
+      <a class="ui-button" href="{% url 'decisions' %}">Alle zugänglichen Beschlüsse ansehen</a>
+      {% else %}
+      <p>Hier erscheinen nach einer Sitzung die für Sie lesbaren Beschlüsse. Zuständigkeiten, Fristen und Sachstände werden im jeweiligen Beschlussvorgang gepflegt.</p>
+      <a class="ui-button" href="{% url 'meetings' %}">Sitzungen ansehen</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  <p class="ui-small decision-footnote">Ein gemeldeter Abschluss ist noch keine abschließend geprüfte Erledigung. Die fachliche Bestätigung erfolgt im einzelnen Beschlussvorgang.</p>
+</div>
+{% endblock %}
