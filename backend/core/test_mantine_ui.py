@@ -99,7 +99,8 @@ class MantineTemplateContracts(SimpleTestCase):
         self.assertIn("Zugriff entziehen", html)
 
     @override_settings(SERVER_ROLE="public")
-    def test_public_visitor_never_loads_authenticated_ui_assets(self):
+    @patch("core.portal_configuration.for_request", return_value=None)
+    def test_public_visitor_never_loads_authenticated_ui_assets(self, portal):
         req = self.factory.get("/")
         req.resolver_match = resolve("/")
         req.user = AnonymousUser()
