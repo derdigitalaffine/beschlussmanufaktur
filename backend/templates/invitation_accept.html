@@ -1,4 +1,61 @@
 {% extends "base.html" %}
-{% block content %}<section class="page-heading"><span class="eyebrow">Ihre Einladung</span><h1>{{ invitation.organization.name }}</h1><p>{{ invitation.email }} · {{ invitation.get_role_display }}<br>Gültig ab {{ invitation.starts_at|date:"d.m.Y H:i" }}{% if invitation.ends_at %} bis {{ invitation.ends_at|date:"d.m.Y H:i" }}{% endif %}</p></section><section class="card form-card">{% if error %}<div class="errorlist" role="alert">{{ error }}</div>{% endif %}
-{% if wrong_account %}<h2>Anderes Konto angemeldet</h2><p>Die Einladung gehört zur oben genannten E-Mail-Adresse. Melden Sie sich ab und öffnen Sie Ihren Einladungslink erneut.</p>{% elif needs_login %}<h2>Bestehendes Konto verwenden</h2><p>Melden Sie sich mit dem eingeladenen Konto an. Danach können Sie die zusätzliche Rolle annehmen.</p><a class="primary button-link" href="{% url 'sign_in' %}">Zur Anmeldung</a>{% else %}<h2>{% if form %}Ihr Konto einrichten{% else %}Rolle annehmen{% endif %}</h2><form method="post">{% csrf_token %}{% if form %}{{ form.non_field_errors }}{% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}{% endif %}<button class="primary" type="submit">Einladung annehmen</button></form><p class="help">{% if form %}Anschließend melden Sie sich mit Passwort und E-Mail-Code an.{% else %}Ihr Passwort und Ihre anderen Organisationsrollen werden nicht verändert.{% endif %}</p>{% endif %}</section>{% endblock %}
-
+{% load static %}
+{% block title %}Einladung annehmen · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-onboarding.css' %}">{% endblock %}
+{% block content %}
+<section class="page-heading bm-invitation-hero">
+  <span class="eyebrow">Ihre persönliche Einladung</span>
+  <h1>{{ invitation.organization.name }}</h1>
+  <p>Für {{ invitation.email }} · {{ invitation.get_role_display }}</p>
+  <div class="bm-invitation-validity">
+    <span><strong>Beginn:</strong> {{ invitation.starts_at|date:"d.m.Y H:i" }}</span>
+    {% if invitation.ends_at %}<span><strong>Ende:</strong> {{ invitation.ends_at|date:"d.m.Y H:i" }}</span>{% endif %}
+  </div>
+</section>
+<div class="bm-guest-grid">
+  <section class="card form-card bm-guest-main" aria-labelledby="invitation-accept-heading">
+    {% if error %}<div class="bm-auth-error" role="alert">{{ error }}</div>{% endif %}
+    {% if wrong_account %}
+      <span class="bm-auth-caption bm-auth-caption-attention">Konto prüfen</span>
+      <h2 id="invitation-accept-heading">Anderes Konto angemeldet</h2>
+      <p>Diese Einladung gilt für die oben genannte E-Mail-Adresse. Melden Sie sich ab und öffnen Sie den Einladungslink erneut.</p>
+    {% elif needs_login %}
+      <span class="bm-auth-caption">Bereits registriertes Konto</span>
+      <h2 id="invitation-accept-heading">Bestehendes Konto verwenden</h2>
+      <p>Melden Sie sich mit dem eingeladenen Konto an. Anschließend können Sie die zusätzliche Rolle annehmen.</p>
+      <a class="primary button-link" href="{% url 'sign_in' %}">Zur Anmeldung</a>
+    {% else %}
+      <span class="bm-auth-caption">Rolle und Konto</span>
+      <h2 id="invitation-accept-heading">{% if form %}Ihr Konto einrichten{% else %}Rolle annehmen{% endif %}</h2>
+      <p>Bitte prüfen Sie Organisation, Rolle und Gültigkeit, bevor Sie diese Einladung annehmen.</p>
+      <form method="post" class="bm-auth-form">
+        {% csrf_token %}
+        {% if form %}
+          {% if form.non_field_errors %}<div class="bm-auth-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+          {% for field in form %}
+          {% if field.is_hidden %}{{ field }}{% else %}
+          <div class="field bm-auth-field{% if field.errors %} bm-auth-field-error{% endif %}">
+            {{ field.label_tag }}{{ field }}
+            {% if field.help_text %}<p class="bm-auth-help">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<div role="alert" class="bm-auth-error">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endif %}
+          {% endfor %}
+        {% endif %}
+        <button class="primary" type="submit">Einladung annehmen</button>
+      </form>
+      <p class="bm-auth-help">{% if form %}Anschließend melden Sie sich mit Passwort und E-Mail-Code an.{% else %}Ihr Passwort und Ihre anderen Organisationsrollen bleiben unverändert.{% endif %}</p>
+    {% endif %}
+  </section>
+  <aside class="card bm-guest-aside" aria-labelledby="invitation-context-heading">
+    <span class="eyebrow">Ihre neue Rolle</span>
+    <h2 id="invitation-context-heading">Was diese Einladung bedeutet</h2>
+    <ol class="bm-guest-steps">
+      <li><strong>Organisation</strong><span>Die Rolle gilt ausschließlich für die angegebene Körperschaft.</span></li>
+      <li><strong>Gültigkeit</strong><span>Der Zugang beginnt und endet gemäß den genannten Zeiten.</span></li>
+      <li><strong>Arbeitskontext</strong><span>Nach der Anmeldung wählen Sie Ihre Rolle ausdrücklich aus.</span></li>
+    </ol>
+    <p class="bm-auth-help">Rollen und Berechtigungen werden vom Server geprüft, nicht durch diese Darstellung festgelegt.</p>
+  </aside>
+</div>
+{% endblock %}
