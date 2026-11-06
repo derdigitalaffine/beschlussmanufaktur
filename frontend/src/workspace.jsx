@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowLeft, faArrowRight, faCalendarDays, faCheck, faChevronRight,
   faCircleExclamation, faCircleInfo, faClipboardCheck, faClock,
-  faFileLines, faGavel, faLock, faShieldHalved, faSparkles, faUserPlus,
+  faFileLines, faGavel, faLock, faShieldHalved, faStar, faUserPlus,
   faUsers,
 } from '@fortawesome/free-solid-svg-icons';
 import '@mantine/core/styles.layer.css';
@@ -93,7 +93,7 @@ function Dashboard({ fallback }) {
 
   return (
     <div className="bm-mantine-dashboard" data-testid="bm-mantine-dashboard">
-      <div className="bm-section-label">{glyph(faSparkles)} <span>Ihr digitaler Arbeitsplatz</span></div>
+      <div className="bm-section-label">{glyph(faStar)} <span>Ihr digitaler Arbeitsplatz</span></div>
       <Group justify="space-between" align="flex-end" mb="md">
         <div>
           <Title order={2} className="bm-spotlight-heading">Was steht als Nächstes an?</Title>
