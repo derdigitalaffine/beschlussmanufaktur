@@ -7,6 +7,18 @@
   --bm-muted:#586d73;
   color:var(--bm-navy);
 }
+/* Font Awesome's automatic stylesheet is disabled to honor CSP. Explicitly
+   size self-hosted SVGs so the browser never uses its 300px SVG default. */
+.bm-mantine-dashboard .svg-inline--fa,
+.bm-mantine-membership .svg-inline--fa,
+.bm-mantine-invitation .svg-inline--fa{
+  display:inline-block;width:1em;height:1em;vertical-align:-.125em;flex:none;
+}
+.bm-mantine-dashboard .mantine-Button-root,
+.bm-mantine-membership .mantine-Button-root,
+.bm-mantine-invitation .mantine-Button-root{text-decoration:none}
+.bm-mantine-dashboard a.mantine-Button-root,
+.bm-mantine-dashboard a.mantine-Button-root:hover{color:#fff!important}
 .bm-mantine-dashboard .mantine-Paper-root,
 .bm-mantine-membership .mantine-Paper-root,
 .bm-mantine-invitation .mantine-Paper-root{
