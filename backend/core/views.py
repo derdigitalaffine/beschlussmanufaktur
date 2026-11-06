@@ -96,12 +96,15 @@ def sign_out(request):
 
 @login_required
 def dashboard(request):
+    from .home_tasks import today_tasks
+
     contexts = available_contexts(request.user)
     context = active_context(request)
     return render(request, "dashboard.html", {
         "contexts": contexts, "context": context,
         "internal": settings.SERVER_ROLE == "internal",
         "can_manage": settings.SERVER_ROLE == "internal" and may_manage_organization(context),
+        **today_tasks(context, request.user),
     })
 
 
