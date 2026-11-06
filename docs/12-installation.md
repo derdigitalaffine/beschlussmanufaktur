@@ -2,6 +2,47 @@
 
 Voraussetzungen: Linux, Docker Engine mit Compose v2, DNS/Hostauflösung für die gewählten Domains, administrativer Hostzugriff und funktionierender SMTP-Versand. Die folgenden Schritte betreffen den Entwicklungsstand, nicht eine bereits abgenommene Produktivinstallation.
 
+## Geführte Erstinstallation (Bash-Setup)
+
+Das Repository bietet für den **Entwicklungsstand** einen interaktiven, wiederholbar prüfbaren Einstieg. Beide Compose-Zonen werden auf **getrennten Linux-Hosts** eingerichtet; der interne Host darf nicht versehentlich das öffentliche Frontend beherbergen. Docker Engine, Docker Compose v2 und Python 3 müssen auf dem Linux-Host bereits installiert sein. Das Skript installiert keine Systempakete, verändert keine Firewall und löscht keine Volumes.
+
+```bash
+# Auf dem internen Host, aus dem Wurzelverzeichnis des Repositorys:
+bash setup.sh --stack internal
+
+# Auf einem eigenen externen Host mit eigenem Checkout:
+bash setup.sh --stack external
+
+# Vorbereiten/Prüfen ohne Containerstart (gut für erste Konfigurationsprüfung):
+bash setup.sh --stack internal --config-only
+bash setup.sh --stack internal --check
+# Bei Bedarf: --env-file /absoluter/pfad/zur/privaten/datei.env
+```
+
+Der Assistent fragt die für den jeweiligen Host nötigen Domains, den SMTP-Transport und optional IMAP, Datenaustausch sowie ein separates verschlüsseltes Backupziel ab. Er erzeugt mit Python kryptografisch zufällige, verschiedene Django-, Datenbank-, TLS-Agent- und Fernet-Schlüssel und legt die lokale `.env` ausschließlich für den Eigentümer lesbar an (`0600`). **Ein bereits vorhandenes `.env` wird nicht überschrieben**. Die Zugehörigkeit zur Betriebszone und wesentliche Eingaben werden vor dem Start überprüft. `--check` gibt **keine** Geheimnisse aus. Bewahren Sie `.env` und Backup-Schlüssel getrennt, verschlüsselt und zugriffsbeschränkt auf; nie in Git, Screenshots oder Supporttickets posten. Der Assistent deaktiviert bei fehlender SMTP-Konfiguration den realen Deploy, weil ansonsten Anmeldecodes nicht sicher versendet werden können.
+
+Nach Bestätigung baut der Assistent die vorhandenen Compose-Images, startet die getrennten Datenbanken, führt die Django-Migrationen aus und erstellt **ausschließlich intern** den ersten Verwaltungsbenutzer mit dem existierenden interaktiven `manage.py bootstrap`. Das persönliche Passwort wird dabei nicht durch das Setup übernommen. Der externe Host erhält **kein** eigenes Bootstrap-Konto. Anschließend werden Web-, Hintergrund- und Caddy-Dienste gestartet und die internen Readiness-Endpunkte geprüft. Vorhandene laufende Fachanwendungen werden nicht als vermeintlich frische Installation neu aufgesetzt. Für bestehende Installationen gilt das gesonderte Update-/Backup-Verfahren.
+
+**Datenaustausch:** Es genügt nicht, auf beiden Hosts unabhängig zufällige Werte zu erzeugen. `EXCHANGE_SOURCE` (UUID), `EXCHANGE_PROTECTED_KEY` und `EXCHANGE_PUBLIC_KEY` müssen zwischen dem internen und dem externen Host übereinstimmen. Konfigurieren Sie zunächst die interne Seite; übertragen Sie UUID und Schlüssel ausschließlich über einen gesicherten Administrationskanal und geben Sie sie beim externen Setup verdeckt ein. Der interne Host benötigt die zwei HTTPS-Portal-Origins; bei lokaler Caddy-CA muss das **öffentliche** Root-PEM sicher auf den internen Host übertragen und für die Transfer-TLS-Prüfung im Dateienvolume bereitgestellt werden. `EXCHANGE_CA_FILE` muss auf den Containerpfad zeigen. **Keine** TLS-Prüfung deaktivieren, kein privates CA-Schlüsselmaterial übermitteln. Vor den ersten echten Transfers müssen Körperschaft, Rollen, Bereitstellungsfreigaben und die erforderliche Rückrichtung im Fachsystem kontrolliert werden. Ohne aktivierten Datenaustausch funktionieren die externen Portale nicht als vollständiges Gremiensystem.
+
+**TLS/DNS:** Die ausgelieferten Caddyfiles verwenden zunächst `tls internal` und stellen die Verbindung über eine lokal betriebene CA aus, **nicht** automatisch über Let's Encrypt. Der Wizard prüft Hostsyntax und gibt (sofern verfügbar) einen DNS-Auflösungs-Hinweis, aber keine verbindliche öffentliche DNS-, Zertifikats- oder Portfreigabe. Das öffentliche CA-Root-Zertifikat kann ein Administrator nach dem Start aus dem Caddy-Volume exportieren; das Skript zeigt dazu einen passenden Befehl. Dieses **öffentliche** Zertifikat muss auf allen zugelassenen Browser-/Mobilgeräten als vertrauenswürdig installiert werden. Private CA-Schlüssel niemals exportieren. Externe Domains benötigen vor realer Nutzung separat geprüfte DNS-/Firewall-Regeln und einen abgesicherten TLS-Modus; ein erfolgreicher Container-Start beweist keine externe HTTPS-Erreichbarkeit.
+
+**Backup:** Optional wird ein absoluter Backup-Zielpfad außerhalb des Repositorys und ein **separater**, privat gespeicherter 256-Bit-Schlüssel vorbereitet. Wenn das Host-Python-Modul `cryptography` vorhanden ist und `.env` den normalen Repo-Pfad nutzt, kann ein Erstbackup mit dem **vorhandenen** `ops/backup.py` ausgelöst werden. Es verwendet den bestehenden authentisierten AES-256-GCM-Betriebsmechanismus; Ziel und Schlüssel sollen sich auf getrennten, gesichert betriebenen Medien befinden. Ein übersprungenes Backup ist **kein** positives Backup- oder Restore-Ergebnis. Die Produktionsvorgaben aus [Betrieb](07-betrieb.md) (Zeitplan, 14/8/12 Aufbewahrung, Benachrichtigungen, getrennter Aufbewahrungsort, vollständiger isolierter Restore mit Event-/Replay-Zuständen) sind damit **nicht** automatisch erfüllt. Backup und Restore nur nach dokumentiertem Betriebsverfahren; nie `docker compose down -v` zur Fehlerbehebung benutzen.
+
+**Abnahmegrenze:** Das Skript ist ein Hilfsmittel für einen konservativen First Install, **keine** unbeaufsichtigte Update-, Restore-, Firewall-, ACME-, Secret-Rotation- oder Produktivfreigabeautomatik. Nach der Installation sind SMTP-Testzustellung, Browser-Login einschließlich E-Mail-Code, realer HTTPS-Zugriff und Clientvertrauen, Rollen-/Datentrennung, Einladungen, Datenaustausch, regelmäßige Sicherung und isolierter Restore sowie die fachlichen und barrierefreien Bedienwege einzeln nachzuweisen. Bei Abbruch bleiben bestehende Volumes erhalten; Ursache beseitigen und den Lauf kontrolliert fortsetzen. Einzelne Fehlversuche werden nicht durch das Löschen von Datenbanken korrigiert.
+
+### Fehlerdiagnose und erneuter Aufruf
+
+```bash
+bash setup.sh --stack internal --check
+docker compose --env-file .env -f compose.yaml ps
+docker compose --env-file .env -f compose.yaml logs --tail=100 backend
+# extern:
+docker compose --env-file .env -f compose.external.yaml ps
+```
+
+Fehlgeschlagene Anmeldungen nicht durch Loggen von SMTP-Passwörtern, Einmalcodes oder `.env` untersuchen. Für einen kontrollierten Rückweg vor Änderungen eine bestätigte und isoliert wiederhergestellte Sicherung anfertigen; ein Downgrade eines Containerimages allein setzt migrierte Daten nicht zurück.
+
 ## Intern / Einzelserver
 
 1. Repository klonen und `.env.example` nach `.env` kopieren.
