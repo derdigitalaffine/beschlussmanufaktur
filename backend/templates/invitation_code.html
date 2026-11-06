@@ -1,3 +1,43 @@
-{% extends "base.html" %}{% load static %}
-{% block content %}<section class="page-heading"><span class="eyebrow">Persönliche Einladung</span><h1>Willkommen in der Beschlussmanufaktur.</h1><p>Öffnen Sie den Link aus Ihrer Einladung oder tragen Sie den Einladungscode ein.</p></section><section class="card form-card"><form id="invitation-code-form" method="post">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}<button class="primary" type="submit">Einladung öffnen</button></form><p class="help">Der Code wird vertraulich geprüft. Es gibt keine freie Selbstregistrierung.</p></section><script src="{% static 'invitation.js' %}" defer></script>{% endblock %}
-
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Einladung öffnen · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-onboarding.css' %}">{% endblock %}
+{% block content %}
+<section class="page-heading bm-invitation-hero">
+  <span class="eyebrow">Persönliche Einladung / Zugang</span>
+  <h1>Willkommen in der Beschlussmanufaktur.</h1>
+  <p>Öffnen Sie den Link aus Ihrer Einladung oder tragen Sie den persönlichen Einladungscode ein. Der Zugang ist an die eingeladenen Kontodaten gebunden.</p>
+</section>
+<div class="bm-guest-grid">
+  <section class="card form-card bm-guest-main" aria-labelledby="invite-code-heading">
+    <span class="bm-auth-caption">Einladung prüfen</span>
+    <h2 id="invite-code-heading">Ihren Einladungscode eingeben</h2>
+    <p>Der Code wird geprüft, bevor die zugehörige Organisation und Rolle angezeigt werden.</p>
+    <form id="invitation-code-form" method="post" class="bm-auth-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div role="alert" class="bm-auth-error">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+      {% if field.is_hidden %}{{ field }}{% else %}
+      <div class="field bm-auth-field{% if field.errors %} bm-auth-field-error{% endif %}">
+        {{ field.label_tag }}{{ field }}
+        {% if field.help_text %}<p class="bm-auth-help">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<div class="bm-auth-error" role="alert">{{ field.errors }}</div>{% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+      <button class="primary" type="submit">Einladung öffnen</button>
+    </form>
+  </section>
+  <aside class="card bm-guest-aside" aria-labelledby="invitation-safety-heading">
+    <span class="eyebrow">Zugangsprüfung</span>
+    <h2 id="invitation-safety-heading">Nur auf persönliche Einladung</h2>
+    <ol class="bm-guest-steps">
+      <li><strong>Einladung erhalten</strong><span>Code oder persönlicher Link der Verwaltung.</span></li>
+      <li><strong>Rolle prüfen</strong><span>Körperschaft und Gültigkeit ausdrücklich kontrollieren.</span></li>
+      <li><strong>Konto verwenden</strong><span>Bereits bestehende Konten werden nicht ersetzt.</span></li>
+    </ol>
+    <p class="bm-auth-help">Es gibt keine freie Selbstregistrierung und keine öffentlich auswählbaren Administratorrechte.</p>
+  </aside>
+</div>
+<script src="{% static 'invitation.js' %}" defer></script>
+{% endblock %}
