@@ -86,6 +86,48 @@ grep -q 'interaktives Terminal' "$workspace/tty.log"
   echo "Fehler: Nachholmodus änderte private Konfiguration." >&2; exit 1;
 }
 
+# End-to-end Operator-CLI-Vertrag auf Pseudo-TTY mit gefälschtem Docker:
+# Nur die bestehende Django-Bootstrap-Funktion aufrufen, niemals Migration,
+# Build oder Neustart. Der Test startet ausdrücklich keine echten Container.
+if command -v script >/dev/null 2>&1; then
+  mkdir -p "$workspace/mockbin"
+  cat > "$workspace/mockbin/docker" <<'MOCK'
+#!/usr/bin/env bash
+set -euo pipefail
+args="$*"
+printf '%s\n' "$args" >> "$BM_MOCK_DOCKER_LOG"
+if [[ "$args" == "compose version" || "$args" == "info" ]]; then exit 0; fi
+if [[ "$args" == *" config --quiet" ]]; then exit 0; fi
+if [[ "$args" == *" ps --status running --services" ]]; then printf 'db\n'; exit 0; fi
+if [[ "$args" == *" python manage.py shell -c "* ]]; then
+  printf 'BM_INITIAL_USER_EXISTS=%s\n' "${BM_MOCK_EXISTS:-no}"
+  exit 0
+fi
+if [[ "$args" == *" python manage.py bootstrap" ]]; then
+  printf 'Django-Bootstrap wurde über den Operator-Einstieg aufgerufen.\n'
+  exit 0
+fi
+printf 'Unzulässige Docker-Aktion im Bootstrap-Only-Modus.\n' >&2
+exit 61
+MOCK
+  chmod 700 "$workspace/mockbin/docker"
+  export BM_MOCK_DOCKER_LOG="$workspace/mock-docker.log"
+  export PATH="$workspace/mockbin:$PATH"
+  script -qec "bash setup.sh --stack internal --initial-user-only --env-file '$workspace/internal.env'" /dev/null > "$workspace/mock-bootstrap.log" 2>&1
+  [[ "$(grep -c 'python manage.py bootstrap' "$BM_MOCK_DOCKER_LOG")" == 1 ]] || {
+    echo "Fehler: Django-Erstkonto-Kommando nicht genau einmal aufgerufen." >&2; exit 1;
+  }
+  if grep -Eq '( migrate | build | up | down )' "$BM_MOCK_DOCKER_LOG"; then
+    echo "Fehler: Nachholmodus darf Build, Migration oder Dienststart nicht ausführen." >&2; exit 1
+  fi
+  : > "$BM_MOCK_DOCKER_LOG"
+  BM_MOCK_EXISTS=yes script -qec "bash setup.sh --stack internal --initial-user-only --env-file '$workspace/internal.env'" /dev/null > "$workspace/mock-existing.log" 2>&1
+  if grep -q 'python manage.py bootstrap' "$BM_MOCK_DOCKER_LOG"; then
+    echo "Fehler: initiales Konto trotz bestehender Benutzer erneut angelegt." >&2; exit 1
+  fi
+  unset BM_MOCK_DOCKER_LOG BM_MOCK_EXISTS
+fi
+
 # Auch nach manuellem, fehlerhaftem Exchange-Teilsetup keine stille Freigabe.
 printf "EXCHANGE_PROTECTED_KEY='unpaired-secret'\n" >> "$workspace/internal.env"
 if bash setup.sh --stack internal --env-file "$workspace/internal.env" --check > "$workspace/exchange.log" 2>&1; then
