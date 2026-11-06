@@ -38,7 +38,8 @@ def workspace(request,meeting_id):
     can_publish=bool(editable and settings.SERVER_ROLE=='internal' and meeting_access(context,'invite',obj))
     return render(request,'minutes.html',{
         'context':context,'obj':obj,'minutes':minutes,'editable':editable,
-        'can_publish':can_publish,'error':error,'shown':shown,
+        'can_publish':can_publish,'can_export':meeting_access(context,'export',obj),
+        'error':error,'shown':shown,
         'preview':mark_safe(render_markdown(shown.get('markdown',''))),
         'versions':versions,'chosen':chosen,
         'corrections':Meeting.objects.filter(committee=obj.committee,starts_at__gt=obj.starts_at),
