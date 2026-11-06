@@ -37,15 +37,37 @@ class TemplateForm(forms.Form):
     def field_values(self):
         return {spec['key']:self.cleaned_data['extra_'+spec['key']] if isinstance(self.cleaned_data['extra_'+spec['key']],(bool,int,float,type(None))) else str(self.cleaned_data['extra_'+spec['key']]) for spec in self.kind.fields}
 
+# Anzeigestatus sind bewusst nicht die Fachzustandsmaschine: diese bleibt in workflow.py.
+TEMPLATE_LIST_STATES = {
+    'draft': ('Entwurf', 'neutral'),
+    'review': ('In Prüfung', 'info'),
+    'returned': ('Zurückgegeben', 'attention'),
+    'ready': ('Bereitgestellt', 'success'),
+}
+
+
 @login_required
 @require_http_methods(['GET'])
 def index(request):
     context=active_context(request)
     if not context:raise PermissionDenied
-    query=request.GET.get('q','')[:100]
+    query=request.GET.get('q','')[:100].strip()
+    requested_state=request.GET.get('state','')[:30]
+    state=requested_state if requested_state in TEMPLATE_LIST_STATES else ''
     candidates=Template.objects.select_related('kind','organization','author','unit').filter(subject__icontains=query)[:500]
-    objects=[obj for obj in candidates if template_access(context,'read',obj)]
-    return render(request,'templates_list.html',{'context':context,'objects':objects,'query':query,'can_create':context.role in ('author','clerk'),'notifications':Notification.objects.filter(user=request.user,read_at__isnull=True).order_by('-created_at')[:20]})
+    accessible=[obj for obj in candidates if template_access(context,'read',obj)]
+    counts={key:0 for key in TEMPLATE_LIST_STATES}
+    for obj in accessible:
+        if obj.state in counts:counts[obj.state]+=1
+        obj.ui_status,obj.ui_tone=TEMPLATE_LIST_STATES.get(obj.state,('Anderer Bearbeitungsstand','neutral'))
+    objects=[obj for obj in accessible if not state or obj.state==state]
+    state_filters=[{'value':key,'label':label,'count':counts[key]} for key,(label,_) in TEMPLATE_LIST_STATES.items()]
+    return render(request,'templates_list.html',{
+        'context':context,'objects':objects,'query':query,'state':state,
+        'state_filters':state_filters,'accessible_count':len(accessible),
+        'can_create':context.role in ('author','clerk'),
+        'notifications':Notification.objects.filter(user=request.user,read_at__isnull=True).order_by('-created_at')[:20],
+    })
 
 @login_required
 @require_http_methods(['GET','POST'])

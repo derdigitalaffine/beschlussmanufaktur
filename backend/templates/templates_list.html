@@ -1,1 +1,106 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>Vorlagen</h1><p>Es erscheinen ausschließlich Vorlagen Ihres aktiven Arbeitskontexts.</p><a href="/">Arbeitsplatz</a></section>{% if can_create %}<a class="primary button-link" href="{% url 'template_new' %}">Vorlage erstellen</a>{% endif %}<form method="get"><label>Betreff durchsuchen <input name="q" value="{{ query }}"></label><button>Suchen</button></form>{% for obj in objects %}<article class="card"><span class="eyebrow">{{ obj.organization }} · {{ obj.kind }}</span><h2><a href="{% url 'template_detail' obj.pk %}">{{ obj.subject }}</a></h2><p>{{ obj.number|default:'Entwurf ohne endgültige Nummer' }} · Version {{ obj.version }} · {{ obj.state }} · {{ obj.get_classification_display }}</p></article>{% empty %}<section class="card"><h2>Noch keine zugänglichen Vorlagen</h2><p>Erstellen Sie eine Vorlage oder lassen Sie eine Beteiligung zuweisen.</p></section>{% endfor %}<section class="card"><h2>Hinweise</h2>{% for n in notifications %}<p><a href="{{ n.path }}">{{ n.text }}</a> · {{ n.created_at }}</p>{% empty %}<p>Keine neuen Hinweise.</p>{% endfor %}</section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Vorlagen & Vorgänge · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-templates.css' %}">{% endblock %}
+{% block content %}
+<div class="workpage template-worklist">
+  <header class="ui-header">
+    <a class="ui-back" href="{% url 'home' %}">← Heute / Meine Arbeit</a>
+    <div class="ui-hero">
+      <div>
+        <span class="ui-kicker">{{ context.organization.name }} · {{ context.get_role_display }}</span>
+        <h1>Vorlagen &amp; Vorgänge</h1>
+        <p class="ui-lead">Von der ersten Fassung über die Mitzeichnung bis zur Bereitstellung. Es erscheinen ausschließlich Vorgänge, die Sie in diesem Arbeitskontext lesen dürfen.</p>
+      </div>
+      <div class="ui-hero-actions">
+        {% if can_create %}
+        <a href="{% url 'template_new' %}" class="ui-button ui-button--primary">Neue Vorlage erstellen</a>
+        {% elif context.role == 'reviewer' %}
+        <a href="{% url 'templates' %}?state=review" class="ui-button ui-button--primary">Vorlagen in Prüfung</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <section class="ui-summary" aria-label="Bearbeitungsstände in der aktuellen Suche">
+    <div class="ui-metric"><strong>{{ accessible_count }}</strong><span>Zugängliche Vorlagen{% if query %} zur Suche{% endif %} (max. 500)</span></div>
+    {% for filter in state_filters %}
+    <div class="ui-metric"><strong>{{ filter.count }}</strong><span>{{ filter.label }}</span></div>
+    {% endfor %}
+  </section>
+
+  <form method="get" action="{% url 'templates' %}" class="ui-filter" role="search" aria-label="Vorlagen durchsuchen und filtern">
+    <div class="ui-filter-field">
+      <label for="template-search">Betreff suchen</label>
+      <input id="template-search" type="search" name="q" value="{{ query }}" maxlength="100" placeholder="Stichwort aus dem Betreff">
+    </div>
+    <div class="ui-filter-field">
+      <label for="template-state">Bearbeitungsstand</label>
+      <select id="template-state" name="state">
+        <option value="">Alle Bearbeitungsstände</option>
+        {% for filter in state_filters %}
+        <option value="{{ filter.value }}" {% if state == filter.value %}selected{% endif %}>{{ filter.label }} ({{ filter.count }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="ui-filter-actions">
+      <button class="ui-button" type="submit">Ergebnisse anzeigen</button>
+      {% if query or state %}<a class="ui-button ui-button--subtle" href="{% url 'templates' %}">Filter zurücksetzen</a>{% endif %}
+    </div>
+  </form>
+
+  <section aria-labelledby="template-results">
+    <div class="ui-section-heading">
+      <h2 id="template-results">Vorlagenübersicht</h2>
+      <p aria-live="polite">{{ objects|length }} Vorlagen angezeigt{% if state %} · Statusfilter aktiv{% endif %}</p>
+    </div>
+    {% if objects %}
+    <ul class="ui-list">
+      {% for obj in objects %}
+      <li class="ui-item">
+        <div class="ui-item-main">
+          <span class="ui-kicker">{{ obj.kind.name }}{% if obj.number %} · {{ obj.number }}{% else %} · Noch ohne endgültige Nummer{% endif %}</span>
+          <h3 class="ui-item-title"><a href="{% url 'template_detail' obj.pk %}">{{ obj.subject }}</a></h3>
+          <div class="ui-item-meta">
+            <span>Fassung {{ obj.version }}</span>
+            <span>{{ obj.get_classification_display }}</span>
+            {% if obj.unit %}<span>Fachbereich: {{ obj.unit }}</span>{% endif %}
+            <span>Geändert: {{ obj.updated_at|date:"d.m.Y" }}</span>
+          </div>
+        </div>
+        <div class="ui-item-aside">
+          <span class="ui-tag" data-tone="{{ obj.ui_tone }}">{{ obj.ui_status }}</span>
+          <a class="template-open" href="{% url 'template_detail' obj.pk %}">Vorgang öffnen<span aria-hidden="true"> ↗</span></a>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="ui-empty">
+      <h3>Keine passenden Vorlagen</h3>
+      {% if query or state %}
+      <p>Im gewählten Arbeitskontext gibt es für diese Suche und den Bearbeitungsstand keine zugänglichen Treffer.</p>
+      <a class="ui-button" href="{% url 'templates' %}">Alle zugänglichen Vorlagen ansehen</a>
+      {% else %}
+      <p>Hier erscheinen erstellte, zur Prüfung zugewiesene und bereitgestellte Vorlagen. Bei fehlendem Zugriff wenden Sie sich an den zuständigen Fachbereich.</p>
+      {% if can_create %}<a class="ui-button ui-button--primary" href="{% url 'template_new' %}">Erste Vorlage erstellen</a>{% endif %}
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  <aside class="template-notifications" aria-labelledby="template-notices">
+    <div class="ui-section-heading">
+      <h2 id="template-notices">Aktuelle Hinweise</h2>
+      <p>Benachrichtigungen zu Ihren Vorgängen</p>
+    </div>
+    <div class="ui-panel ui-panel--padded">
+      {% for n in notifications %}
+      <p class="template-notification"><a href="{{ n.path }}">{{ n.text }}</a><span class="ui-small">{{ n.created_at|date:"d.m.Y H:i" }}</span></p>
+      {% empty %}
+      <p class="ui-small">Keine ungelesenen Hinweise für dieses Konto.</p>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
