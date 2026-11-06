@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied,ValidationError
 from django.http import HttpResponse,Http404
@@ -31,7 +32,18 @@ def workspace(request,meeting_id):
     versions=minutes.versions.order_by('-version') if minutes else []
     chosen=versions.filter(version=request.GET.get('version')).first() if request.GET.get('version','').isdigit() else None
     shown=chosen.snapshot if chosen else pending if error and pending else {'markdown':minutes.markdown,'public_markdown':minutes.public_markdown,'kind':minutes.kind} if minutes else {}
-    return render(request,'minutes.html',{'context':context,'obj':obj,'minutes':minutes,'editable':editable,'error':error,'shown':shown,'preview':mark_safe(render_markdown(shown.get('markdown',''))),'versions':versions,'chosen':chosen,'corrections':Meeting.objects.filter(committee=obj.committee,starts_at__gt=obj.starts_at)})
+    if minutes:
+        states={'draft':('Entwurf','attention'),'scribe_checked':('Durch Schriftführung geprüft','info'),'approved':('Durch Vorsitz geprüft','success')}
+        minutes.ui_status,minutes.ui_tone=states.get(minutes.state,('Weiterer Prüfstand','neutral'))
+    can_publish=bool(editable and settings.SERVER_ROLE=='internal' and meeting_access(context,'invite',obj))
+    return render(request,'minutes.html',{
+        'context':context,'obj':obj,'minutes':minutes,'editable':editable,
+        'can_publish':can_publish,'can_export':meeting_access(context,'export',obj),
+        'error':error,'shown':shown,
+        'preview':mark_safe(render_markdown(shown.get('markdown',''))),
+        'versions':versions,'chosen':chosen,
+        'corrections':Meeting.objects.filter(committee=obj.committee,starts_at__gt=obj.starts_at),
+    })
 
 @login_required
 @require_GET
