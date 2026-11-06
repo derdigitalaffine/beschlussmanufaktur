@@ -7,10 +7,13 @@
 <link rel="stylesheet" href="{% static 'app.css' %}">
 {% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'ux-system.css' %}">{% endif %}
 {% block page_styles %}{% endblock %}
+{% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'ux-polish.css' %}">
+<script type="module" src="{% static 'mantine/shell.js' %}"></script>{% endif %}
+{% block page_mantine_assets %}{% endblock %}
 <script src="{% static 'auth-events.js' %}" defer></script>
 {% if portal %}<link rel="stylesheet" href="/portal.css">{% endif %}
 </head>
-<body>
+<body{% if user.is_authenticated %} class="bm-private-ui"{% endif %}>
 <a class="skip-link" href="#inhalt">Direkt zum Inhalt</a>
 <header class="topbar">
   <div class="topbar-main">
@@ -30,26 +33,26 @@
       {% endif %}
     </div>
     <div class="account-actions">
-      <a href="{% url 'security' %}">Anmeldesicherheit</a>
-      <form method="post" action="{% url 'sign_out' %}">{% csrf_token %}<button class="quiet" type="submit">Abmelden</button></form>
+      <a href="{% url 'security' %}"><span class="nav-glyph" data-fa-icon="security" aria-hidden="true"></span>Anmeldesicherheit</a>
+      <form method="post" action="{% url 'sign_out' %}">{% csrf_token %}<button class="quiet" type="submit"><span class="nav-glyph" data-fa-icon="logout" aria-hidden="true"></span> Abmelden</button></form>
     </div>
     {% endif %}
   </div>
   {% if user.is_authenticated and shell_context %}
   <div class="workspace-toolbar">
     <nav class="global-nav" aria-label="Hauptnavigation">
-      <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}>Heute</a>
+      <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}><span class="nav-glyph" data-fa-icon="home" aria-hidden="true"></span>Heute</a>
       {% if shell_internal %}
-      <a href="{% url 'templates' %}">Vorlagen &amp; Vorgänge</a>
+      <a href="{% url 'templates' %}"><span class="nav-glyph" data-fa-icon="documents" aria-hidden="true"></span><span class="nav-glyph" data-fa-icon="documents" aria-hidden="true"></span>Vorlagen &amp; Vorgänge</a>
       {% else %}
       <a href="{% url 'replica_documents' %}">Vorlagen &amp; Vorgänge</a>
       {% endif %}
-      <a href="{% url 'meetings' %}">Sitzungen</a>
-      {% if shell_internal %}<a href="{% url 'decisions' %}">Beschlüsse</a>{% endif %}
-      <a href="{% url 'member_desk' %}">Mein Arbeitsbereich</a>
+      <a href="{% url 'meetings' %}"><span class="nav-glyph" data-fa-icon="meetings" aria-hidden="true"></span>Sitzungen</a>
+      {% if shell_internal %}<a href="{% url 'decisions' %}"><span class="nav-glyph" data-fa-icon="decisions" aria-hidden="true"></span>Beschlüsse</a>{% endif %}
+      <a href="{% url 'member_desk' %}"><span class="nav-glyph" data-fa-icon="desk" aria-hidden="true"></span>Mein Arbeitsbereich</a>
       {% if shell_can_manage %}
-      <a href="{% url 'registry' %}">Organisation</a>
-      <a href="{% url 'users' %}">Administration</a>
+      <a href="{% url 'registry' %}"><span class="nav-glyph" data-fa-icon="organization" aria-hidden="true"></span>Organisation</a>
+      <a href="{% url 'users' %}"><span class="nav-glyph" data-fa-icon="users" aria-hidden="true"></span>Administration</a>
       {% endif %}
     </nav>
     <form class="global-search" role="search" method="get" action="{% url 'member_desk' %}">
