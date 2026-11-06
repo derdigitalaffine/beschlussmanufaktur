@@ -1,0 +1,13 @@
+# Client code is compiled into the edge image. No CDN and no host Node.js
+# dependency; original Django routes remain server-side and fully functional.
+FROM node:24-alpine AS mantine-builder
+WORKDIR /work/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund
+COPY frontend/vite.config.mjs ./vite.config.mjs
+COPY frontend/src ./src
+RUN npm run build
+
+FROM caddy:2-alpine
+COPY backend/static/ /srv/static/
+COPY --from=mantine-builder /work/backend/static/mantine/ /srv/static/mantine/
