@@ -3,8 +3,8 @@
 import React, { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
-  Alert, Anchor, Avatar, Badge, Button, Card, Checkbox, Divider, Grid,
-  Group, MantineProvider, NativeSelect, Paper, SimpleGrid, Stack,
+  Alert, Anchor, Badge, Button, Checkbox, Divider,
+  Group, MantineProvider, NativeSelect, Paper, Stack,
   Text, Textarea, TextInput, ThemeIcon, Timeline, Title,
 } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -118,8 +118,8 @@ function Dashboard({ fallback }) {
           {displayLabel(context)} · {displayLabel(role)}
         </Badge>}
       </Group>
-      <Grid gutter="lg" align="stretch">
-        <Grid.Col span={{ base: 12, md: 7 }}>
+      <div className="bm-dashboard-grid">
+        <div className="bm-dashboard-primary">
           <WorkflowCard
             icon={faClipboardCheck}
             label="Empfohlener Einstieg"
@@ -130,8 +130,8 @@ function Dashboard({ fallback }) {
             secondary={clean(secondaryAction)}
             secondaryUrl={target(secondaryAction)}
           />
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, md: 5 }}>
+        </div>
+        <div className="bm-dashboard-secondary">
           <Stack gap="md" className="bm-side-stack">
             <Paper withBorder radius="lg" className="bm-overview-card">
               <Group align="flex-start" gap="md" wrap="nowrap">
@@ -160,10 +160,10 @@ function Dashboard({ fallback }) {
               </Group>
             </Paper>}
           </Stack>
-        </Grid.Col>
-      </Grid>
+        </div>
+      </div>
       {tasks.length > 0 && (
-        <Paper className="bm-task-worklist" withBorder radius="xl" mt="lg" p={{ base: 'lg', sm: 'xl' }}>
+        <Paper className="bm-task-worklist" withBorder radius="xl" mt="lg">
           <Group justify="space-between" align="center" gap="md" mb="md">
             <Group gap="sm">
               <ThemeIcon variant="light" size={36} color="orange" radius="md">{glyph(faClipboardCheck)}</ThemeIcon>
@@ -309,8 +309,8 @@ function Membership({ model, fallback }) {
         <Title order={1}>{title}</Title>
         <Text>{subtitle}</Text>
       </div>
-      <Grid gutter="xl" align="flex-start">
-        <Grid.Col span={{ base: 12, lg: 8 }}>
+      <div className="bm-membership-grid">
+        <div className="bm-membership-main">
           <Paper className="bm-mantine-mainform" radius="xl" withBorder>
             <Group justify="space-between" mb="xl" align="center">
               <div>
@@ -324,8 +324,8 @@ function Membership({ model, fallback }) {
             <Fields form={model} danger={danger} submitLabel={button}
               info={help} backUrl={target(back)} />
           </Paper>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12, lg: 4 }}>
+        </div>
+        <div className="bm-membership-sidebar">
           <Paper className="bm-mantine-aside" radius="xl" withBorder>
             <Group gap="xs" mb="lg">
               <ThemeIcon size="lg" variant="light" color="teal">{glyph(faShieldHalved)}</ThemeIcon>
@@ -347,8 +347,8 @@ function Membership({ model, fallback }) {
               Ein sichtbarer Klick ist noch keine Berechtigungsänderung. Entscheidend ist die Serverantwort.
             </Text>
           </Paper>
-        </Grid.Col>
-      </Grid>
+        </div>
+      </div>
     </div>
   );
 }
