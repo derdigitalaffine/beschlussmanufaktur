@@ -32,6 +32,12 @@ async function ensureServer() {
     await page.getByTestId('bm-mantine-dashboard').waitFor();
     await page.getByTestId('bm-mantine-membership').waitFor();
     await page.getByTestId('bm-mantine-invitation').waitFor();
+    const desktopColumns = await page.locator('.bm-membership-grid > div').evaluateAll((nodes) =>
+      nodes.map((node) => ({ x: node.getBoundingClientRect().x, y: node.getBoundingClientRect().y }))
+    );
+    assert.equal(desktopColumns.length, 2);
+    assert.ok(desktopColumns[1].x > desktopColumns[0].x + 100,
+      'Desktop membership form and guidance must form two columns under strict CSP');
     assert.equal(await page.locator('.next-step').isHidden(), true, 'Fallback replaced after React mount');
     assert.equal(await page.locator('.today-work').isHidden(), true, 'Duplicate today panels are removed only after Mantine mount');
     assert.equal(await page.locator('.bm-task-worklist a[href="/beschluss/eins/"]').count(), 1);
@@ -94,6 +100,11 @@ async function ensureServer() {
       viewportWidth: window.innerWidth,
     }));
     assert.ok(fit.documentWidth <= fit.viewportWidth + 1, '360px layout must not overflow: ' + JSON.stringify(fit));
+    const mobileColumns = await narrow.locator('.bm-membership-grid > div').evaluateAll((nodes) =>
+      nodes.map((node) => ({ x: node.getBoundingClientRect().x, y: node.getBoundingClientRect().y }))
+    );
+    assert.ok(Math.abs(mobileColumns[0].x - mobileColumns[1].x) <= 2,
+      'Membership form and guidance must stack at 360px with production CSP');
     await narrow.screenshot({ path: 'mantine-ui-mobile-360.png', fullPage: true });
 
     const noJs = await browser.newContext({ javaScriptEnabled: false });
