@@ -16,7 +16,7 @@
         {% if can_create %}
         <a href="{% url 'template_new' %}" class="ui-button ui-button--primary">Neue Vorlage erstellen</a>
         {% elif context.role == 'reviewer' %}
-        <a href="{% url 'templates' %}?state=review" class="ui-button ui-button--primary">Vorlagen in Prüfung</a>
+        <a href="{{ review_focus_url }}" class="ui-button ui-button--primary">Vorlagen in Prüfung</a>
         {% endif %}
       </div>
     </div>
