@@ -1,1 +1,39 @@
-{% extends 'base.html' %}{% block content %}<a href="/">← Bürgerinformation</a><article class="card"><h1>{{ record.title }}</h1>{% if record.metadata.photo %}<img src="{% url 'public_portrait' record.pk %}" alt="Porträt von {{ record.title }}" width="200">{% endif %}<div class="markdown">{{ body|safe }}</div>{% if record.kind == 'template' %}<p><a href="{% url 'replica_export' record.pk 'pdf' %}">PDF</a> · <a href="{% url 'replica_export' record.pk 'docx' %}">DOCX</a></p>{% endif %}{% for a in record.attachments %}<p><a href="{% url 'replica_asset' record.pk a.id %}">{{ a.name }}</a></p>{% endfor %}</article>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ record.title }} · Bürgerinformation{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-onboarding.css' %}">{% endblock %}
+{% block content %}
+<a class="bm-guest-back bm-public-back" href="/">← Zur Bürgerinformation</a>
+<article class="card bm-public-document">
+  <header class="bm-public-document-heading">
+    <span class="eyebrow">Öffentlich freigegebene Information</span>
+    <h1>{{ record.title }}</h1>
+    <p>Diese Ansicht zeigt die vom öffentlichen Portal freigegebene Fassung.</p>
+  </header>
+  {% if record.metadata.photo %}
+  <figure class="bm-public-portrait">
+    <img src="{% url 'public_portrait' record.pk %}" alt="Porträt von {{ record.title }}" width="200">
+  </figure>
+  {% endif %}
+  <div class="markdown bm-public-document-body">{{ body|safe }}</div>
+  {% if record.kind == 'template' %}
+  <section class="bm-public-document-files" aria-labelledby="public-export-heading">
+    <h2 id="public-export-heading">Dokument herunterladen</h2>
+    <div class="bm-public-downloads">
+      <a href="{% url 'replica_export' record.pk 'pdf' %}">PDF herunterladen</a>
+      <a href="{% url 'replica_export' record.pk 'docx' %}">DOCX herunterladen</a>
+    </div>
+  </section>
+  {% endif %}
+  {% if record.attachments %}
+  <section class="bm-public-document-files" aria-labelledby="public-attachments-heading">
+    <h2 id="public-attachments-heading">Veröffentlichte Anlagen</h2>
+    <ul class="bm-public-attachment-list">
+      {% for a in record.attachments %}
+      <li><a href="{% url 'replica_asset' record.pk a.id %}">{{ a.name }}</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</article>
+{% endblock %}

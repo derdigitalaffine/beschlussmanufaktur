@@ -1,4 +1,93 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">Bürgerinformation</span><h1>{% firstof portal.title "Entscheidungen nachvollziehen." %}</h1><p>{% firstof portal.introduction "Veröffentlichte Sitzungen, Vorlagen und Niederschriften." %}</p></section>
-<form method="get" class="card"><label>Suchbegriff<input name="q" value="{{ filters.q }}" maxlength="200" type="search"></label><label>Körperschaft<select name="organisation"><option value="">Alle Körperschaften</option>{% for o in organizations %}<option value="{{ o.id }}" {% if filters.organisation == o.id|stringformat:'s' %}selected{% endif %}>{{ o.title }}</option>{% endfor %}</select></label><label>Gremium<select name="gremium"><option value="">Alle Gremien</option>{% for o in committees %}<option value="{{ o.id }}" {% if filters.gremium == o.id|stringformat:'s' %}selected{% endif %}>{{ o.title }}</option>{% endfor %}</select></label><label>Information<select name="art"><option value="">Alle Informationen</option><option value="meeting" {% if filters.art == 'meeting' %}selected{% endif %}>Sitzungen</option><option value="template" {% if filters.art == 'template' %}selected{% endif %}>Vorlagen</option><option value="minutes" {% if filters.art == 'minutes' %}selected{% endif %}>Niederschriften</option></select></label><label>Von<input type="date" name="von" value="{{ filters.von }}"></label><label>Bis<input type="date" name="bis" value="{{ filters.bis }}"></label><button class="primary">Suchen</button> <a href="/">Zurücksetzen</a> · <a href="/kalender.ics?{{ query_string }}">Termine als Kalenderdatei</a></form>
-{% for record in page %}<article class="card"><span class="eyebrow">{{ record.kind }}</span><h2><a href="{% url 'public_detail' record.pk %}">{{ record.title }}</a></h2>{% if record.metadata.starts_at %}<p>{{ record.metadata.starts_at }} · {{ record.metadata.location }}</p>{% endif %}<p>{{ record.body|truncatechars:240 }}</p></article>{% empty %}<section class="card empty"><h2>Noch keine Veröffentlichungen</h2><p>Keine veröffentlichten Informationen für diese Auswahl.</p></section>{% endfor %}
-<nav aria-label="Ergebnisseiten">{% if page.has_previous %}<a href="?{{ query_string }}&page={{ page.previous_page_number }}">Zurück</a>{% endif %} · Seite {{ page.number }} von {{ page.paginator.num_pages }} · {% if page.has_next %}<a href="?{{ query_string }}&page={{ page.next_page_number }}">Weiter</a>{% endif %}</nav>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% firstof portal.title "Bürgerinformation" %} · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-onboarding.css' %}">{% endblock %}
+{% block content %}
+<section class="page-heading bm-public-hero">
+  <span class="eyebrow">Bürgerinformation / Öffentliche Dokumente</span>
+  <h1>{% firstof portal.title "Entscheidungen nachvollziehen." %}</h1>
+  <p>{% firstof portal.introduction "Veröffentlichte Sitzungen, Vorlagen und Niederschriften." %}</p>
+  <div class="bm-public-hero-meta">
+    <span>Veröffentlichte Informationen</span>
+    <span>Ohne Bürgerkonto nutzbar</span>
+  </div>
+</section>
+<section class="bm-public-search-region" aria-labelledby="public-search-heading">
+  <div class="bm-public-section-heading">
+    <div><span class="eyebrow">Gezielt recherchieren</span><h2 id="public-search-heading">Informationen finden</h2></div>
+    <p>Suche nach Begriff, Körperschaft, Gremium, Dokumentart und Zeitraum.</p>
+  </div>
+  <form method="get" class="card bm-public-filter" role="search" aria-label="Veröffentlichte Informationen filtern">
+    <div class="bm-public-field bm-public-keyword">
+      <label for="public-search">Suchbegriff</label>
+      <input id="public-search" name="q" value="{{ filters.q }}" maxlength="200" type="search" placeholder="Thema, Sitzung oder Vorlage suchen">
+    </div>
+    <div class="bm-public-field">
+      <label for="public-organisation">Körperschaft</label>
+      <select id="public-organisation" name="organisation">
+        <option value="">Alle Körperschaften</option>
+        {% for o in organizations %}<option value="{{ o.id }}" {% if filters.organisation == o.id|stringformat:'s' %}selected{% endif %}>{{ o.title }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="bm-public-field">
+      <label for="public-gremium">Gremium</label>
+      <select id="public-gremium" name="gremium">
+        <option value="">Alle Gremien</option>
+        {% for o in committees %}<option value="{{ o.id }}" {% if filters.gremium == o.id|stringformat:'s' %}selected{% endif %}>{{ o.title }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="bm-public-field">
+      <label for="public-kind">Information</label>
+      <select id="public-kind" name="art">
+        <option value="">Alle Informationen</option>
+        <option value="meeting" {% if filters.art == 'meeting' %}selected{% endif %}>Sitzungen</option>
+        <option value="template" {% if filters.art == 'template' %}selected{% endif %}>Vorlagen</option>
+        <option value="minutes" {% if filters.art == 'minutes' %}selected{% endif %}>Niederschriften</option>
+      </select>
+    </div>
+    <div class="bm-public-field">
+      <label for="public-from">Von</label>
+      <input id="public-from" type="date" name="von" value="{{ filters.von }}">
+    </div>
+    <div class="bm-public-field">
+      <label for="public-to">Bis</label>
+      <input id="public-to" type="date" name="bis" value="{{ filters.bis }}">
+    </div>
+    <div class="bm-public-filter-actions">
+      <button class="primary" type="submit">Veröffentlichungen suchen</button>
+      <a href="/">Filter zurücksetzen</a>
+      <a href="/kalender.ics?{{ query_string }}">Termine als Kalenderdatei</a>
+    </div>
+  </form>
+</section>
+<section class="bm-public-results" aria-labelledby="public-results-heading">
+  <div class="bm-public-section-heading">
+    <div><span class="eyebrow">Öffentliche Recherche</span><h2 id="public-results-heading">Veröffentlichte Informationen</h2></div>
+    <p>Hier erscheinen ausschließlich freigegebene Fassungen.</p>
+  </div>
+  <div class="bm-public-list">
+    {% for record in page %}
+    <article class="card bm-public-result">
+      <div class="bm-public-result-meta">
+        <span class="bm-public-kind">{{ record.kind }}</span>
+        {% if record.metadata.starts_at %}<span>{{ record.metadata.starts_at }}{% if record.metadata.location %} · {{ record.metadata.location }}{% endif %}</span>{% endif %}
+      </div>
+      <h3><a href="{% url 'public_detail' record.pk %}">{{ record.title }}</a></h3>
+      <p>{{ record.body|truncatechars:240 }}</p>
+      <a class="bm-public-result-action" href="{% url 'public_detail' record.pk %}">Veröffentlichung ansehen →</a>
+    </article>
+    {% empty %}
+    <section class="card bm-public-empty">
+      <h3>Noch keine Veröffentlichungen</h3>
+      <p>Für die gewählte Kombination aus Suchbegriff, Gremium und Zeitraum wurden keine veröffentlichten Informationen gefunden. Ändern oder entfernen Sie einen Filter.</p>
+      <a href="/">Alle Veröffentlichungen anzeigen</a>
+    </section>
+    {% endfor %}
+  </div>
+  <nav class="bm-public-pagination" aria-label="Ergebnisseiten">
+    {% if page.has_previous %}<a href="?{{ query_string }}&page={{ page.previous_page_number }}">← Zurück</a>{% endif %}
+    <span>Seite {{ page.number }} von {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?{{ query_string }}&page={{ page.next_page_number }}">Weiter →</a>{% endif %}
+  </nav>
+</section>
+{% endblock %}
