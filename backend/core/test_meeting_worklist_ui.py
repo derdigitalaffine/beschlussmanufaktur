@@ -84,3 +84,10 @@ class MeetingWorklistUITests(SimpleTestCase):
             queryset.return_value.select_related.return_value = [meeting]
             index(request)
             self.assertFalse(rendered.call_args.args[2]["can_plan"])
+
+    def test_search_handles_meeting_without_location(self):
+        meeting = row("Ortsgemeinderat", "invited", timezone.now() + timedelta(days=2))
+        meeting.location = None
+        response = self.render_page({"q": "Ortsgemeinderat"}, [meeting])
+        self.assertContains(response, "Ortsgemeinderat")
+        self.assertContains(response, "1 Termine angezeigt")

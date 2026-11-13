@@ -70,7 +70,7 @@ def index(request):
     accessible.sort(key=lambda obj: (0, obj.starts_at) if obj.starts_at >= now else (1, -obj.starts_at.timestamp()))
     next_meeting=next((obj for obj in accessible if obj.starts_at>=now),None)
     rows=[m for m in accessible if (not state or m.state==state) and
-          query.casefold() in (m.title+' '+m.committee.name+' '+m.location).casefold()]
+          query.casefold() in ' '.join((m.title or '', m.committee.name or '', m.location or '')).casefold()]
     return render(request,'meetings.html',{
         'context':context,'meetings':rows,'can_plan':settings.SERVER_ROLE=='internal' and context.role=='clerk',
         'query':query,'state':state,'state_filters':[
