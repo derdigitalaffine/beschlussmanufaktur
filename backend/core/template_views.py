@@ -1,4 +1,6 @@
 import difflib,json,uuid
+from urllib.parse import urlencode
+from django.urls import reverse
 from django import forms
 from django.conf import settings
 from django.contrib import messages
@@ -66,6 +68,7 @@ def index(request):
         'context':context,'objects':objects,'query':query,'state':state,
         'state_filters':state_filters,'accessible_count':len(accessible),
         'can_create':context.role in ('author','clerk'),
+        'review_focus_url':reverse('templates')+'?'+urlencode({'state':'review',**({'q':query} if query else {})}),
         'notifications':Notification.objects.filter(user=request.user,read_at__isnull=True).order_by('-created_at')[:20],
     })
 
