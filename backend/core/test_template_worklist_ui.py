@@ -72,3 +72,25 @@ class TemplateWorklistUITests(SimpleTestCase):
         with patch("core.template_views.active_context", return_value=None):
             with self.assertRaises(PermissionDenied):
                 index(request)
+
+    def test_search_is_scoped_to_current_organization_before_limit(self):
+        row = template_row("Zugänglicher Vorgang", "draft")
+        request = self.factory.get("/vorlagen/", {"q": "Vorgang"})
+        request.user = SimpleNamespace(is_authenticated=True, first_name="Pat", username="tester")
+        request.resolver_match = resolve("/vorlagen/")
+        request.session = {}
+        request._messages = []
+        with (
+            patch("core.template_views.active_context", return_value=self.context),
+            patch("core.shell.active_context", return_value=self.context),
+            patch("core.template_views.template_access", return_value=True),
+            patch("core.template_views.Template.objects.select_related") as queryset,
+            patch("core.template_views.Notification.objects.filter") as notifications,
+        ):
+            queryset.return_value.filter.return_value.__getitem__.return_value = [row]
+            notifications.return_value.order_by.return_value.__getitem__.return_value = []
+            response = index(request)
+            self.assertContains(response, "Zugänglicher Vorgang")
+            queryset.return_value.filter.assert_called_once_with(
+                organization=self.context.organization, subject__icontains="Vorgang"
+            )
