@@ -72,3 +72,9 @@ class TemplateWorklistUITests(SimpleTestCase):
         with patch("core.template_views.active_context", return_value=None):
             with self.assertRaises(PermissionDenied):
                 index(request)
+
+    def test_reviewer_shortcut_keeps_encoded_search_context(self):
+        row = template_row("Brücke & Rathaus", "review")
+        response = self.render_page({"q": "Brücke & Rathaus"}, [row])
+        self.assertContains(response, 'href="/vorlagen/?state=review&amp;q=Br%C3%BCcke+%26+Rathaus"')
+        self.assertContains(response, "Vorlagen in Prüfung")
