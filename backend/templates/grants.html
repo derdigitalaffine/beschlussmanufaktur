@@ -1,1 +1,78 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>Einzelrechte und Geltungsbereiche</h1><p>Im einfachen Modus verwenden Sie die Rollenpakete. Diese zusätzlichen Rechte gelten nur für den ausgewählten Arbeitskontext und erteilen keinen Zugriff auf andere Körperschaften.</p><a href="/">Arbeitsplatz</a></section><section class="card"><h2>Recht zuweisen</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button class="primary">Ausdrücklich zuweisen</button></form></section><section class="card"><h2>Bestehende Freigaben</h2>{% for grant in grants %}<p>{{ grant.membership.user.email }} · {{ grant.membership.get_role_display }} · {{ grant.resource_kind }} / {{ grant.resource_id }} · {{ grant.actions|join:', ' }} · {{ grant.reason }} {% if grant.revoked_at %}· Entzogen{% else %}<form method="post" action="{% url 'revoke_grant' grant.pk %}">{% csrf_token %}<button>Entziehen</button></form>{% endif %}</p>{% empty %}<p>Keine zusätzlichen Einzelrechte.</p>{% endfor %}</section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Einzelrechte · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span>
+  <h1>Einzelrechte und Geltungsbereiche</h1>
+  <p>Rollenpakete decken den Standardfall ab. Diese Einzelrechte gelten ausschließlich im ausgewählten Arbeitskontext und geben keinen Zugang zu anderen Körperschaften.</p>
+  <a class="bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+</section>
+<div class="bm-task-grid bm-grants-grid">
+  <section class="card bm-task-main" aria-labelledby="grant-create-title">
+    <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Neue ausdrückliche Zuweisung</span></div>
+    <h2 id="grant-create-title">Einzelrecht zuweisen</h2>
+    <p class="muted">Prüfen Sie Person, Zielobjekt, erlaubte Aktion und fachliche Begründung vor der Freigabe.</p>
+    <form method="post" class="bm-task-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="bm-task-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+        {% if field.is_hidden %}{{ field }}{% else %}
+        <div class="bm-task-field{% if field.errors %} bm-task-field-error{% endif %}">
+          {{ field.label_tag }}{{ field }}
+          {% if field.help_text %}<p class="bm-task-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<div class="bm-task-error" role="alert">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div class="bm-task-actions">
+        <button class="primary" type="submit">Ausdrücklich zuweisen</button>
+      </div>
+    </form>
+  </section>
+  <aside class="card bm-task-aside" aria-labelledby="grant-guide-title">
+    <span class="eyebrow">Sicherheitsgrenze</span>
+    <h2 id="grant-guide-title">Nur den notwendigen Zugriff vergeben</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>Konkretes Ziel</strong><span>Ressource und erlaubte Aktion müssen fachlich zusammenpassen.</span></li>
+      <li><strong>Nachvollziehbarkeit</strong><span>Begründung und bestehende Rollen kontrollieren.</span></li>
+      <li><strong>Entzug</strong><span>Erfolgt getrennt von der Zuweisung und erst nach Serverbestätigung.</span></li>
+    </ol>
+  </aside>
+</div>
+<section class="bm-task-section" aria-labelledby="grant-current-title">
+  <div class="bm-task-section-title">
+    <div><span class="eyebrow">Prüfbare Zuordnungen</span><h2 id="grant-current-title">Bestehende Einzelrechte</h2></div>
+    <p class="muted">Aktive und bereits entzogene Rechte werden ausdrücklich unterschieden.</p>
+  </div>
+  {% if grants %}
+    <ul class="bm-access-list">
+      {% for grant in grants %}
+      <li class="bm-access-item{% if grant.revoked_at %} bm-access-revoked{% endif %}">
+        <div class="bm-access-content">
+          <span class="bm-task-status {% if grant.revoked_at %}bm-status-muted{% else %}bm-status-active{% endif %}">
+            {% if grant.revoked_at %}Entzogen{% else %}Aktiv{% endif %}
+          </span>
+          <h3>{{ grant.membership.user.email }}</h3>
+          <p>{{ grant.membership.get_role_display }}</p>
+          <dl class="bm-access-meta">
+            <div><dt>Ressource</dt><dd>{{ grant.resource_kind }} / {{ grant.resource_id }}</dd></div>
+            <div><dt>Aktionen</dt><dd>{{ grant.actions|join:', ' }}</dd></div>
+            <div><dt>Begründung</dt><dd>{{ grant.reason }}</dd></div>
+          </dl>
+        </div>
+        {% if not grant.revoked_at %}
+        <form method="post" action="{% url 'revoke_grant' grant.pk %}" class="bm-access-revoke">
+          {% csrf_token %}
+          <button class="bm-danger-button" type="submit">Recht entziehen</button>
+        </form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <section class="card bm-task-empty"><h3>Keine Einzelrechte vergeben</h3><p>Zusätzliche Freigaben erscheinen nach einer ausdrücklichen Zuweisung hier.</p></section>
+  {% endif %}
+</section>
+{% endblock %}

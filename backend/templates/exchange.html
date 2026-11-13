@@ -1,1 +1,78 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>Datenbereitstellung</h1><p>Intern → geschützt / öffentlich. Rücklauf wird intern abgeholt und gesondert geprüft.</p><a href="/">Arbeitsplatz</a></section><section class="card"><form method="post">{% csrf_token %}{{ form.as_p }}<button class="primary">Freigabe speichern und Übertragung vorbereiten</button></form></section><section class="card"><h2>Übertragungsstatus</h2>{% for batch in batches %}<p>{{ batch.channel }} · Stand {{ batch.revision }} · {% if batch.delivered_at %}Übertragen {{ batch.delivered_at }}{% else %}Ausstehend · {{ batch.error }}{% endif %}</p>{% empty %}<p>Noch keine Übertragung.</p>{% endfor %}</section><section class="card"><h2>Änderungen zur Prüfung</h2>{% for change in changes %}<p><a href="{% url 'review_remote' change.pk %}">{{ change.reason }}</a> · {{ change.created_at }}</p>{% empty %}<p>Keine ungeprüften Änderungen.</p>{% endfor %}</section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Datenbereitstellung · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span>
+  <h1>Datenbereitstellung</h1>
+  <p>Intern → geschützt / öffentlich. Änderungen aus dem externen Bereich werden intern abgeholt und erst nach einer gesonderten fachlichen Prüfung übernommen.</p>
+  <a class="bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+</section>
+<div class="bm-task-grid">
+  <section class="card bm-task-main" aria-labelledby="transfer-settings-title">
+    <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Freigabe und Vorbereitung</span></div>
+    <h2 id="transfer-settings-title">Daten für die Bereitstellung prüfen</h2>
+    <p class="muted">Freigabe und Übertragungsauftrag sind getrennt von der tatsächlich bestätigten Auslieferung.</p>
+    <form class="bm-task-form" method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div role="alert" class="bm-task-error">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+      {% if field.is_hidden %}{{ field }}{% else %}
+      <div class="bm-task-field{% if field.errors %} bm-task-field-error{% endif %}">
+        {{ field.label_tag }}{{ field }}
+        {% if field.help_text %}<p class="bm-task-help">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<div role="alert" class="bm-task-error">{{ field.errors }}</div>{% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+      <div class="bm-task-actions"><button class="primary" type="submit">Freigabe speichern und Übertragung vorbereiten</button></div>
+    </form>
+  </section>
+  <aside class="card bm-task-aside" aria-labelledby="transfer-guide-title">
+    <span class="eyebrow">Veröffentlichungsgrenze</span>
+    <h2 id="transfer-guide-title">Freigabe ist nicht Übertragung</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>Prüfen</strong><span>Inhalte und Zielkanal ausdrücklich bestimmen.</span></li>
+      <li><strong>Bereitstellen</strong><span>Übertragung wird im bestehenden Hintergrundprozess durchgeführt.</span></li>
+      <li><strong>Bestätigen</strong><span>Erst bestätigte Auslieferung ist im Status als übertragen sichtbar.</span></li>
+    </ol>
+  </aside>
+</div>
+<section class="bm-task-section" aria-labelledby="transfer-status-title">
+  <div class="bm-task-section-title"><div><span class="eyebrow">Auslieferungsnachweis</span><h2 id="transfer-status-title">Übertragungsstatus</h2></div></div>
+  <div class="bm-record-list">
+  {% for batch in batches %}
+    <article class="card bm-record">
+      <div>
+        <span class="bm-task-status {% if batch.delivered_at %}bm-status-active{% else %}bm-status-attention{% endif %}">
+          {% if batch.delivered_at %}Übertragen{% else %}Ausstehend{% endif %}
+        </span>
+        <h3>{{ batch.channel }}</h3>
+        <p>Revision {{ batch.revision }}</p>
+        {% if batch.delivered_at %}<p>Bestätigte Übertragung: {{ batch.delivered_at }}</p>{% elif batch.error %}<div role="alert" class="bm-task-error">{{ batch.error }}</div>{% endif %}
+      </div>
+    </article>
+  {% empty %}
+    <section class="card bm-task-empty"><h3>Noch keine Übertragung</h3><p>Der Status erscheint, nachdem eine freigegebene Bereitstellung vorbereitet wurde.</p></section>
+  {% endfor %}
+  </div>
+</section>
+<section class="bm-task-section" aria-labelledby="remote-changes-title">
+  <div class="bm-task-section-title"><div><span class="eyebrow">Rückrichtung</span><h2 id="remote-changes-title">Änderungen zur Prüfung</h2></div></div>
+  <div class="bm-record-list">
+  {% for change in changes %}
+    <article class="card bm-record">
+      <div><span class="bm-task-status bm-status-attention">Prüfung erforderlich</span>
+        <h3>{{ change.reason }}</h3>
+        <p>Vorgeschlagen {{ change.created_at }}</p></div>
+      <a href="{% url 'review_remote' change.pk %}" class="bm-record-action">Vorschlag prüfen →</a>
+    </article>
+  {% empty %}
+    <section class="card bm-task-empty"><h3>Keine ungeprüften Änderungen</h3>
+      <p>Vorschläge aus geschützten Bereichen werden ausschließlich über die interne Prüfung übernommen.</p>
+    </section>
+  {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,1 +1,46 @@
-{% extends 'base.html' %}{% block content %}<section class="page-heading"><span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span><h1>Externen Vorschlag prüfen</h1></section><section class="card"><p>Objekt {{ change.resource_id }} · Ausgangsversion {{ change.base_version }} · Urheber-ID {{ change.actor_id }}</p><p>{{ change.reason }}</p><pre>{% if change.resource_kind == 'credential' %}Verschlüsselter Wiederherstellungsnachweis; Prüfung erfolgt bei Zustimmung.{% else %}{{ change.content }}{% endif %}</pre><form method="post">{% csrf_token %}<button class="primary" name="decision" value="accept">Geprüft übernehmen</button><button name="decision" value="reject">Ablehnen</button></form></section>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Externen Vorschlag prüfen · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+<section class="page-heading">
+  <span class="eyebrow">{{ context.organization }} · {{ context.get_role_display }}</span>
+  <h1>Externen Vorschlag prüfen</h1>
+  <p>Ein Vorschlag aus der geschützten Zone verändert zunächst keine internen Daten. Annahme und Ablehnung sind bewusste, getrennte Entscheidungen.</p>
+</section>
+<div class="bm-task-grid">
+  <section class="card bm-task-main" aria-labelledby="review-content-title">
+    <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Prüfung und Entscheidung</span></div>
+    <h2 id="review-content-title">Vorgeschlagene Änderung</h2>
+    <dl class="bm-access-meta">
+      <div><dt>Objekt-ID</dt><dd>{{ change.resource_id }}</dd></div>
+      <div><dt>Ausgangsversion</dt><dd>{{ change.base_version }}</dd></div>
+      <div><dt>Urheber-ID</dt><dd>{{ change.actor_id }}</dd></div>
+    </dl>
+    <div class="bm-review-reason"><span class="eyebrow">Begründung</span><p>{{ change.reason }}</p></div>
+    <section class="bm-review-content" aria-labelledby="review-data-title">
+      <h3 id="review-data-title">Inhalt der Änderung</h3>
+      {% if change.resource_kind == 'credential' %}
+      <p class="bm-task-hint">Verschlüsselter Wiederherstellungsnachweis; die Prüfung erfolgt erst bei ausdrücklicher Zustimmung.</p>
+      {% else %}
+      <pre>{{ change.content }}</pre>
+      {% endif %}
+    </section>
+    <form method="post" class="bm-ops-plan-actions bm-review-decisions">
+      {% csrf_token %}
+      <button class="primary" type="submit" name="decision" value="accept">Geprüft übernehmen</button>
+      <button class="bm-danger-button" type="submit" name="decision" value="reject">Vorschlag ablehnen</button>
+    </form>
+  </section>
+  <aside class="card bm-task-aside" aria-labelledby="review-guide-title">
+    <span class="eyebrow">Vertrauensgrenze</span>
+    <h2 id="review-guide-title">Vor einer Übernahme</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>Herkunft</strong><span>Ausgangsversion und fachlichen Vorgang prüfen.</span></li>
+      <li><strong>Inhalt</strong><span>Änderung und Begründung vollständig kontrollieren.</span></li>
+      <li><strong>Entscheidung</strong><span>Erst der interne Server bestätigt Annahme oder Ablehnung.</span></li>
+    </ol>
+  </aside>
+</div>
+{% endblock %}

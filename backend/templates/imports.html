@@ -1,1 +1,73 @@
-{% extends 'base.html' %}{% block content %}<a href="/">← Arbeitsplatz</a><h1>Import mit Vorschau</h1><p>{{ context.organization.name }} · Keine Passwörter und keine fremden Organisations-IDs importieren.</p>{% if error %}<p class="errorlist" role="alert">{{ error }}</p>{% endif %}{% if batch %}<section class="card"><h2>{{ batch.kind }} · {{ batch.rows|length }} Zeilen</h2>{% for row in batch.rows %}<dl>{% for k,v in row.items %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>{% endfor %}{% if batch.applied_at %}<p>Übernommen {{ batch.applied_at }}. Konteneinladungen werden aus der verschlüsselten Versandwarteschlange gesendet.</p>{% else %}<form method="post">{% csrf_token %}<label><input type="checkbox" name="confirm" value="yes" required>Vorschau geprüft; diese Zeilen übernehmen und gegebenenfalls Einladungen versenden.</label><button class="primary">Geprüft übernehmen</button></form>{% endif %}</section>{% else %}<form class="card" method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button class="primary">Vorschau erstellen</button></form><section class="card"><h2>CSV-Spalten</h2>{% for kind,fields in headers.items %}<p>{{ kind }}: {{ fields|join:', ' }}</p>{% endfor %}<p>Datum: YYYY-MM-DD. Kontenzeiten: ISO-8601 mit Zeitzone. Komma oder Semikolon; UTF-8.</p></section>{% endif %}{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Datenimport mit Vorschau · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+<section class="page-heading">
+  <span class="eyebrow">Stammdaten / Import</span>
+  <h1>Import mit Vorschau</h1>
+  <p>{{ context.organization.name }} · Übernahme erst nach Prüfung. Passwörter und fremde Organisations-IDs dürfen nicht importiert werden.</p>
+</section>
+{% if error %}<div class="bm-task-error" role="alert">{{ error }}</div>{% endif %}
+<div class="bm-task-grid">
+  <section class="card bm-task-main" aria-labelledby="import-title">
+    <div class="bm-task-caption"><span class="bm-task-step">{% if batch %}02{% else %}01{% endif %}</span><span>{% if batch %}Vorschau und Bestätigung{% else %}Datei und Einordnung{% endif %}</span></div>
+    {% if batch %}
+      <h2 id="import-title">Vorschau: {{ batch.kind }}</h2>
+      <p class="muted">{{ batch.rows|length }} Importzeilen. Prüfen Sie die tatsächlichen Inhalte, bevor Änderungen übernommen werden.</p>
+      <div class="bm-import-rows">
+        {% for row in batch.rows %}
+        <details class="bm-import-row">
+          <summary>Datensatz {{ forloop.counter }} <span>Details anzeigen</span></summary>
+          <dl class="bm-import-data">
+            {% for k,v in row.items %}<div><dt>{{ k }}</dt><dd>{{ v }}</dd></div>{% endfor %}
+          </dl>
+        </details>
+        {% empty %}<p>Die Vorschau enthält keine Datensätze.</p>{% endfor %}
+      </div>
+      {% if batch.applied_at %}
+        <div class="bm-task-success" role="status">Übernommen am {{ batch.applied_at }}. Einladungen werden gegebenenfalls über die verschlüsselte Versandwarteschlange abgewickelt.</div>
+      {% else %}
+        <form method="post" class="bm-task-form bm-import-confirm">
+          {% csrf_token %}
+          <label class="bm-check-line"><input type="checkbox" name="confirm" value="yes" required>
+            <span>Ich habe die Vorschau geprüft. Die angezeigten Zeilen sollen übernommen und gegebenenfalls Einladungen versandt werden.</span></label>
+          <button class="primary" type="submit">Geprüfte Daten übernehmen</button>
+        </form>
+      {% endif %}
+    {% else %}
+      <h2 id="import-title">CSV-Datei auswählen</h2>
+      <form class="bm-task-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="bm-task-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}
+          {% if field.is_hidden %}{{ field }}{% else %}
+          <div class="bm-task-field{% if field.errors %} bm-task-field-error{% endif %}">
+            {{ field.label_tag }}{{ field }}
+            {% if field.help_text %}<p class="bm-task-help">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<div class="bm-task-error" role="alert">{{ field.errors }}</div>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+        <div class="bm-task-actions"><button class="primary" type="submit">Vorschau erstellen</button></div>
+      </form>
+    {% endif %}
+  </section>
+  <aside class="card bm-task-aside" aria-labelledby="import-help-title">
+    <span class="eyebrow">Importformat</span>
+    <h2 id="import-help-title">So bereiten Sie Ihre Datei vor</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>UTF-8</strong><span>CSV-Datei mit Komma oder Semikolon als Trennzeichen.</span></li>
+      <li><strong>Datum</strong><span>YYYY-MM-DD, für Kontenzeiten ISO-8601 mit Zeitzone.</span></li>
+      <li><strong>Übernahme</strong><span>Eine Vorschau ist noch keine Datenübernahme.</span></li>
+    </ol>
+    {% if headers %}
+    <details class="bm-import-columns">
+      <summary>Erwartete CSV-Spalten</summary>
+      {% for kind,fields in headers.items %}<p><strong>{{ kind }}:</strong> {{ fields|join:', ' }}</p>{% endfor %}
+    </details>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

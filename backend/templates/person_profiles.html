@@ -1,1 +1,56 @@
-{% extends 'base.html' %}{% block content %}<a href="/">← Arbeitsplatz</a><h1>Personen und öffentliche Freigaben</h1><p>{{ context.organization.name }} · Konto- und Kontaktdaten werden niemals automatisch veröffentlicht.</p><section class="card">{% for p in profiles %}<p><a href="{% url 'person_profile' p.id %}">{{ p.name }}</a> · {% if p.published %}freigegeben{% else %}intern{% endif %}</p>{% endfor %}<a href="{% url 'person_profiles' %}">Neue Person</a></section><form method="post" class="card" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button class="primary">Geprüft speichern</button></form>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Personen und öffentliche Freigaben · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-admin-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="{% url 'home' %}">← Zum Arbeitsplatz</a>
+<section class="page-heading">
+  <span class="eyebrow">Stammdaten / Veröffentlichung</span>
+  <h1>Personen und öffentliche Freigaben</h1>
+  <p>{{ context.organization.name }} · Konto- und Kontaktdaten werden niemals automatisch veröffentlicht. Der öffentliche Status muss ausdrücklich geprüft werden.</p>
+</section>
+<div class="bm-task-grid">
+  <section class="card bm-task-main" aria-labelledby="person-heading">
+    <div class="bm-task-caption"><span class="bm-task-step">01</span><span>Personenangaben</span></div>
+    <h2 id="person-heading">Person erfassen oder bearbeiten</h2>
+    <form method="post" class="bm-task-form" enctype="multipart/form-data">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="bm-task-error" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+        {% if field.is_hidden %}{{ field }}{% else %}
+        <div class="bm-task-field{% if field.errors %} bm-task-field-error{% endif %}">
+          {{ field.label_tag }}{{ field }}
+          {% if field.help_text %}<p class="bm-task-help">{{ field.help_text }}</p>{% endif %}
+          {% if field.errors %}<div class="bm-task-error" role="alert">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div class="bm-task-actions"><button class="primary" type="submit">Geprüft speichern</button></div>
+    </form>
+  </section>
+  <aside class="card bm-task-aside" aria-labelledby="person-guide-title">
+    <span class="eyebrow">Datenschutz</span>
+    <h2 id="person-guide-title">Vor einer öffentlichen Freigabe</h2>
+    <ol class="bm-task-guidance">
+      <li><strong>Datentrennung</strong><span>Login- und Kontaktdaten bleiben vom öffentlichen Profil getrennt.</span></li>
+      <li><strong>Bild/Angaben</strong><span>Porträt und sichtbare Inhalte gezielt prüfen.</span></li>
+      <li><strong>Freigabe</strong><span>Der Server entscheidet über öffentliche Bereitstellung.</span></li>
+    </ol>
+  </aside>
+</div>
+<section class="bm-task-section" aria-labelledby="profiles-title">
+  <div class="bm-task-section-title"><div><span class="eyebrow">Öffentliche Profile</span><h2 id="profiles-title">Personen im Überblick</h2></div></div>
+  <div class="bm-record-list">
+  {% for p in profiles %}
+    <article class="card bm-record">
+      <div><span class="bm-task-status {% if p.published %}bm-status-active{% else %}bm-status-muted{% endif %}">{% if p.published %}Öffentlich freigegeben{% else %}Nur intern{% endif %}</span>
+        <h3><a href="{% url 'person_profile' p.id %}">{{ p.name }}</a></h3></div>
+      <a class="bm-record-action" href="{% url 'person_profile' p.id %}">Profil prüfen →</a>
+    </article>
+  {% empty %}
+    <section class="card bm-task-empty"><h3>Keine Personen erfasst</h3><p>Neue Profile legen Sie im Formular oberhalb an.</p></section>
+  {% endfor %}
+  </div>
+  <a class="bm-task-secondary bm-kind-new" href="{% url 'person_profiles' %}">Neue Person anlegen</a>
+</section>
+{% endblock %}
