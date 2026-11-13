@@ -54,7 +54,7 @@ def index(request):
     query=request.GET.get('q','')[:100].strip()
     requested_state=request.GET.get('state','')[:30]
     state=requested_state if requested_state in TEMPLATE_LIST_STATES else ''
-    candidates=Template.objects.select_related('kind','organization','author','unit').filter(subject__icontains=query)[:500]
+    candidates=Template.objects.select_related('kind','organization','author','unit').filter(organization=context.organization,subject__icontains=query)[:500]
     accessible=[obj for obj in candidates if template_access(context,'read',obj)]
     counts={key:0 for key in TEMPLATE_LIST_STATES}
     for obj in accessible:
