@@ -45,23 +45,23 @@
   {% if user.is_authenticated and shell_context %}
   <div class="workspace-toolbar">
     <nav class="global-nav" aria-label="Hauptnavigation">
-      <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}><span class="nav-glyph" data-fa-icon="home" aria-hidden="true"></span>Heute</a>
+      <a href="{% url 'home' %}" {% if shell_active_section == 'home' %}aria-current="{% if request.resolver_match.url_name == 'home' %}page{% else %}location{% endif %}"{% endif %}><span class="nav-glyph" data-fa-icon="home" aria-hidden="true"></span>Heute</a>
       {% if shell_internal %}
-      <a href="{% url 'templates' %}"><span class="nav-glyph" data-fa-icon="documents" aria-hidden="true"></span>Vorlagen &amp; Vorgänge</a>
+      <a href="{% url 'templates' %}" {% if shell_active_section == 'templates' %}aria-current="{% if request.resolver_match.url_name == 'templates' %}page{% else %}location{% endif %}"{% endif %}><span class="nav-glyph" data-fa-icon="documents" aria-hidden="true"></span>Vorlagen &amp; Vorgänge</a>
       {% else %}
-      <a href="{% url 'replica_documents' %}">Vorlagen &amp; Vorgänge</a>
+      <a href="{% url 'replica_documents' %}" {% if shell_active_section == 'templates' %}aria-current="{% if request.resolver_match.url_name == 'replica_documents' %}page{% else %}location{% endif %}"{% endif %}>Vorlagen &amp; Vorgänge</a>
       {% endif %}
-      <a href="{% url 'meetings' %}"><span class="nav-glyph" data-fa-icon="meetings" aria-hidden="true"></span>Sitzungen</a>
-      {% if shell_internal %}<a href="{% url 'decisions' %}"><span class="nav-glyph" data-fa-icon="decisions" aria-hidden="true"></span>Beschlüsse</a>{% endif %}
-      <a href="{% url 'member_desk' %}"><span class="nav-glyph" data-fa-icon="desk" aria-hidden="true"></span>Mein Arbeitsbereich</a>
+      <a href="{% url 'meetings' %}" {% if shell_active_section == 'meetings' %}aria-current="{% if request.resolver_match.url_name == 'meetings' %}page{% else %}location{% endif %}"{% endif %}><span class="nav-glyph" data-fa-icon="meetings" aria-hidden="true"></span>Sitzungen</a>
+      {% if shell_internal %}<a href="{% url 'decisions' %}" {% if shell_active_section == 'decisions' %}aria-current="{% if request.resolver_match.url_name == 'decisions' %}page{% else %}location{% endif %}"{% endif %}><span class="nav-glyph" data-fa-icon="decisions" aria-hidden="true"></span>Beschlüsse</a>{% endif %}
+      <a href="{% url 'member_desk' %}" {% if shell_active_section == 'member_desk' %}aria-current="{% if request.resolver_match.url_name == 'member_desk' %}page{% else %}location{% endif %}"{% endif %}><span class="nav-glyph" data-fa-icon="desk" aria-hidden="true"></span>Mein Arbeitsbereich</a>
       {% if shell_can_manage %}
-      <a href="{% url 'registry' %}"><span class="nav-glyph" data-fa-icon="organization" aria-hidden="true"></span>Organisation</a>
-      <a href="{% url 'users' %}"><span class="nav-glyph" data-fa-icon="users" aria-hidden="true"></span>Administration</a>
+      <a href="{% url 'registry' %}" {% if shell_active_section == 'registry' %}aria-current="{% if request.resolver_match.url_name == 'registry' %}page{% else %}location{% endif %}"{% endif %}><span class="nav-glyph" data-fa-icon="organization" aria-hidden="true"></span>Organisation</a>
+      <a href="{% url 'users' %}" {% if shell_active_section == 'users' %}aria-current="{% if request.resolver_match.url_name == 'users' %}page{% else %}location{% endif %}"{% endif %}><span class="nav-glyph" data-fa-icon="users" aria-hidden="true"></span>Administration</a>
       {% endif %}
     </nav>
     <form class="global-search" role="search" method="get" action="{% url 'member_desk' %}">
       <label class="visually-hidden" for="global-search">Sitzungen und Vorlagen im Arbeitskontext suchen</label>
-      <input id="global-search" type="search" name="q" placeholder="Sitzungen und Vorlagen suchen" maxlength="100">
+      <input id="global-search" type="search" name="q" placeholder="Sitzungen und Vorlagen suchen" maxlength="100" value="{{ shell_search_query|default:'' }}">
       <button type="submit">Suchen</button>
     </form>
   </div>
