@@ -67,3 +67,23 @@ class MeetingTests(MeetingFixture,TestCase):
     def test_context_other_body_denied(self):
         other=Organization.objects.create(name='Andere',kind='union');context=Membership.objects.create(organization=other,user=self.clerk,role='clerk')
         self.assertFalse(meeting_access(context,'read',self.meeting))
+
+    def test_invitation_requires_meeting_venue(self):
+        self.item();self.meeting.refresh_from_db();self.meeting.location='';self.meeting.save(update_fields=['location'])
+        with self.assertRaisesMessage(ValidationError,'Sitzungsort'):
+            issue(self.c,self.meeting.pk,self.meeting.version)
+
+    def test_private_agenda_requires_public_safe_label(self):
+        item=self.item(False);item.public_title='';item.save(update_fields=['public_title'])
+        self.meeting.refresh_from_db()
+        with self.assertRaisesMessage(ValidationError,'Bekanntmachungsbezeichnung'):
+            issue(self.c,self.meeting.pk,self.meeting.version)
+
+    def test_shorter_configured_invitation_days_do_not_bypass_statutory_notice(self):
+        self.item();self.meeting.refresh_from_db()
+        self.meeting.invitation_days=1
+        self.meeting.starts_at=timezone.now()+timezone.timedelta(days=2)
+        self.meeting.ends_at=self.meeting.starts_at+timezone.timedelta(hours=2)
+        self.meeting.save()
+        with self.assertRaisesMessage(ValidationError,'vier volle Kalendertage'):
+            issue(self.c,self.meeting.pk,self.meeting.version)
