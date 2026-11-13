@@ -2,11 +2,11 @@
  * Domain decisions, HTML forms, CSRF, live/offline state and role checks
  * remain exclusively in their existing server-rendered applications.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   ActionIcon, Anchor, Badge, Breadcrumbs, Button, Divider, Drawer,
-  Group, MantineProvider, NavLink, Paper, Stack, Text, ThemeIcon, Title,
+  Group, MantineProvider, Modal, NavLink, Paper, Stack, Text, TextInput, ThemeIcon, Title,
 } from '@mantine/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -53,7 +53,7 @@ function authorizedUrl(anchor) {
 
 function allowedLinks() {
   return [...document.querySelectorAll('.global-nav a[href]')]
-    .map((node) => ({ text: label(node), href: authorizedUrl(node) }))
+    .map((node) => ({ text: label(node), href: authorizedUrl(node), active: node.hasAttribute('aria-current') }))
     .filter(({ text, href }) => Boolean(text && href));
 }
 
@@ -93,7 +93,26 @@ function pageActions() {
 
 function Workbench({ route, sections, links, actions }) {
   const [drawer, setDrawer] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [quickQuery, setQuickQuery] = useState('');
   const [title, description, fa] = category(route);
+  const matches = links.filter((link) =>
+    link.text.toLocaleLowerCase('de-DE').includes(quickQuery.trim().toLocaleLowerCase('de-DE'))
+  );
+  // No extra routes or permission rules: the model only contains server-rendered links.
+  useEffect(() => {
+    const openByKeyboard = (event) => {
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setDrawer(false);
+        setQuickQuery('');
+        setQuickOpen(true);
+      }
+    };
+    document.addEventListener('keydown', openByKeyboard);
+    return () => document.removeEventListener('keydown', openByKeyboard);
+  }, []);
+
   return (
     <div className="bm-workbench" data-testid="bm-workbench">
       <Paper withBorder radius="xl" className="bm-workbench-banner">
@@ -120,6 +139,10 @@ function Workbench({ route, sections, links, actions }) {
                 {action.text}
               </Button>
             ))}
+            {links.length > 0 && <Button variant="light" className="bm-workbench-quick"
+              aria-keyshortcuts="Control+K Meta+K" title="Tastenkürzel: Strg + K oder ⌘ + K"
+              leftSection={icon(faMagnifyingGlass)} onClick={() => { setDrawer(false); setQuickQuery(''); setQuickOpen(true); }}
+              radius="md">Schnellwechsel <span className="bm-shortcut-label">Strg/⌘ K</span></Button>}
             {links.length > 0 && <Button variant="default" className="bm-workbench-open"
               leftSection={icon(faBars)} onClick={() => setDrawer(true)} radius="md"
               aria-label="Alle für mich verfügbaren Bereiche öffnen">
@@ -145,7 +168,33 @@ function Workbench({ route, sections, links, actions }) {
           </Group>
         </nav>
       )}
-      <Drawer opened={drawer} onClose={() => setDrawer(false)} title="Bereiche und Aufgaben"
+      <Modal opened={quickOpen} onClose={() => setQuickOpen(false)}
+         title="Bereich schnell wechseln" centered size="md" className="bm-quick-modal"
+         aria-label="Schnellnavigation zu freigegebenen Arbeitsbereichen">
+         <Text size="sm" c="dimmed" mb="sm">
+           Suchen Sie einen Bereich. Mit Enter öffnen Sie den ersten Treffer; Esc schließt die Auswahl.
+         </Text>
+         <TextInput label="Bereich finden" placeholder="Zum Beispiel: Sitzungen"
+           value={quickQuery} onChange={(event) => setQuickQuery(event.currentTarget.value)}
+           maxLength={60} autoFocus
+           leftSection={icon(faMagnifyingGlass)}
+           onKeyDown={(event) => {
+             if (event.key === 'Enter' && matches.length) {
+               event.preventDefault();
+               window.location.assign(matches[0].href);
+             }
+           }} />
+         <nav aria-label="Schnellnavigation" className="bm-quick-results">
+           {matches.length ? matches.map((link) => (
+             <NavLink key={link.href} label={link.text} href={link.href}
+               active={link.active} leftSection={icon(faArrowRight)}
+               className="bm-workbench-navlink" />
+           )) : <Text c="dimmed" size="sm" py="md">
+             Kein passender Bereich. Für Sitzungen und Vorlagen können Sie die globale Suche verwenden.
+           </Text>}
+         </nav>
+       </Modal>
+       <Drawer opened={drawer} onClose={() => setDrawer(false)} title="Bereiche und Aufgaben"
         position="right" size="sm" className="bm-area-drawer"
         aria-label="Für diesen Arbeitskontext freigegebene Navigation">
         <Text size="sm" c="dimmed" mb="md">
@@ -155,7 +204,7 @@ function Workbench({ route, sections, links, actions }) {
           {links.map((link) => (
             <NavLink key={link.href} label={link.text} href={link.href}
               leftSection={icon(faArrowRight)} className="bm-workbench-navlink"
-              active={window.location.pathname === new URL(link.href, window.location.origin).pathname}
+              active={link.active}
             />
           ))}
         </Stack>
