@@ -64,3 +64,32 @@ Maximale gleichzeitige Nutzer und Abstimmende, Dokument-/Mappegrößen, Speicher
 ## Voraussetzungen vor produktivem Einsatz
 
 Alle KERN-Szenarien erfolgreich; Fachanwender bestätigen Arbeitsabläufe. RLP-Regelprofile einschließlich Geschäftsordnungen, digitale/geheime Wahlverfahren, Veröffentlichungs-/Aufbewahrungsregeln und tatsächlich geltende Barrierefreiheitsanforderungen sind geprüft. Rollen/Zuständigkeiten, Sicherungsziel, TLS-Vertrauen, SMTP, Domains, Adminmeldungen und Wiederherstellung sind eingerichtet. Verschobene Module sind deaktiviert und werden nicht als verfügbare Funktion dargestellt.
+
+
+## Zusätzliche verpflichtende Nachweise: Recht, Veröffentlichung und durchgängige UX (Stand 2026-11-13)
+
+Diese Nachweise ergänzen A-01–A-32 und **ersetzen keine fachliche Freigabe**. Die konkret anwendbaren Normen und lokalen Satzungen müssen von der zuständigen Stelle auf aktuellem Stand bestätigt werden. Verweise: #128 (Rechts-/Datenmatrix), #129 (UX-/Geräte-Audit), #124 (PDF/UA), #46 (Bürgerportal), #50 (Produktiv-Gate).
+
+| ID | Prüfgegenstand | Positivfall | Negativfall / Freigabekriterium | Nachweis |
+|---|---|---|---|---|
+| A-33 | Öffentlichkeitsgrenze | Freigegebene Sitzung mit freigegebenen Dokumentfassungen sichtbar | Nichtöffentlicher TOP und nicht freigegebene Anlagen sind auch in Suche, Zählern, URLs, Cache, API, Replikat und Export unsichtbar | Rollen-/Tenant-Matrix, HTTP- und UI-Tests |
+| A-34 | Veröffentlichungsentscheidung | Berechtigte Person prüft Fassung, Anlagen, Schwärzungen und erteilt dokumentierte Freigabe | Sitzungstyp allein publiziert nichts; Entzug entfernt öffentliche Suchtreffer und Downloads nachvollziehbar | Auditereignis, End-to-End-Test |
+| A-35 | Personenbezug/Metadaten | Zulässige Angaben erscheinen nur in genehmigter Fassung | Vertrauliche Namen, Betreffzeilen, Dateinamen, PDF-Metadaten, Snippets und Link-Previews bleiben verborgen | Leak-Testkorpus, PDF-Inspektion |
+| A-36 | Einladung/TO/Niederschrift | Zuständigkeit, Frist, Bekanntmachung, Berichtigung und Versionsstand nach lokalem Regelprofil | Kein generischer Automatismus behauptet Frist- oder Unterschriftskonformität für jede Körperschaft | Normenstand, Geschäftsordnung, Fachfreigabe |
+| A-37 | Barrierefreiheit der Fachoberflächen | Kritische Aufgabe nur mit Tastatur und Screenreader erfolgreich; Status verständlich, Fokus nachvollziehbar | 200–400% Zoom, 320-CSS-px-Reflow, Fehlermeldungen, Dialoge und Touch ohne Funktionsverlust | Geräte-/AT-Matrix, manuelle Prüfung |
+| A-38 | Dokumentzugänglichkeit | Einladung, Beschlussauszug, Niederschrift mit korrekter Lesereihenfolge und Semantik | Visuell schönes PDF gilt nicht als PDF/UA; fehlende Tags/Alternativtexte blockieren Freigabe | PDF-Validator und manuelle Lesereihenfolge |
+| A-39 | UX je Rolle | Verwaltung, Vorsitz, Schriftführung, Ratsmitglied, Bürger und Admin erledigen mindestens fünf typische Aufgaben | Unverständliche Aktion, verlorene Suche, unbemerkte Doppelaktion und Sackgassen werden als Befund erfasst | Erfolg, Dauer, Fehlversuche, Hilfe, Abbruch |
+| A-40 | Offline und Rechteentzug | Berechtigtes Mitglied erkennt Download-/Syncstatus und kann kontrolliert synchronisieren | Entzogene Berechtigung, verlorene Sitzungshoheit oder Offline-Zustand erlauben keine unbemerkte Aktion oder erneute Veröffentlichung | Geräte-/Race-/Replay-Tests |
+
+### Nachweisprotokoll pro Testlauf
+
+Für **jede** ID A-01–A-40 erfassen: Build/Commit, Testumgebung, Datum, Organisation/Mandant, Testrolle, Datenklasse, Eingabedaten, erwartetes Ergebnis, tatsächliches Ergebnis, Belege (Screenshot/Log ohne vertrauliche Daten), Ticket, verantwortliche prüfende Person und Entscheidung **bestanden / fehlgeschlagen / blockiert**. Ungeprüft ist nicht bestanden. Automatisierte Tests ersetzen weder juristische Prüfung noch fachliche und assistive manuelle Tests.
+
+### Reihenfolge und Freigaberegel
+
+1. #128: verbindliche Matrix Rechtsgrundlage → fachliche Regel → Datenklasse → Oberfläche/Export → Negativtest, einschließlich lokaler Hauptsatzung und Geschäftsordnung.
+2. #129: vollständiges Inventar der Seiten, Rollen und kritischen Aufgaben, Messung mit realen Nutzenden.
+3. #46/#124: Veröffentlichungsgrenzen und barrierefreie Dokumentausgabe umsetzen, anschließend A-33–A-38 wiederholen.
+4. #50: Sicherheits-, Restore-, Last-, Geräte-, Rechts- und Fachabnahme konsolidieren; offene P0-Befunde sperren Produktivfreigabe.
+
+Die experimentellen Draft-PRs #73/#74 bleiben bis zur Architekturentscheidung #44 **außerhalb** des Produktiv-Merges.
