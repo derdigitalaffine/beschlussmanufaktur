@@ -134,4 +134,11 @@ if bash setup.sh --stack internal --env-file "$workspace/internal.env" --check >
   echo "Fehler: unvollständige Exchange-Konfiguration akzeptiert." >&2; exit 1
 fi
 
+# Duplicate keys are ambiguous to Compose and must be rejected even when values match.
+printf "SMTP_STARTTLS='false'\\n" >> "$workspace/internal.env"
+if bash setup.sh --stack internal --env-file "$workspace/internal.env" --check > "$workspace/duplicate.log" 2>&1; then
+  echo "Fehler: doppelte Umgebungsvariable akzeptiert." >&2; exit 1
+fi
+grep -q 'Doppelte Konfigurationsvariable' "$workspace/duplicate.log"
+
 echo "Setup-Smoketests: interne/externe Schlüssel, Re-Run, Secrets, Berechtigungen, First-Admin-Grenzen und Negativfälle bestanden."
