@@ -1,0 +1,156 @@
+/* Mantine workspace: visual layer only. Never use CSS to grant access. */
+.bm-mantine-dashboard,.bm-mantine-membership,.bm-mantine-invitation{
+  --bm-navy:#19343a;
+  --bm-teal:#087e75;
+  --bm-bright:#ecf9f5;
+  --bm-border:#dce7e4;
+  --bm-muted:#586d73;
+  color:var(--bm-navy);
+}
+/* Font Awesome's automatic stylesheet is disabled to honor CSP. Explicitly
+   size self-hosted SVGs so the browser never uses its 300px SVG default. */
+.bm-mantine-dashboard .svg-inline--fa,
+.bm-mantine-membership .svg-inline--fa,
+.bm-mantine-invitation .svg-inline--fa{
+  display:inline-block;width:1em;height:1em;vertical-align:-.125em;flex:none;
+}
+.bm-mantine-dashboard .mantine-Button-root,
+.bm-mantine-membership .mantine-Button-root,
+.bm-mantine-invitation .mantine-Button-root{text-decoration:none}
+.bm-mantine-dashboard a.mantine-Button-root,
+.bm-mantine-dashboard a.mantine-Button-root:hover{color:#fff!important}
+.bm-mantine-dashboard .mantine-Paper-root,
+.bm-mantine-membership .mantine-Paper-root,
+.bm-mantine-invitation .mantine-Paper-root{
+  box-shadow:0 10px 30px rgba(15,45,52,.055);
+  border-color:var(--bm-border);
+}
+/* Strict Django CSP forbids Mantine's per-component inline Grid variables. These
+   static responsive grids avoid any inline layout styles at 360px and desktop. */
+.bm-dashboard-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:1.1rem;align-items:stretch}
+.bm-dashboard-grid>div{min-width:0}
+.bm-membership-grid{display:grid;grid-template-columns:minmax(0,8fr) minmax(250px,4fr);gap:1.5rem;align-items:start}
+.bm-membership-grid>div{min-width:0}
+.bm-task-worklist{padding:1.55rem 1.8rem}
+@media(max-width:900px){
+  .bm-membership-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:850px){
+  .bm-dashboard-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:500px){
+  .bm-task-worklist{padding:1.15rem}
+}
+.bm-section-label{
+  display:inline-flex;align-items:center;gap:.55rem;padding:.4rem .8rem;
+  margin-bottom:.9rem;font-size:.74rem;font-weight:850;text-transform:uppercase;
+  letter-spacing:.09em;color:#11665c;background:#dff3e9;border-radius:8px;
+}
+.bm-mantine-dashboard{margin:2rem 0 3rem}
+.bm-spotlight-heading{font-size:clamp(1.5rem,2.3vw,2.25rem);letter-spacing:-.05em;line-height:1.16}
+.bm-spotlight-subline{font-size:.91rem;color:var(--bm-muted);max-width:710px;margin-top:.4rem}
+.bm-role-badge{max-width:min(100%,320px);height:auto;min-height:28px;padding:.4rem .65rem;line-height:1.25;white-space:normal;text-align:center}
+.bm-feature{
+  position:relative;isolation:isolate;overflow:hidden;padding:clamp(1.5rem,3vw,2.4rem);
+  height:100%;min-height:300px;
+  background:linear-gradient(128deg,#f7fbf8 5%,#edf8f4 100%)!important;
+}
+.bm-feature:before{
+  content:"";position:absolute;inset:auto -55px -88px auto;z-index:-1;
+  width:270px;height:270px;border:54px solid rgba(28,137,118,.075);
+  border-radius:50%;pointer-events:none;
+}
+.bm-feature-icon{color:#096c60!important;background:#d7efe7!important}
+.bm-feature-badge{background:#e1efe8!important;color:#176356!important}
+.bm-feature-title{font-size:clamp(1.65rem,2.3vw,2.4rem);letter-spacing:-.055em;line-height:1.16;max-width:650px}
+.bm-feature-desc{font-size:1rem;color:var(--bm-muted);max-width:610px;line-height:1.7}
+.bm-feature-actions{row-gap:.9rem}
+.bm-feature-actions .mantine-Button-root{
+  background:#087e75;border-radius:12px;font-weight:750;min-height:46px;
+  box-shadow:0 8px 16px rgba(8,126,117,.18);
+}
+.bm-feature-actions .mantine-Button-root:hover{background:#075e58}
+.bm-secondary-link{font-size:.89rem;color:#0e655c;font-weight:750;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.bm-side-stack{height:100%}
+.bm-overview-card{
+  display:flex;align-items:center;flex:1;padding:1.5rem;background:#fff!important;
+  min-height:130px;
+}
+.bm-overview-card .mantine-Group-root{width:100%}
+.bm-overview-card .mantine-Group-root>div:last-child{min-width:0}
+.bm-overview-label{font-size:.78rem;color:#587178;font-weight:750;letter-spacing:.02em}
+.bm-overview-title{font-size:1rem;letter-spacing:-.02em;margin:.25rem 0 .6rem;overflow-wrap:anywhere}
+.bm-overview-count{font-size:2.2rem;line-height:1.05;letter-spacing:-.045em;margin:.1rem 0 .35rem}
+.bm-overview-action{display:inline-flex;align-items:center;gap:.4rem;font-weight:750;color:#09665e;font-size:.85rem;text-underline-offset:3px}
+.bm-task-worklist{background:#fff!important}
+.bm-task-worklist h3{font-size:1.1rem;letter-spacing:-.035em;margin:0}
+.bm-task-worklist>.mantine-Group-root>a{font-size:.86rem;font-weight:750;color:#096e64}
+.bm-task-row{padding:.9rem .15rem}
+.bm-task-row+.bm-task-row{border-top:1px solid var(--bm-border)}
+.bm-task-row>div{min-width:0}
+.bm-task-title{font-weight:790;font-size:.94rem;overflow-wrap:anywhere}
+.bm-task-detail{color:#5e7174;margin-top:.23rem;line-height:1.55}
+.bm-task-row .mantine-Badge-root{flex:none}
+@media(max-width:450px){
+  .bm-task-row{align-items:flex-start;gap:.5rem}
+  .bm-task-row .mantine-Badge-root{margin-top:.2rem}
+}
+.bm-mantine-membership{max-width:1240px;margin:0 auto;padding-top:.35rem}
+.bm-mantine-back{display:inline-flex;align-items:center;gap:.65rem;font-weight:750;font-size:.85rem;color:#17645f;margin-bottom:1.7rem}
+.bm-mantine-heading{max-width:900px;margin-bottom:2rem}
+.bm-mantine-heading .mantine-Badge-root{height:31px;font-weight:800;letter-spacing:.02em}
+.bm-mantine-heading .mantine-Badge-label{display:inline-flex;gap:.5rem;align-items:center}
+.bm-mantine-heading h1{font-size:clamp(2rem,3.8vw,3.4rem);letter-spacing:-.065em;line-height:1.08;margin:.7rem 0}
+.bm-mantine-heading>p{color:#5e7478;font-size:1.06rem;overflow-wrap:anywhere}
+.bm-mantine-mainform{padding:clamp(1.25rem,3vw,2.5rem);background:#fff}
+.bm-mantine-mainform h2{font-size:1.45rem;letter-spacing:-.04em;margin:0}
+.bm-overline{font-weight:800;font-size:.73rem;letter-spacing:.11em;text-transform:uppercase;color:#59817f;margin:0 0 .35rem}
+.bm-mantine-form .bm-control label{font-weight:750;font-size:.87rem;margin-bottom:.45rem;color:#27454a}
+.bm-mantine-form .mantine-Input-input{
+  min-height:48px;border:1px solid #cfddda;border-radius:11px;
+  background:#fbfdfb;color:#1d373c;font-size:.94rem;
+}
+.bm-mantine-form .mantine-Input-input:focus{border-color:#087e75;box-shadow:0 0 0 3px rgba(8,126,117,.11)}
+.bm-mantine-form textarea.mantine-Input-input{min-height:106px;line-height:1.6;resize:vertical}
+.bm-mantine-form .mantine-InputWrapper-error{font-size:.85rem;font-weight:700;color:#983f34}
+.bm-mantine-form .mantine-Alert-root{border-radius:12px}
+.bm-form-reason{padding:1.2rem 1.3rem;margin-top:.3rem;background:#f5faf8!important}
+.bm-form-helper{font-size:.78rem;color:#5f7174}
+.bm-form-actions{padding-top:.3rem;row-gap:.65rem}
+.bm-form-actions .mantine-Button-root{min-height:46px;border-radius:11px;font-weight:750}
+.bm-submit{box-shadow:0 6px 14px rgba(8,126,117,.14)}
+.bm-confirm-check .mantine-Checkbox-label{font-size:.89rem;line-height:1.5}
+.bm-mantine-aside{padding:1.55rem;background:#f9fbfa!important}
+.bm-mantine-aside h3{font-size:1.12rem;letter-spacing:-.025em;margin:0}
+.bm-mantine-aside .mantine-Timeline-itemTitle{font-size:.88rem;font-weight:800;line-height:1.5}
+.bm-mantine-aside .mantine-Timeline-itemContent .mantine-Text-root{font-size:.83rem;line-height:1.6;color:#63767a}
+.bm-mantine-aside .mantine-Timeline-itemBullet{color:#117a6c}
+.bm-aside-caption{color:#5a7376;font-size:.83rem;line-height:1.65}
+.bm-mantine-invitation{margin:.7rem 0 0}
+.bm-invite-highlight{padding:1rem;background:linear-gradient(135deg,#eaf8f1,#f9fcfa)!important;margin-bottom:1.35rem}
+.bm-invite-highlight .mantine-Text-root:last-child{font-size:.82rem;line-height:1.55;color:#567170;margin-top:.2rem}
+.bm-invite-highlight .mantine-Group-root>div:last-child{flex:1;min-width:0}
+.bm-mantine-invitation .bm-submit{width:100%}
+.bm-mantine-invitation .bm-form-actions{margin-top:.3rem}
+.bm-mantine-dashboard :where(a,button,input,select,textarea):focus-visible,
+.bm-mantine-membership :where(a,button,input,select,textarea):focus-visible,
+.bm-mantine-invitation :where(a,button,input,select,textarea):focus-visible{
+  outline:3px solid #087e75;outline-offset:3px;
+}
+@media(max-width:850px){
+  .bm-feature{min-height:0}
+  .bm-side-stack{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bm-overview-card{padding:1.15rem}
+}
+@media(max-width:590px){
+  .bm-mantine-dashboard{margin:1.2rem 0 2rem}
+  .bm-side-stack{grid-template-columns:1fr}
+  .bm-feature-actions{align-items:stretch}
+  .bm-feature-actions .mantine-Button-root{width:100%}
+  .bm-mantine-mainform{padding:1.1rem}
+  .bm-mantine-aside{padding:1.1rem}
+  .bm-overview-card{min-height:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .bm-mantine-dashboard *,.bm-mantine-membership *,.bm-mantine-invitation *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}

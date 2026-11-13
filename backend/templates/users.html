@@ -2,6 +2,7 @@
 {% load static %}
 {% block title %}Menschen & Rollen · Beschlussmanufaktur{% endblock %}
 {% block page_styles %}<link rel="stylesheet" href="{% static 'ux-users.css' %}">{% endblock %}
+{% block page_mantine_assets %}<link rel="stylesheet" href="{% static 'mantine/workspace.css' %}"><script type="module" src="{% static 'mantine/workspace.js' %}"></script>{% endblock %}
 {% block content %}
 <div class="workpage users-workspace">
   <header class="ui-header">
@@ -152,6 +153,8 @@
         {{ form.non_field_errors }}
       </div>
       {% endif %}
+      <div id="mantine-invitation"></div>
+      <div id="invitation-fallback">
       <form class="users-invite-form" method="post" action="{% url 'users' %}">
         {% csrf_token %}
         {% for field in form.hidden_fields %}{{ field }}{% endfor %}
@@ -165,6 +168,7 @@
         {% endfor %}
         <button class="ui-button ui-button--primary users-submit" type="submit">Einladung senden</button>
       </form>
+      </div>
       <p class="ui-note">Einladungslinks gelten sieben Tage. Ohne Beginn startet die Rolle jetzt; ein Ende ist optional. Die Einladung wird protokolliert.</p>
     </aside>
   </div>

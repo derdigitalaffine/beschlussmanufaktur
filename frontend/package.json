@@ -1,0 +1,21 @@
+{
+  "name": "beschlussmanufaktur-mantine-pilot",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "build": "vite build",
+    "check": "node --check src/shell.js && node --check vite.config.mjs"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "7.3.1",
+    "@fortawesome/free-solid-svg-icons": "7.3.1",
+    "@fortawesome/react-fontawesome": "3.5.0",
+    "@mantine/core": "9.7.5",
+    "@mantine/hooks": "9.7.5",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": { "vite": "8.3.6" }
+}
