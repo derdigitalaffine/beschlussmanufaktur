@@ -1,0 +1,62 @@
+/* Shared Mantine workbench: always additive; every Django screen works without JS. */
+.bm-workbench{width:100%;margin:0 0 clamp(1.6rem,3vw,2.6rem);position:relative;z-index:4}
+.bm-workbench-banner.mantine-Paper-root{
+  padding:clamp(1rem,2vw,1.4rem) clamp(1.1rem,2.5vw,1.8rem);
+  border:1px solid #d6e5e0;background:linear-gradient(115deg,#fff 0%,#f5faf7 75%,#ecf6f1 100%);
+  box-shadow:0 10px 28px rgba(18,55,51,.055);
+}
+.bm-workbench-banner-row{min-width:0}
+.bm-workbench-context{min-width:0}
+.bm-workbench-emblem.mantine-ThemeIcon-root{background:#d9f0e7;color:#126d65;flex:none}
+.bm-workbench-breadcrumbs .mantine-Breadcrumbs-root{gap:.5rem}
+.bm-workbench-breadcrumbs{font-size:.78rem;color:#546e72;font-weight:750}
+.bm-workbench-breadcrumbs a{color:#126d65!important}
+.bm-workbench-breadcrumbs svg{font-size:.63rem;opacity:.55}
+.bm-workbench-description{color:#637980!important;max-width:62ch;line-height:1.45}
+.bm-workbench-actions{flex-shrink:0}
+.bm-workbench-actions .mantine-Button-root{
+  min-height:39px;padding-inline:1rem;font-weight:740;letter-spacing:0;box-shadow:none;
+}
+.bm-workbench-actions .mantine-Button-label{overflow:hidden;text-overflow:ellipsis}
+.bm-workbench-actions .mantine-Button-root[data-variant="filled"]{
+  background:#12766d;color:#fff;border-color:#12766d
+}
+.bm-workbench-open.mantine-Button-root{border-color:#ceded9;background:#fff;color:#174c47}
+.bm-workbench-index{margin:.85rem 0 0;padding:.55rem .3rem .55rem .75rem;background:#f2f7f5;border:1px solid #e0eae6;border-radius:12px}
+.bm-workbench-index .mantine-Group-root{min-width:0}
+.bm-index-label.mantine-Badge-root{flex-shrink:0;white-space:nowrap;background:#e1efea;color:#28665b}
+.bm-index-label svg{margin-right:.25rem}
+.bm-workbench-index-scroll{min-width:0;display:flex;flex:1;gap:.35rem;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#b6d1c7 transparent;padding:.25rem 0}
+.bm-index-link.mantine-Anchor-root{flex-shrink:0;font-size:.79rem;color:#3a5558!important;font-weight:650;padding:.5rem .75rem;border:1px solid transparent;border-radius:9px;white-space:nowrap;min-height:36px;display:flex;align-items:center}
+.bm-index-link:hover{border-color:#ceded8;background:#fff;text-decoration:none}
+.bm-index-link:focus-visible,.bm-workbench a:focus-visible,.bm-workbench button:focus-visible{
+  outline:3px solid #d5a552;outline-offset:3px
+}
+.bm-area-drawer .mantine-Drawer-content{background:#f9fbfa}
+.bm-area-drawer .mantine-Drawer-header{background:#f9fbfa;border-bottom:1px solid #e1eae5;padding-block:1.15rem}
+.bm-area-drawer .mantine-Drawer-title{color:#173e3b;font-weight:800;font-size:1.12rem}
+.bm-area-drawer .mantine-NavLink-root{border-radius:11px;color:#284c4a;font-weight:680}
+.bm-area-drawer .mantine-NavLink-root:hover{background:#edf5f1}
+.bm-area-drawer .mantine-NavLink-root[data-active]{background:#ddf1e8;color:#116e60}
+.bm-area-drawer .mantine-Drawer-body{padding-top:1.5rem}
+#bm-workbench-root:empty{display:none}
+@media(max-width:780px){
+  .bm-workbench-banner-row{align-items:flex-start!important}
+  .bm-workbench-banner-row>.mantine-Group-root:first-child{flex:1 1 100%;min-width:0}
+  .bm-workbench-actions{width:100%;display:flex}
+  .bm-workbench-actions a{flex:1 1 auto}
+  .bm-workbench-index{padding:.45rem .5rem}
+  .bm-index-label span{display:none}
+}
+@media(max-width:420px){
+  .bm-workbench-banner.mantine-Paper-root{padding:1rem}
+  .bm-workbench-description{font-size:.76rem}
+  .bm-workbench-actions .mantine-Button-root{min-width:0;padding-inline:.65rem;font-size:.77rem}
+  .bm-workbench-breadcrumbs{font-size:.7rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .bm-workbench *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+@media(forced-colors:active){
+  .bm-workbench-banner.mantine-Paper-root,.bm-workbench-index{border:1px solid CanvasText}
+}

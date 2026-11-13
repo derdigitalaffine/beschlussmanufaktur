@@ -1,0 +1,21 @@
+<!doctype html><html lang="de"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bürgerinformation</title><link rel="stylesheet" href="/backend/static/app.css">
+<link rel="stylesheet" href="/backend/static/ux-guest.css"></head>
+<body class="bm-public-ui">
+<header class="topbar"><a href="/" class="brand"><span class="brand-mark">B</span>Bürgerinformation</a></header>
+<main id="inhalt">
+<section class="page-heading"><span class="eyebrow">Bürgerinformation</span><h1>Entscheidungen nachvollziehen.</h1>
+<p>Veröffentlichte Sitzungen, Vorlagen und Niederschriften.</p></section>
+<form class="card" method="get">
+<label>Suchbegriff<input type="search" name="q" value=""></label>
+<label>Körperschaft<select name="organisation"><option>Alle Körperschaften</option></select></label>
+<label>Gremium<select name="gremium"><option>Alle Gremien</option></select></label>
+<label>Information<select name="art"><option>Alle Informationen</option></select></label>
+<label>Von<input type="date" name="von"></label>
+<label>Bis<input type="date" name="bis"></label>
+<button type="submit" class="primary">Suchen</button><a href="/">Zurücksetzen</a>
+</form>
+<article class="card"><span class="eyebrow">Sitzung</span><h2><a href="/detail/">Sitzung des Gemeinderats</a></h2>
+<p>Beschlussübersicht der veröffentlichten Sitzung.</p></article>
+</main><footer>Beschlussmanufaktur · Öffentliche Informationen</footer></body></html>
