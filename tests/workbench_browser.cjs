@@ -51,6 +51,21 @@ async function noHorizontalOverflow(page, name) {
     await page.locator('.bm-index-link', { hasText: 'Anlagen' }).click();
     assert.equal(new URL(page.url()).hash, '#bm-section-3');
 
+    // CTRL/⌘ K quick switcher must show only routes already emitted by the server.
+    assert.equal(await page.locator('.global-nav a[aria-current="location"]').count(), 1);
+    await page.keyboard.press('Control+k');
+    const quick = page.locator('.bm-quick-modal');
+    await quick.getByText('Bereich schnell wechseln').waitFor();
+    assert.equal(await quick.locator('a[href="/vorlagen/"]').count(), 1);
+    assert.equal(await quick.locator('a[href="/verwaltung/"]').count(), 0);
+    await quick.getByRole('textbox', { name: 'Bereich finden' }).fill('Sitz');
+    assert.equal(await quick.locator('.bm-quick-results a').count(), 1);
+    assert.equal(await quick.locator('.bm-quick-results a[href="/sitzungen/"]').count(), 1);
+    await quick.getByRole('textbox', { name: 'Bereich finden' }).fill('Unbekannt');
+    await quick.getByText('Kein passender Bereich.').waitFor();
+    await page.keyboard.press('Escape');
+    await quick.waitFor({ state: 'hidden' });
+
     await page.getByRole('button', { name: 'Alle für mich verfügbaren Bereiche öffnen' }).click();
     await page.getByText('Bereiche und Aufgaben').waitFor();
     assert.equal(await page.locator('.bm-area-drawer a[href="/vorlagen/"]').count(), 1);
@@ -78,6 +93,10 @@ async function noHorizontalOverflow(page, name) {
     await narrow.goto(`${base}/tests/fixtures/workbench.html`, { waitUntil: 'networkidle' });
     await narrow.getByTestId('bm-workbench').waitFor();
     await noHorizontalOverflow(narrow, 'Protected workbench 360px');
+    await narrow.getByRole('button', { name: /Schnellwechsel/ }).click();
+    await narrow.locator('.bm-quick-modal').getByRole('textbox', { name: 'Bereich finden' }).waitFor();
+    await noHorizontalOverflow(narrow, 'Quick navigation at 360px');
+    await narrow.keyboard.press('Escape');
     assert.equal(await narrow.getByRole('heading', { name: 'Schulwegsicherung im Ortsbeirat' }).isVisible(), true);
     await narrow.screenshot({ path: 'workbench-mobile-360.png', fullPage: true });
 
@@ -92,6 +111,8 @@ async function noHorizontalOverflow(page, name) {
     const plain = await noJs.newPage();
     await plain.goto(`${base}/tests/fixtures/workbench.html`);
     assert.equal(await plain.locator('#bm-workbench-root').isHidden(), true);
+    assert.equal(await plain.locator('.global-nav a[aria-current="location"]').count(), 1);
+    assert.equal(await plain.getByRole('button', { name: /Schnellwechsel/ }).count(), 0);
     assert.equal(await plain.locator('form[action="/save-step/"] button').isVisible(), true);
     assert.equal(await plain.locator('.ui-panel h2').count(), 5);
     await noHorizontalOverflow(plain, 'No-JS protected layout 360px');
