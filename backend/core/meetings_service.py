@@ -76,6 +76,13 @@ def issue(context,meeting_id,version,reason='',exception_confirmed=False):
     full_days=(timezone.localtime(obj.starts_at).date()-timezone.localtime(now).date()).days-1
     if full_days<obj.invitation_days and (not reason.strip() or not exception_confirmed):raise ValidationError('Einladungsfrist unterschritten. Begründete und bestätigte Ausnahme erforderlich.')
     if not obj.items.filter(removed=False).exists():raise ValidationError('Tagesordnung fehlt.')
+    if not (obj.location or '').strip():raise ValidationError('Für die Einladung muss der Sitzungsort angegeben sein (§ 34 Abs. 6 GemO).')
+    if obj.ends_at<=obj.starts_at:raise ValidationError('Sitzungsende muss nach dem Sitzungsbeginn liegen.')
+    if obj.invitation_days<4 and full_days<4 and not exception_confirmed:
+        raise ValidationError('Die gesetzliche Regelfrist beträgt mindestens vier volle Kalendertage (§ 34 Abs. 3 GemO). Dringlichkeit ausdrücklich prüfen und dokumentieren.')
+    for item in obj.items.filter(removed=False,public=False):
+        if not (item.public_title or '').strip():
+            raise ValidationError('Für nichtöffentliche TOPs ist eine datensparsame Bekanntmachungsbezeichnung erforderlich (§ 34 Abs. 6, § 35 GemO).')
     for item in obj.items.filter(removed=False,template__isnull=False).select_related('template'):
         if item.template.state!='ready':raise ValidationError('Alle verknüpften Vorlagen müssen intern bereitgestellt sein.')
         if item.template.attachments.filter(removed_at__isnull=True,checked=False).exists():raise ValidationError('Ungeprüfte Anlagen.')
