@@ -79,3 +79,33 @@ class MemberDeskUITests(SimpleTestCase):
             response=desk(self.request())
         self.assertContains(response,"Keine freigegebenen Treffer")
         self.assertContains(response,"Keine zukünftige Sitzung")
+
+    def test_favorite_toggle_returns_to_filtered_results_without_open_redirect(self):
+        item=meeting_row()
+        entry=SimpleNamespace(favorite=False, save=lambda **kwargs: None)
+        with (
+            patch("core.member_views.active_context",return_value=self.context),
+            patch("core.member_views.resources",return_value=[item]),
+            patch("core.member_views.WorkspaceEntry.objects.get_or_create",return_value=(entry,False)),
+        ):
+            response=desk(self.request("post",{
+                "kind":"meeting","resource_id":str(item["id"]),
+                "q":"Rat & Bau","next":"https://example.org/redirect",
+            }))
+        self.assertTrue(entry.favorite)
+        self.assertEqual(response.status_code,302)
+        self.assertEqual(response["Location"],"/mein-bereich/?q=Rat+%26+Bau")
+        self.assertNotIn("example.org",response["Location"])
+
+    def test_favorite_search_context_is_escaped_in_post_form(self):
+        item=meeting_row()
+        with (
+            patch("core.member_views.active_context",return_value=self.context),
+            patch("core.shell.active_context",return_value=self.context),
+            patch("core.member_views.resources",return_value=[item]),
+            patch("core.member_views.WorkspaceEntry.objects.filter",return_value=[]),
+            patch("core.member_views.Notification.objects.filter") as notifications,
+        ):
+            notifications.return_value.order_by.return_value.__getitem__.return_value=[]
+            response=desk(self.request(data={"q":'Rat " & Bau'}))
+        self.assertContains(response,'name="q" type="hidden" value="Rat &quot; &amp; Bau"')
