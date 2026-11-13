@@ -124,9 +124,10 @@ def apply_payload(obj,kind,data):
         obj.state='finished';obj.paused=False
     elif kind in ('pause','resume'):
         if obj.state!='live':raise ValidationError('Keine laufende Sitzung.')
+        if obj.paused==(kind=='pause'):raise ValidationError('Sitzung ist bereits in diesem Zustand.')
         obj.paused=kind=='pause'
     elif kind=='top':
-        if obj.state!='live':raise ValidationError('Keine laufende Sitzung.')
+        if obj.state!='live' or obj.paused:raise ValidationError('Tagesordnungspunkt kann nur während einer laufenden, nicht pausierten Sitzung aufgerufen werden.')
         item=AgendaItem.objects.get(pk=data['item_id'],meeting=obj,removed=False);obj.active_item=item
     elif kind=='presence':
         if obj.state not in ('invited','live'):raise ValidationError('Anwesenheit ist nur vor oder während der Sitzung erfassbar.')
