@@ -1,5 +1,9 @@
 # Beschlussmanufaktur
 
+![Beschlussmanufaktur – Dokument und Beschluss](backend/static/brand-mark.svg)
+
+> **Entwicklungssoftware, nicht für den produktiven Betrieb freigegeben.** Ein erfolgreicher CI-Lauf ersetzt weder eine fachliche Abnahme noch Penetrationstest, Barrierefreiheitsprüfung, Restoreprobe oder einen realen Zweiserver-Test.
+
 Ein geplantes, vollständig webbasiertes Ratsinformationssystem für kommunale Verwaltung, Mandatsträger und Öffentlichkeit. Schwerpunkt sind eine verständliche Bedienung und die Schriftführung während der Sitzung. Das System soll auf Linux vollständig mit Docker Compose betreibbar sein und getrennte interne und externe Server unterstützen.
 
 **Projektstand: Entwicklungsstand 0.7.** Implementiert sind Organisationen/Rechte, geschützter Datenaustausch, Vorlagen mit Freigaben, Sitzungsvorbereitung und PDF-Mappen, Live-Schriftführung und namentliche digitale Abstimmungen, Niederschriften, Beschlusskontrolle sowie persönlicher Arbeitsbereich mit verschlüsselter Offline-Vorbereitung und geprüftem Abgleich. Noch keine Produktivfreigabe. Umfang, Tests und offene Teilanforderungen stehen im [Implementierungsstand](docs/11-implementierungsstand.md).
@@ -58,27 +62,55 @@ Das langfristige Zielbild ist ein durchgängig verständliches, zugängliches, p
 | [Dynamische Roadmap](docs/22-dynamische-roadmap.md) | Outcome-Portfolio, Horizonte, Prioritäten, Risiken, Qualitätsgates und WIP-Regeln |
 | [Agenten-Council](docs/23-agenten-council.md) | Sichtbare Gegenprüfung strittiger Architektur-, UX- und Security-Entscheidungen |
 
-## Erster produktiver Umfang
+## Schonungslose Bestandsaufnahme (Stand: 13. November 2026)
 
-- Organisationen, Gremien, Personen, Legislaturperioden und flexible Rechte.
-- Markdown-basierte Vorlagen im Webeditor, Zusammenarbeit und Freigaben.
-- Sitzungsvorbereitung, kontrollierte Nachträge, Einladungen, PDF-Mappen und Druckpakete.
-- Live-Schriftführung, Anwesenheit, Befangenheit, Beschlussfähigkeitsprüfung und digitale Abstimmungen einschließlich eines gesondert geprüften Entwurfs für geheime Abstimmungen/Wahlen.
-- Offline-Schriftführung für ausdrücklich vorbereitete Sitzungen; digitale Stimmabgabe ausschließlich online.
-- Niederschriften, Prüfung, Berichtigungen, Anträge und Beschlusskontrolle.
-- Geschütztes Mandatsträgerportal und öffentliches Bürgerportal mit Suche.
-- Administration, CI, Domains und TLS, E-Mail, lokale Dateispeicherung, Backup und Wiederherstellung.
-- Einzelserverbetrieb und Trennung in internen und externen Server.
+Diese Übersicht trennt **Code vorhanden**, **automatisiert geprüft** und **im Realbetrieb nachgewiesen**. Sie beruht auf dem Repository, den vorhandenen Tests/Workflows und der Dokumentation; sie ist **kein** unabhängiges Security- oder Fachgutachten.
 
-## Bewusst später
+| Bereich | Nachweisbarer Stand | Wesentliche Einschränkung |
+|---|---|---|
+| Fachliche Kernstrecke | Django-Modelle, Formulare und Views für Organisationen, Mandate, Vorlagen, Sitzungen, Einladungen, Beschlüsse, Niederschriften und Beschlusskontrolle | Der gesamte Ablauf wurde nicht mit realen kommunalen Fachanwendern verbindlich abgenommen |
+| Rechte/Mandanten | Organisationsgebundene Kontexte, Rollen, Einladungen, getrennte interne/geschützte/öffentliche Dienste und entsprechende Tests | Rollenmatrix, Ausnahmesituationen und organisationsübergreifende Datenflüsse benötigen unabhängige Sicherheitsprüfung |
+| Live-Sitzung | Implementierte Führerschaft, Journal, Anwesenheit und digitale namentliche Stimmabgabe | Digitale geheime Wahl/Abstimmung nicht produktiv vorhanden; keine rechtliche Gesamtzertifizierung |
+| Dokumente | PDF/DOCX, Einladungsmappen, ICS, Vorlagen und Fassungen | Komplexe Typografie, PDF/UA, Signaturen, Druckqualität und rechtssichere Muster nicht vollständig nachgewiesen |
+| Offline | Verschlüsselte lokale Vorbereitung und Konfliktbehandlung, automatisierte Chromium-Prüfung | Rechteentzug kann offline nicht sofort greifen; reale Endgeräte-/Browsermatrix und Sicherheitsreview fehlen |
+| Integrationen | CSV-Importpipeline und kontrollierter interner/externer Austausch | Kein belegter vollständiger OParl-/DokuFIS- oder bidirektionaler more! rubin-Connector; CSV-Adapter ist in PR #142, noch nicht Teil von `main` |
+| Branding/UI | Django-Templates, selbst gehostete Mantine-Assets, neue SVG-Bildmarke und CSS-Design-Tokens | Branding nicht mandantenweise administrierbar; keine fertige Logo-Uploadverwaltung, kein vollständiger UX-/Accessibility-Nachweis |
+| Installation/Betrieb | Getrennte Compose-Dateien, Caddy, SMTP, Bootstrap-Assistent, Backup-Skripte und Smoke-Tests | Lokale CA statt automatisch öffentlichem ACME; kein unbeaufsichtigtes Upgrade, kein bestätigter isolierter Restore unter Realbedingungen |
+| Qualität | GitHub Actions für Django (inkl. PostgreSQL/Rollen), Migrationen, Compose/Caddy/Imagebuild, JS/Node und Chromium | CI deckt nicht Penetration, Last, Ausfallsicherheit, Datenschutz-Folgenabschätzung, WCAG/BITV oder reale kommunale Freigaben ab |
 
-Aufnahme, Audioablage, Whisper/WhisperX, SpeechMind, KI-Protokollvorschläge und Sitzungsgeld werden erst nach dem übrigen Kern entwickelt. OParl und DMS werden vorbereitet. Vollständige Barrierefreiheitsumsetzung ist nicht Bestandteil des ersten Umfangs; ihre mögliche Bedeutung für einen realen öffentlichen Einsatz bleibt eine ausdrücklich zu klärende Freigabevoraussetzung. Das Produktzielbild setzt dennoch eine hohe Accessibility-Zielqualität für die weitere Produktreife; daraus entsteht keine rückwirkende Behauptung bereits erreichter Konformität.
+### Konkrete technische Befunde
 
-Keine Migration aus Bestands-RIS, Bürgerkonten, Themenabonnements, Browser-Push oder verpflichtenden externen Analyse- und KI-Dienste. Keine kundenspezifischen Logos, Namen oder realen Personen im Auslieferungszustand. Wenige eindeutig gekennzeichnete, vollständig löschbare Testdaten werden vorgesehen.
+- Das Repository enthält eine **monolithische Django-Fachanwendung** mit lokal gebauten Mantine/JavaScript-Teilen, PostgreSQL und separaten externen Diensten. Die Architektur ist funktionsreich, aber entsprechend anspruchsvoll bei Schema-, Rechte- und Synchronisationsänderungen.
+- Der geführte Installer ist **ausdrücklich nur für Erstinstallationen**. Er verhindert absichtsvoll gefährliche automatische Updates und Volume-Löschungen. Das ist ein Schutz, keine fertige Betriebsautomatisierung.
+- Die GitHub-Workflowdatei `.github/workflows/checks.yml` enthält echte technische Prüfungen einschließlich PostgreSQL, Compose/Caddy und Browserautomation. Eine grüne Pipeline belegt jedoch nur die dort abgedeckten Fälle.
+- Der öffentliche Dienst erhält freigegebene Projektionen; der externe Transfer ist ein zusätzlicher Vertrauens- und Betriebsbereich. Reale Netzsegmentierung, Zertifikatsvertrauen und Ende-zu-Ende-Übertragung sind gesondert zu prüfen.
+- Es gibt **keine belastbare Aussage**, dass alle kommunalrechtlichen Sonderfälle, Geheimhaltung, Befangenheit, Vertretungen und Fristen vollständig fachlich geprüft sind.
+- Die neue SVG-Bildmarke wird im Header und als Favicon verwendet. Die erzeugten alternativen Logoentwürfe sind **nicht** als auswählbare Assets oder Bildgenerator in die Anwendung integriert.
+- README und andere Dokumente enthalten teils ältere Zielbildformulierungen. Maßgeblich für den tatsächlichen Stand sind implementierter Code, grüne Checks und dokumentierte Abnahmen, **nicht** die Zahl der beschriebenen Funktionen.
 
-## Technische Richtung
+### Offene Pull Requests und Risiken
 
-Bestätigt sind Python im Backend, Linux, Docker Compose, Caddy und administrierbare TLS-Zertifikate. Umgesetzt sind Django, PostgreSQL, lokal gerenderte Weboberflächen mit JavaScript und getrennte Hintergrundprozesse. Fachaktionen und kleine JSON-Verträge werden serverseitig autorisiert. Die Offline-Oberfläche benötigt HTTPS und einen aktuellen Browser. Ein zusätzliches React-Frontend ist aktuell nicht erforderlich; es bleibt eine mögliche spätere Umstellung. Eine größere Frontendmigration benötigt nach dem Zielbild zuerst einen repräsentativen Prototyp und messbare Vorteile bei UX, Accessibility, Testbarkeit und komplexem Zustand, ohne Security/Performance/Betrieb unverhältnismäßig zu verschlechtern.
+Zum Zeitpunkt dieser Bestandsaufnahme sind unter anderem [#141](https://github.com/derdigitalaffine/beschlussmanufaktur/pull/141) (Setup-Härtung; Backend-CI fehlgeschlagen) und [#142](https://github.com/derdigitalaffine/beschlussmanufaktur/pull/142) (more! rubin CSV-Adapter; noch nicht gemergt) offen. Die experimentellen Frontend-PRs [#73](https://github.com/derdigitalaffine/beschlussmanufaktur/pull/73) und [#74](https://github.com/derdigitalaffine/beschlussmanufaktur/pull/74) sind keine Produktionsfreigaben. Aktuelle Zustände immer auf GitHub nachprüfen.
+
+### Prioritäten vor jeder Produktivfreigabe
+
+1. **P0 – Betriebssicherheit:** Fehlerhafte CI-Läufe beheben; realen Zwei-Host-Test mit TLS, SMTP, Transfer, Berechtigungsentzug, Backup und isoliertem Restore dokumentieren.
+2. **P0 – Fachrecht und Datenschutz:** kommunalrechtliche Fachabnahme der Einladungen, Quoren, Befangenheit, Vertretung, Beschlüsse und Niederschriften; Rollen-/Mandantentrennung extern prüfen; Datenschutzkonzept und Aufbewahrung festlegen.
+3. **P0 – Sicherheit:** unabhängiger Pentest, Bedrohungsmodell, Secret-Rotation, Audit- und Vorfallprozesse, Wiederanlauf nach Fehlern und belastbare Lasttests.
+4. **P1 – UX/Accessibility:** Tastatur-, Screenreader- und Mobiltests; durchgängige verständliche Fehlermeldungen und echte Anwenderstudien; barrierefreie Dokumente.
+5. **P1 – Administration/Integrationen:** Mandantenbranding mit sicherem Upload, Importzuordnung und Dublettenprüfung; OParl-/DokuFIS-Verträge und more! rubin nur anhand realer Hersteller- oder Exportbelege umsetzen.
+6. **P2 – Komfort:** Erweiterte Auswertungen, optionale KI und Audio erst nach verlässlichem Kernbetrieb.
+
+**Freigabestatus: NEIN.** Es gibt weder einen dokumentierten vollständigen Abnahmenachweis noch eine Grundlage für die Aussage „100 % fertig“, „rechtskonform zertifiziert“ oder „produktionssicher“.
+
+## Technischer Aufbau
+
+- **Backend:** Python 3.12, Django, PostgreSQL; Templates und selbst gehostete JavaScript-/Mantine-Oberflächen.
+- **Infrastruktur:** Linux, Docker Compose, Caddy, separate interne und externe Hosts, asynchrone Hintergrundaufgaben und private Dateivolumes.
+- **Qualitätsprüfungen:** `.github/workflows/checks.yml` und die lokalen Django-/Node-/Browser-Smokes.
+- **Schnittstellen:** kontrollierte Transferverträge und CSV-Import; OParl/DMS als noch zu belegende Ausbauziele.
+
+Die Abschnitte [Implementierungsstand](docs/11-implementierungsstand.md), [Abnahme](docs/09-abnahme-umsetzung.md), [Betrieb](docs/07-betrieb.md) und [Installation](docs/12-installation.md) enthalten die fachlichen und technischen Details.
 
 ## Verbindlichkeit und Lizenz
 
