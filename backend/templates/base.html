@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Beschlussmanufaktur{% endblock %}</title>
 <link rel="stylesheet" href="{% static 'app.css' %}">
+<link rel="icon" href="{% static 'brand-mark.svg' %}" type="image/svg+xml">
+<link rel="stylesheet" href="{% static 'brand-custom.css' %}">
 {% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'ux-system.css' %}">{% endif %}
 {% block page_styles %}{% endblock %}
 {% if user.is_authenticated %}<link rel="stylesheet" href="{% static 'ux-polish.css' %}">
@@ -22,7 +24,7 @@
 <header class="topbar">
   <div class="topbar-main">
     <a class="brand" href="{% url 'home' %}">
-      <span class="brand-mark" aria-hidden="true">B</span>
+      <span class="brand-mark" aria-hidden="true"><img src="{% static 'brand-mark.svg' %}" alt="" width="36" height="36"></span>
       <span>{% firstof portal.title "Beschlussmanufaktur" %}<small>Gremienarbeit. Gemeinsam gestaltet.</small></span>
     </a>
     {% if user.is_authenticated %}
