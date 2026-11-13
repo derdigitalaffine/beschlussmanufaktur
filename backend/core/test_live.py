@@ -71,3 +71,15 @@ class LiveTests(MeetingFixture,TestCase):
         person.refresh_from_db();self.assertFalse(person.present)
     def test_malformed_determination_returns_validation(self):
         with self.assertRaises(ValidationError):self.send('eligibility',{'participant_id':str(MeetingParticipant.objects.get().pk),'voting':True,'reason':['invalid']})
+
+    def test_pause_resume_are_explicit_and_idempotent_only_by_event_id(self):
+        self.send('begin', {})
+        self.send('pause', {})
+        with self.assertRaises(ValidationError):
+            self.send('pause', {})
+        with self.assertRaises(ValidationError):
+            self.send('top', {'item_id': str(self.meeting.items.first().pk)})
+        self.send('resume', {})
+        with self.assertRaises(ValidationError):
+            self.send('resume', {})
+        self.send('top', {'item_id': str(self.meeting.items.first().pk)})

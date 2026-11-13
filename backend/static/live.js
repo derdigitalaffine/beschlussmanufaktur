@@ -13,3 +13,16 @@ async function pulse(){
 }
 if(connection){pulse();setInterval(pulse,30000);}
 for(const form of document.querySelectorAll('form[method=post]'))form.addEventListener('submit',()=>{const id=form.querySelector('[name=event_id]');if(id&&crypto.randomUUID)id.value=crypto.randomUUID();});
+
+// Prevent accidental double submissions and require an explicit end confirmation.
+for(const form of document.querySelectorAll('form[method=post]')){
+  form.addEventListener('submit',event=>{
+    const submitter=event.submitter;
+    if(submitter?.dataset.confirmLiveEnd==='true'&&!window.confirm('Sitzung wirklich endgültig beenden? Die Livebearbeitung kann danach nicht fortgesetzt werden.')){
+      event.preventDefault();return;
+    }
+    if(form.dataset.submitting==='true'){event.preventDefault();return;}
+    form.dataset.submitting='true';
+    if(submitter)submitter.setAttribute('aria-disabled','true');
+  });
+}
