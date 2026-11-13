@@ -99,6 +99,7 @@
           <form method="post" class="member-favorite-form">
             {% csrf_token %}
             <input name="kind" type="hidden" value="{{ obj.kind }}">
+            <input name="q" type="hidden" value="{{ query }}">
             <input name="resource_id" type="hidden" value="{{ obj.id }}">
             <button class="ui-button" type="submit">{% if obj.favorite %}Favorit entfernen{% else %}Als Favorit merken{% endif %}</button>
           </form>
