@@ -21,7 +21,7 @@ def resources(context,query=''):
     if not context or not available_contexts(context.user).filter(pk=context.pk).exists():raise PermissionDenied
     text=query.casefold();rows=[]
     for obj in Meeting.objects.select_related('committee').filter(organization=context.organization):
-        if meeting_access(context,'read',obj) and text in (obj.title+' '+obj.committee.name+' '+obj.location).casefold():
+        if meeting_access(context,'read',obj) and text in (' '.join((obj.title or '',obj.committee.name or '',obj.location or ''))).casefold():
             meeting_state={'preparation':'In Vorbereitung','invited':'Eingeladen','live':'Sitzung läuft','finished':'Beendet','return_pending':'Rückgabe ausstehend'}
             rows.append({
                 'id':obj.pk,'kind':'meeting','title':obj.title,
@@ -31,8 +31,8 @@ def resources(context,query=''):
                 'status_label':meeting_state.get(obj.state,'Anderer Sitzungsstand'),
             })
     if settings.SERVER_ROLE=='internal':
-        for obj in Template.objects.select_related('organization','kind','author','unit').all():
-            if template_access(context,'read',obj) and text in (obj.subject+' '+obj.number+' '+obj.markdown).casefold():
+        for obj in Template.objects.select_related('organization','kind','author','unit').filter(organization=context.organization):
+            if template_access(context,'read',obj) and text in (' '.join((obj.subject or '',obj.number or '',obj.markdown or ''))).casefold():
                 template_state={'draft':'Entwurf','review':'In Prüfung','returned':'Zurückgegeben','ready':'Bereitgestellt'}
                 rows.append({
                     'id':obj.pk,'kind':'template','title':obj.subject,'subtitle':obj.number,
@@ -41,7 +41,7 @@ def resources(context,query=''):
                 })
     else:
         for obj in ExternalDocument.objects.all():
-            if 'read' in obj.permissions.get(str(context.pk),[]) and text in (obj.title+' '+obj.number+' '+obj.markdown).casefold():
+            if 'read' in obj.permissions.get(str(context.pk),[]) and text in (' '.join((obj.title or '',obj.number or '',obj.markdown or ''))).casefold():
                 rows.append({
                     'id':obj.pk,'kind':'template','title':obj.title,'subtitle':obj.number,
                     'url':f'/dokumente/{obj.pk}/','status_label':'Zum Lesen bereitgestellt',
