@@ -126,7 +126,7 @@ def export(title,markdown,format='pdf',subtitle='',metadata=None,organization_id
                 content='&#8226;  '+escape(text)
             else:
                 content=escape(text)
-            content=content.replace('\\n','<br/>')
+            content=content.replace('\n','<br/>')
             elements.append(Paragraph(content,style))
     if metadata:
         elements.extend([Spacer(1,16),HRFlowable(width='100%',thickness=.6,color=rule,spaceAfter=12),
