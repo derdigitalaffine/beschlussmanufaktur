@@ -5,6 +5,8 @@ from django.core.exceptions import PermissionDenied,ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404,render,redirect
+from django.urls import reverse
+from urllib.parse import urlencode
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from .models import Decision,DecisionUpdate,Meeting,Membership,Notification
@@ -85,10 +87,18 @@ def index(request):
         str(obj.pk),
     ))
     state_filters=[{'value':key,'label':label,'count':counts[key]} for key,(label,_) in DECISION_LIST_STATES.items()]
+    # The dashboard shortcuts refine the current result instead of silently
+    # discarding the user's search and status selection.
+    def focus_url(target):
+        params={'focus':target}
+        if query:params['q']=query
+        if state:params['state']=state
+        return reverse('decisions')+'?'+urlencode(params)
     return render(request,'decisions.html',{
         'context':context,'objects':rows,'query':query,'state':state,'focus':focus,
         'state_filters':state_filters,'accessible_count':len(accessible),
         'overdue_count':overdue_count,'mine_count':mine_count,
+        'overdue_focus_url':focus_url('overdue'),'mine_focus_url':focus_url('mine'),
         'active_count':len(accessible)-counts['closed']-counts['not_required'],
     })
 
