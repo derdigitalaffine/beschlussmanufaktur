@@ -13,6 +13,7 @@ from django.views.decorators.http import require_http_methods
 from .models import ImportBatch,RegistryRecord,PersonProfile,Membership,AuditEvent,Invitation,InvitationDispatch
 from .invitations import lock_admin,check_existing_role,digest_token,usable_invitations
 from .user_views import admin_context
+from .more_rubin import convert_people_csv
 
 HEADERS={'registry':{'kind','name','starts_on','ends_on','details'},'people':{'name','email','function','faction'},'accounts':{'email','role','starts_at','ends_at'}}
 
@@ -94,7 +95,7 @@ def apply(context,batch_id):
     return batch
 
 class UploadForm(forms.Form):
-    kind=forms.ChoiceField(label='Importart',choices=[('registry','Gremien und Stammdaten'),('people','Personenprofile'),('accounts','Konten/Rollen als Einladungen')])
+    kind=forms.ChoiceField(label='Importart',choices=[('registry','Gremien und Stammdaten'),('people','Personenprofile'),('more_rubin_people','more! rubin: Personen-CSV'),('accounts','Konten/Rollen als Einladungen')])
     file=forms.FileField(label='UTF-8-CSV')
 
 @login_required
@@ -108,10 +109,16 @@ def workspace(request,batch_id=None):
                 if request.POST.get('confirm')!='yes':raise ValidationError('Vorschau ausdrücklich bestätigen.')
                 apply(context,batch.pk);return redirect('import_detail',batch_id=batch.pk)
             if form.is_valid():
-                rows=parse_upload(form.cleaned_data['file'],form.cleaned_data['kind'],context.organization)
+                kind=form.cleaned_data['kind']
+                upload=form.cleaned_data['file']
+                if kind=='more_rubin_people':
+                    from django.core.files.uploadedfile import SimpleUploadedFile
+                    upload=SimpleUploadedFile('more-rubin-normalized.csv',convert_people_csv(upload))
+                    kind='people'
+                rows=parse_upload(upload,kind,context.organization)
                 with transaction.atomic():
                     lock_admin(request.user,context.pk,context.organization_id)
-                    batch=ImportBatch.objects.create(organization=context.organization,owner=request.user,context=context,kind=form.cleaned_data['kind'],rows=rows,digest=digest(rows))
+                    batch=ImportBatch.objects.create(organization=context.organization,owner=request.user,context=context,kind=kind,rows=rows,digest=digest(rows))
                 return redirect('import_detail',batch_id=batch.pk)
         except (ValidationError,ValueError) as exc:error=' '.join(exc.messages) if isinstance(exc,ValidationError) else 'Datum oder Eingabewert ungültig.'
     return render(request,'imports.html',{'context':context,'form':form,'batch':batch,'error':error,'headers':HEADERS})
