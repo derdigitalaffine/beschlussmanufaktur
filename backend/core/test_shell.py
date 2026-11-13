@@ -6,7 +6,7 @@ from django.template.loader import render_to_string
 from django.test import RequestFactory, SimpleTestCase, override_settings
 from django.urls import resolve
 
-from .shell import workspace_shell
+from .shell import _navigation_section, workspace_shell
 
 
 def demo_context(role="clerk"):
@@ -84,3 +84,51 @@ class WorkspaceShellTests(SimpleTestCase):
         self.assertNotIn('aria-label="Hauptnavigation"', html)
         self.assertNotIn("Sitzung planen", html)
         manage.assert_called()
+
+    def test_nested_routes_keep_parent_navigation_active(self):
+        cases = {
+            "home": "home",
+            "template_detail": "templates",
+            "template_edit": "templates",
+            "replica_document": "templates",
+            "meeting_detail": "meetings",
+            "meeting_agenda_edit": "meetings",
+            "live_workspace": "meetings",
+            "minutes": "meetings",
+            "decision": "decisions",
+            "personal_note": "member_desk",
+            "registry_edit": "registry",
+            "remove_membership": "users",
+            "security": None,
+        }
+        for route, section in cases.items():
+            with self.subTest(route=route):
+                self.assertEqual(_navigation_section(route), section)
+
+    @override_settings(SERVER_ROLE="internal")
+    @patch("core.shell.may_manage_organization", return_value=False)
+    @patch("core.shell.active_context")
+    def test_nested_page_marks_location_without_claiming_list_is_current_page(self, active, manage):
+        active.return_value = demo_context()
+        request = self.request()
+        request.resolver_match = SimpleNamespace(url_name="template_detail")
+        html = render_to_string("base.html", {}, request=request)
+        self.assertIn('href="/vorlagen/" aria-current="location"', html)
+        self.assertNotIn('href="/sitzungen/" aria-current=', html)
+        self.assertNotIn('href="/benutzer/"', html)
+
+    @override_settings(SERVER_ROLE="internal")
+    @patch("core.shell.may_manage_organization", return_value=False)
+    @patch("core.shell.active_context")
+    def test_personal_search_query_is_preserved_escaped_and_scoped(self, active, manage):
+        active.return_value = demo_context()
+        request = self.factory.get("/mein-bereich/", {"q": "Bau & Verkehr"})
+        request.resolver_match = SimpleNamespace(url_name="member_desk")
+        request.user = SimpleNamespace(is_authenticated=True, first_name="Test", username="test")
+        html = render_to_string("base.html", {}, request=request)
+        self.assertIn('name="q"', html)
+        self.assertIn('value="Bau &amp; Verkehr"', html)
+        self.assertIn('href="/mein-bereich/" aria-current="page"', html)
+        request.resolver_match = SimpleNamespace(url_name="meetings")
+        html = render_to_string("base.html", {}, request=request)
+        self.assertIn('value=""', html)

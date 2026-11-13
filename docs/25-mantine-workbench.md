@@ -53,3 +53,11 @@ Rollback: `#115`-Branch/PR zurücknehmen. Die zusätzliche Workbench-Root-, CSS-
 ## Produkt-Qualitätsziel vs. aktueller Stand
 
 Der hier durchgeführte Schritt liefert eine **durchgängige visuelle Grund- und Orientierungsoberfläche**, nicht die abschließende Neuentwicklung sämtlicher individuellen Fachprozesse als React-Komponenten. Für riskante Live-, Abstimmungs-, Offline- und Publikationsworkflows bleiben die fachlich geprüften Bestandskomponenten ausdrücklich bestehen, bis ihre Nachfolge in #44/#50 unabhängig evaluiert wurde.
+
+## Navigations-Slice #125 (13.11.2026)
+
+Die bestehende HTML-Navigation erhält auf Vorlagen-, Sitzungs-, Beschluss- und Administrations-Unterseiten eine **serverseitig bestimmte aktive Kategorie**. Listenlinks werden als `aria-current="page"` markiert, wenn die Liste selbst geöffnet ist; für Detail-/Bearbeitungsseiten steht `aria-current="location"`. Die Kategorie verleiht **keine** Zugriffsrechte. Die Hervorhebung funktioniert unabhängig von JavaScript.
+
+Für schnellere Orientierung bietet die private Workbench einen **Schnellwechsel** per Klick oder `Strg/⌘ + K`: zugänglicher Dialog mit Autofokus, Textfilter, Enter für den ersten Treffer und Esc zum Schließen. Die Ergebnisse werden **ausschließlich** aus bestehenden `.global-nav a` gelesen, also aus vom Django-Server bereits angebotenen Links; keine zusätzliche API, kein Index geschützter Objekte, keine vorgetäuschten Rechte. Die klassische Navigation und die HTTP-GET-Suche bleiben mit deaktiviertem JavaScript funktionsfähig. Im persönlichen Arbeitsbereich bleibt eine vorhandene Suchanfrage bei der Rückgabe sichtbar (HTML-escaped; höchstens 100 Zeichen).
+
+Nachweise: Django-Tests für Unterseiten-Zuordnung, Kontextgrenzen und Suchwert-Escaping; Playwright-Fixture für Tastatur, Filter, nicht angebotene Ziele, 360px, No-JS und Public-Abgrenzung. **Noch offen:** echte Fachanwender-Tests, iPad/VoiceOver, vollständige Screenreader-Bedienung und Lasttests. #43/#44/#50 bleiben Freigabegates. Keine Migration, kein API-/Rechtewechsel; Rollback durch Revert von PR #125.
