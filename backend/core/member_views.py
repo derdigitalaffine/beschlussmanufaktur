@@ -2,9 +2,11 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied,ValidationError
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404,render,redirect
 from django.utils.safestring import mark_safe
+from django.urls import reverse
+from urllib.parse import urlencode
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from .models import Meeting,Template,ExternalDocument,WorkspaceEntry,PersonalNote,Notification
@@ -55,7 +57,11 @@ def desk(request):
         target=next((row for row in resources(context) if row['kind']==request.POST.get('kind') and str(row['id'])==request.POST.get('resource_id')),None)
         if not target:raise PermissionDenied
         entry,_=WorkspaceEntry.objects.get_or_create(owner=request.user,context=context,kind=target['kind'],resource_id=target['id'])
-        entry.favorite=not entry.favorite;entry.save(update_fields=['favorite']);return redirect('member_desk')
+        entry.favorite=not entry.favorite;entry.save(update_fields=['favorite'])
+        # Preserve only the bounded search term, never a client-supplied return URL.
+        search=request.POST.get('q','')[:100].strip()
+        url=reverse('member_desk')
+        return HttpResponseRedirect(url+('?' + urlencode({'q':search}) if search else ''))
     entries={(entry.kind,entry.resource_id):entry for entry in WorkspaceEntry.objects.filter(owner=request.user,context=context)}
     for row in rows:row['favorite']=bool(entries.get((row['kind'],row['id'])) and entries[(row['kind'],row['id'])].favorite);row['viewed_at']=entries.get((row['kind'],row['id'])).viewed_at if (row['kind'],row['id']) in entries else None
     favorites=[row for row in rows if row['favorite']];recent=sorted([row for row in rows if row['viewed_at']],key=lambda row:row['viewed_at'],reverse=True)[:8]

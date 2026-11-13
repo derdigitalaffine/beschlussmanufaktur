@@ -85,3 +85,16 @@ class DecisionWorklistUITests(SimpleTestCase):
         with patch("core.decision_views.active_context", return_value=None):
             with self.assertRaises(PermissionDenied):
                 index(request)
+
+    def test_dashboard_shortcuts_preserve_search_and_state_with_encoded_urls(self):
+        item=decision_row("Brücke & Tunnel", "in_progress",timezone.localdate()-timedelta(days=1),USER_ID)
+        response=self.render_page({"q":"Brücke & Tunnel","state":"in_progress"},[item])
+        self.assertContains(response,'href="/beschluesse/?focus=overdue&amp;q=Br%C3%BCcke+%26+Tunnel&amp;state=in_progress"')
+        self.assertContains(response,'href="/beschluesse/?focus=mine&amp;q=Br%C3%BCcke+%26+Tunnel&amp;state=in_progress"')
+        self.assertContains(response,"Brücke &amp; Tunnel")
+
+    def test_shortcut_discards_invalid_state_and_focus(self):
+        item=decision_row("Rathaus", "open")
+        response=self.render_page({"state":"unexpected","focus":"bad"},[item])
+        self.assertContains(response,'href="/beschluesse/?focus=overdue"')
+        self.assertNotContains(response,"state=unexpected")

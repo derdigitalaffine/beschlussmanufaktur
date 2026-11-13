@@ -18,10 +18,10 @@
   <section class="ui-summary" aria-label="Beschlüsse in Ihrem Arbeitskontext">
     <div class="ui-metric"><strong>{{ accessible_count }}</strong><span>Zugängliche Beschlüsse</span></div>
     <div class="ui-metric"><strong>{{ active_count }}</strong><span>Mit offenem Umsetzungsstand</span></div>
-    <a class="ui-metric decision-metric-link{% if focus == 'overdue' %} is-selected{% endif %}" href="{% url 'decisions' %}?focus=overdue">
+    <a class="ui-metric decision-metric-link{% if focus == 'overdue' %} is-selected{% endif %}" href="{{ overdue_focus_url }}">
       <strong>{{ overdue_count }}</strong><span>Überfällige Beschlüsse anzeigen</span>
     </a>
-    <a class="ui-metric decision-metric-link{% if focus == 'mine' %} is-selected{% endif %}" href="{% url 'decisions' %}?focus=mine">
+    <a class="ui-metric decision-metric-link{% if focus == 'mine' %} is-selected{% endif %}" href="{{ mine_focus_url }}">
       <strong>{{ mine_count }}</strong><span>Mir zugewiesen anzeigen</span>
     </a>
   </section>
