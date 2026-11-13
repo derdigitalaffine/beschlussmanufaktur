@@ -73,7 +73,7 @@ class OnboardingPublicUITests(SimpleTestCase):
         self.assertIn('method="post"', html)
         self.assertIn('name="csrfmiddlewaretoken"', html)
         self.assertIn("invitation.js", html)
-        self.assertIn("Keine freie Selbstregistrierung", html)
+        self.assertIn("Es gibt keine freie Selbstregistrierung", html)
 
     def test_invite_accept_preserves_distinct_account_states(self):
         invite = SimpleNamespace(
