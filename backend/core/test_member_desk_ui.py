@@ -114,6 +114,7 @@ class MemberDeskUITests(SimpleTestCase):
         from .member_views import resources
         context=self.context
         context.pk=uuid4()
+        context.user=SimpleNamespace(pk=context.user_id)
         with (
             patch("core.member_views.available_contexts") as available,
             patch("core.member_views.Meeting.objects.select_related") as meetings,
@@ -129,6 +130,7 @@ class MemberDeskUITests(SimpleTestCase):
         from .member_views import resources
         context=self.context
         context.pk=uuid4()
+        context.user=SimpleNamespace(pk=context.user_id)
         obj=SimpleNamespace(
             pk=uuid4(), title="Ratssitzung",committee=SimpleNamespace(name="Gemeinderat"),
             location=None,starts_at=timezone.now()+timedelta(days=2),version=1,state="invited",
