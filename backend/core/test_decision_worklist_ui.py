@@ -98,3 +98,11 @@ class DecisionWorklistUITests(SimpleTestCase):
         response=self.render_page({"state":"unexpected","focus":"bad"},[item])
         self.assertContains(response,'href="/beschluesse/?focus=overdue"')
         self.assertNotContains(response,"state=unexpected")
+
+    def test_active_shortcut_has_accessible_current_state(self):
+        item = decision_row("Wegesanierung", "open", responsible_id=USER_ID)
+        response = self.render_page({"focus": "mine"}, [item])
+        html = response.content.decode("utf-8")
+        self.assertIn('href="/beschluesse/?focus=mine" aria-current="true"', html)
+        self.assertNotIn('href="/beschluesse/?focus=overdue" aria-current="true"', html)
+        self.assertIn('role="status" aria-live="polite"', html)
