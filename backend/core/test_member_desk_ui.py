@@ -109,3 +109,41 @@ class MemberDeskUITests(SimpleTestCase):
             notifications.return_value.order_by.return_value.__getitem__.return_value=[]
             response=desk(self.request(data={"q":'Rat " & Bau'}))
         self.assertContains(response,'name="q" type="hidden" value="Rat &quot; &amp; Bau"')
+
+    def test_mandate_desk_limits_template_query_to_active_organization(self):
+        from .member_views import resources
+        context=self.context
+        context.pk=uuid4()
+        context.user=SimpleNamespace(pk=context.user_id)
+        with (
+            patch("core.member_views.available_contexts") as available,
+            patch("core.member_views.Meeting.objects.select_related") as meetings,
+            patch("core.member_views.Template.objects.select_related") as templates,
+        ):
+            available.return_value.filter.return_value.exists.return_value=True
+            meetings.return_value.filter.return_value=[]
+            templates.return_value.filter.return_value=[]
+            self.assertEqual(resources(context,"Sitzung"),[])
+            templates.return_value.filter.assert_called_once_with(organization=context.organization)
+
+    def test_mandate_desk_handles_missing_meeting_venue(self):
+        from .member_views import resources
+        context=self.context
+        context.pk=uuid4()
+        context.user=SimpleNamespace(pk=context.user_id)
+        obj=SimpleNamespace(
+            pk=uuid4(), title="Ratssitzung",committee=SimpleNamespace(name="Gemeinderat"),
+            location=None,starts_at=timezone.now()+timedelta(days=2),version=1,state="invited",
+        )
+        with (
+            patch("core.member_views.available_contexts") as available,
+            patch("core.member_views.Meeting.objects.select_related") as meetings,
+            patch("core.member_views.meeting_access",return_value=True),
+            patch("core.member_views.Template.objects.select_related") as templates,
+        ):
+            available.return_value.filter.return_value.exists.return_value=True
+            meetings.return_value.filter.return_value=[obj]
+            templates.return_value.filter.return_value=[]
+            rows=resources(context,"Ratssitzung")
+            self.assertEqual(len(rows),1)
+            self.assertIsNone(rows[0]["location"])
