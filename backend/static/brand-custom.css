@@ -1,0 +1,27 @@
+/* Customizable white-label brand layer: adjust these tokens per deployment.
+   Tenant-specific server-side logo upload requires a separate authorized asset model. */
+:root {
+  --bm-brand-accent: #008f86;
+  --bm-brand-ink: #0b2746;
+  --bm-brand-logo-size: 36px;
+}
+.topbar .brand .brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--bm-brand-logo-size);
+  height: var(--bm-brand-logo-size);
+  flex: 0 0 auto;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+}
+.topbar .brand .brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+@media (prefers-contrast: more) {
+  .topbar .brand .brand-mark { outline: 2px solid currentColor; outline-offset: 2px; }
+}
