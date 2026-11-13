@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live-Prototyp A · Progressive</title>
+  <link rel="stylesheet" href="live.css">
+  <script src="progressive.js" defer></script>
+</head>
+<body>
+  <p class="prototype-banner"><strong>Experiment #68 · Variante A:</strong> servernahe Live-Oberfläche + kleine progressive DOM-Updates. Keine Produktivroute, keine Race-Sicherheitsaussage.</p>
+  <header class="topbar"><span class="brand">Beschlussmanufaktur</span><span class="context">Stadt Beispiel · Schriftführung · Rat</span><button type="button" class="secondary">Nutzer</button></header>
+  <main>
+    <header class="page-head"><div><p class="eyebrow">Sitzung 12/2026 · 11.10.2026</p><h1>Rat der Stadt Beispiel · Sitzungsführung</h1><p class="small">Stand <strong id="page-version">42</strong> · Führender Dienst intern</p></div><a href="#events">Ereignisverlauf</a></header>
+
+    <section class="live-status" aria-label="Live-Status">
+      <div class="status-cell" id="connection-cell" data-kind="ok"><strong>Verbindung</strong><span id="connection-value">● Online · bestätigt</span></div>
+      <div class="status-cell" id="authority-cell" data-kind="ok"><strong>Sitzungshoheit</strong><span id="authority-value">Schriftführung aktiv</span></div>
+      <div class="status-cell"><strong>Aktiver TOP</strong><span>TOP 7 · Grundschule Nord</span></div>
+      <div class="status-cell" id="quorum-cell" data-kind="ok"><strong>Beschlussfähigkeit</strong><span id="quorum-value">18 / 28 · festgestellt</span></div>
+      <div class="status-cell" id="vote-cell"><strong>Abstimmung</strong><span id="vote-value">Keine Abstimmung offen</span></div>
+    </section>
+
+    <section class="test-controls" aria-label="Testzustände"><strong>Nur für Experiment:</strong><button id="simulate-stale" type="button" class="secondary">Neueren Serverstand simulieren</button><button id="simulate-offline" type="button" class="secondary">Verbindung trennen</button><button id="simulate-authority-loss" type="button" class="secondary">Sitzungshoheit verlieren</button><button id="recover" type="button" class="secondary" hidden>Serverstand neu laden</button></section>
+
+    <div class="live-grid">
+      <aside class="card"><h2>Tagesordnung</h2><ol class="agenda"><li><button data-state="done">TOP 5 · Jahresabschluss ✓</button></li><li><button data-state="done">TOP 6 · Feuerwehr ✓</button></li><li><button data-state="active" aria-current="step">TOP 7 · Grundschule Nord</button></li><li><button data-state="next">TOP 8 · Stadtentwicklung</button></li><li><button data-state="next">TOP 9 · Anfragen</button></li></ol></aside>
+
+      <section class="card"><h2>TOP 7 · Neubau Grundschule Nord</h2><p><span class="badge ok">öffentlich</span> <span class="badge">Vorlage BM-2026-0042</span></p><label for="note"><strong>Protokolltext</strong></label><textarea id="note" class="note">Der Vorsitz ruft TOP 7 auf. Die Verwaltung erläutert die aktualisierte Kostenberechnung.</textarea><div class="motion"><strong>Antrag 1 · Sachantrag</strong><p>Bauabschnitt 2 wird ausdrücklich in den Beschluss aufgenommen.</p></div>
+        <section class="vote-panel" aria-labelledby="vote-title"><h3 id="vote-title">Namentliche Abstimmung</h3><p id="vote-description">Noch nicht gestartet. Gegenstand: Beschlussvorschlag inklusive Antrag 1.</p><div class="vote-progress" id="vote-progress" hidden><progress id="ballots" max="18" value="0"></progress><span><strong id="ballot-count">0</strong> / 18 Stimmen</span></div><div class="result-grid" id="vote-result" hidden><div><strong>11</strong>Ja</div><div><strong>6</strong>Nein</div><div><strong>1</strong>Enthaltung</div></div></section>
+      </section>
+
+      <aside class="card"><h2>Anwesenheit &amp; Quorum</h2><p class="quorum"><strong>18 / 28</strong><span>stimmberechtigt anwesend</span></p><p><span class="badge ok">Beschlussfähigkeit festgestellt</span></p><ul class="participant-list"><li class="participant"><strong>A. Beispiel</strong> · anwesend · stimmberechtigt</li><li class="participant"><strong>B. Muster</strong> · anwesend · stimmberechtigt</li><li class="participant"><strong>C. Demo</strong> · anwesend · <span class="badge warn">Befangenheit geprüft: nein</span></li><li class="participant">… weitere 15 anwesend</li></ul><button id="toggle-quorum" type="button" class="secondary">Test: Quorum auf 17 / 28 ändern</button></aside>
+    </div>
+
+    <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
+    <div class="action-bar" aria-label="Live-Aktionen"><button id="save-note" type="button" class="secondary">Protokollstand speichern</button><button id="add-motion" type="button" class="secondary">Antrag aufnehmen</button><button id="primary-action" type="button" class="primary">Namentliche Abstimmung starten</button></div>
+
+    <details id="events"><summary>Vollständiger Ereignisverlauf</summary><div class="card"><p>Stand 42 · TOP 7 aufgerufen · Schriftführung</p><p>Stand 41 · Beschlussfähigkeit 18/28 festgestellt · Vorsitz</p></div></details>
+  </main>
+</body>
+</html>
