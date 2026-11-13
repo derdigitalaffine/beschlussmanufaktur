@@ -1,1 +1,61 @@
-{% extends 'base.html' %}{% load static %}{% block content %}<a href="/sicherheit/">← Anmeldesicherheit</a><h1>Passkeys verwalten</h1><p>Passkeys gelten für diesen Arbeitsplatz. Der Browser bestätigt Ihre Identität am Gerät. Registrierung aktiviert Passkey-Anmeldung; neue Wiederherstellungscodes werden einmal angezeigt.</p><form id="passkey-form" class="card">{% csrf_token %}<label>Aktuelles Passwort<input type="password" name="password" autocomplete="current-password"></label><label>Aktueller Authenticator-/Wiederherstellungscode (wenn erforderlich)<input name="code" autocomplete="one-time-code"></label><label>Gerätename<input name="name" maxlength="80" value="Mein Passkey"></label><button type="button" data-passkey="reauth">Vorhandenen Passkey bestätigen</button><button type="button" data-passkey="register">Passkey hinzufügen</button></form><p id="passkey-status" role="status"></p><pre id="passkey-recovery"></pre>{% for key in keys %}<article class="card"><h2>{{ key.name }}</h2><p>Hinzugefügt {{ key.created_at }}</p><button type="button" data-passkey-remove="{{ key.pk }}">Entfernen</button></article>{% empty %}<p>Noch kein Passkey.</p>{% endfor %}<script src="{% static 'passkeys.js' %}" defer></script>{% endblock %}
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Passkeys verwalten · Beschlussmanufaktur{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{% static 'ux-sensitive-workflows.css' %}">{% endblock %}
+{% block content %}
+<a class="ui-back bm-work-back" href="/sicherheit/">← Zur Anmeldesicherheit</a>
+<section class="page-heading">
+  <span class="eyebrow">Persönliche Sicherheit / Passkeys</span>
+  <h1>Passkeys verwalten</h1>
+  <p>Passkeys gelten ausschließlich für diesen Arbeitsplatz. Der Browser prüft Ihre Identität am Gerät. Nach Registrierung werden neue Wiederherstellungscodes einmalig angezeigt.</p>
+</section>
+<div class="bm-sensitive-grid">
+  <section class="card bm-sensitive-main" aria-labelledby="passkey-create-title">
+    <span class="bm-sensitive-tag">Gerät bestätigen</span>
+    <h2 id="passkey-create-title">Passkey hinzufügen</h2>
+    <form id="passkey-form" class="bm-sensitive-form">
+      {% csrf_token %}
+      <div class="bm-sensitive-field"><label for="passkey-password">Aktuelles Passwort</label>
+        <input id="passkey-password" type="password" name="password" autocomplete="current-password"></div>
+      <div class="bm-sensitive-field"><label for="passkey-code">Aktueller Authenticator- oder Wiederherstellungscode (wenn erforderlich)</label>
+        <input id="passkey-code" name="code" autocomplete="one-time-code"></div>
+      <div class="bm-sensitive-field"><label for="passkey-name">Gerätename</label>
+        <input id="passkey-name" name="name" maxlength="80" value="Mein Passkey"></div>
+      <div class="bm-sensitive-actions">
+        <button class="bm-sensitive-secondary" type="button" data-passkey="reauth">Vorhandenen Passkey bestätigen</button>
+        <button class="primary" type="button" data-passkey="register">Passkey hinzufügen</button>
+      </div>
+    </form>
+    <p id="passkey-status" role="status" class="bm-sensitive-status"></p>
+    <pre id="passkey-recovery" class="bm-sensitive-code-block"></pre>
+  </section>
+  <aside class="card bm-sensitive-aside" aria-labelledby="passkey-guide-heading">
+    <span class="eyebrow">Wichtige Hinweise</span>
+    <h2 id="passkey-guide-heading">Nur auf diesem Origin</h2>
+    <ol class="bm-sensitive-steps">
+      <li><strong>Authentifizieren</strong><span>Bestehende Zugangsdaten beziehungsweise vorhandenen Passkey bestätigen.</span></li>
+      <li><strong>Benennen</strong><span>Einen eindeutigen Gerätenamen für die Wiedererkennung vergeben.</span></li>
+      <li><strong>Sichern</strong><span>Einmalige Wiederherstellungscodes außerhalb des Browsers aufbewahren.</span></li>
+    </ol>
+  </aside>
+</div>
+<section class="bm-sensitive-section" aria-labelledby="passkey-existing-heading">
+  <div class="bm-sensitive-section-title">
+    <div><span class="eyebrow">Registrierte Geräte</span><h2 id="passkey-existing-heading">Vorhandene Passkeys</h2></div>
+  </div>
+  <div class="bm-sensitive-list">
+    {% for key in keys %}
+    <article class="card bm-sensitive-row">
+      <div><span class="bm-sensitive-tag">Registriert</span><h3>{{ key.name }}</h3>
+        <p>Hinzugefügt {{ key.created_at }}</p></div>
+      <button type="button" class="bm-sensitive-danger" data-passkey-remove="{{ key.pk }}">Entfernen</button>
+    </article>
+    {% empty %}
+    <section class="card bm-sensitive-empty"><h3>Noch kein Passkey</h3>
+      <p>Fügen Sie einen Passkey hinzu, um die Anmeldung mit der Gerätesicherheitsprüfung zu nutzen.</p>
+    </section>
+    {% endfor %}
+  </div>
+</section>
+<script src="{% static 'passkeys.js' %}" defer></script>
+{% endblock %}
