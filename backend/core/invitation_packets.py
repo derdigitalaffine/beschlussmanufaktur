@@ -83,6 +83,6 @@ def packet(data,context=None,asset_loader=None):
         stamp=io.BytesIO();c=canvas.Canvas(stamp,pagesize=(float(page.mediabox.width),float(page.mediabox.height)))
         c.setFillColorRGB(1,1,1);c.rect(0,10,float(page.mediabox.width),24,fill=1,stroke=0);c.setFillColorRGB(0,0,0);c.setFont('Helvetica',9);c.drawRightString(float(page.mediabox.width)-35,20,f'Seite {index+1} / {total}');c.save()
         page.merge_page(PdfReader(io.BytesIO(stamp.getvalue())).pages[0])
-    for key in ['/OpenAction','/AA','/AcroForm','/Names']:writer._root_object.pop(key,None)
-    writer.add_metadata({'/Title':data['title'],'/Author':'Beschlussmanufaktur'})
+    for key in ['/OpenAction','/AA','/AcroForm','/Names','/Outlines','/Threads','/StructTreeRoot']:writer._root_object.pop(key,None)
+    writer.add_metadata({'/Title':data['title'],'/Author':'Beschlussmanufaktur','/Subject':'Sitzungsunterlagen'})
     output=io.BytesIO();writer.write(output);return output.getvalue()
