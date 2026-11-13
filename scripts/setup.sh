@@ -184,6 +184,8 @@ for line in p.read_text(encoding="utf-8").splitlines():
         val=val[1:-1].replace("\\'","'")
     elif val.startswith('"') and val.endswith('"'):
         val=val[1:-1]
+    if key in values:
+        sys.exit("FEHLER: Doppelte Konfigurationsvariable: "+key)
     values[key]=val
 stack=sys.argv[2]
 if values.get("BM_SETUP_STACK") not in ("",stack):
